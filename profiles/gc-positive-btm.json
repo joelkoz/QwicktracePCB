@@ -1,0 +1,7 @@
+{
+    "name": "Positive, Back/Mirror",
+    "description": "Expose background of mirrored traces",
+    "invertImg": false,
+    "invertCanvas": false,
+    "mirror": true
+}

@@ -1,0 +1,18 @@
+{
+    "super" : {
+        "width": 1760,
+        "height": 1500,
+        "fullScreen": false,
+        "debug": true
+    },
+
+    "mask" : {
+       "marginX": 64,
+       "marginY": 64,
+       "ppmmWidth": 4.2,
+       "ppmmHeight": 4.2,
+       "ppinWidth": 109,
+       "ppinHeight":  109        
+    }
+}
+

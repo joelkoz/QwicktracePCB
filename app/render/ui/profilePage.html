@@ -1,0 +1,50 @@
+<div id="profilePage" class="page">
+    <style type="text/css"> 
+
+        #profilePage .page-body {
+            display: grid;
+            grid-template-areas:
+               'listArea buttonsLeft';
+            grid-template-columns: 3fr 1fr;
+        }
+
+        #profilePage .list-area {
+            grid-area: listArea;
+            margin-right: 5px;
+        }
+
+        #profilePage .buttons-left {
+            grid-area: buttonsLeft;
+            margin: auto auto auto auto;
+        }
+
+        #profilePage .buttons-left button {
+            display: block;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           <button type="button" class="btn w1 back" onClick="ui.showPage('filePage')">&#8592;</button>
+           Select profile
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="list-area">
+            <select name="profileName" id="profileName" class="list" size="3">
+            </select>
+        </div>
+        <div class="buttons-left">
+            <button type="button" class="btn w1" onClick="uiListUp('profileName')">&#8593;</button>
+            <button type="button" class="btn w1" onClick="uiListDown('profileName')">&#8595;</button>
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['profilePage'] = function() {
+             uiInitList('profileName', ui.profileList, (p1, p2) => p1.name < p2.name ? -1 : 1, 'exposureStartPage');
+        };
+    </script>
+</div>

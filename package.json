@@ -1,0 +1,23 @@
+{
+  "name": "QwicktracePCB",
+  "version": "1.0.0",
+  "description": "Control LCD and UI for Qwicktrace PCB Exposure table",
+  "main": "app/main/main.js",
+  "dependencies": {
+    "fast-xml-parser": "^3.18.0",
+    "gerber-to-svg": "^4.2.5",
+    "jquery": "^3.6.0",
+    "pigpio-client": "^1.5.1",
+    "units-css": "^0.4.0"
+  },
+  "devDependencies": {
+    "electron": "^11.2.3",
+    "electron-rebuild": "^2.3.5"
+  },
+  "scripts": {
+    "start": "electron .",
+    "debug": "electron --inspect-brk=5858 ."
+  },
+  "author": "Joel Kozikowski",
+  "license": "MIT"
+}

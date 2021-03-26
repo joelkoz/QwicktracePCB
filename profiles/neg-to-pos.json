@@ -1,0 +1,7 @@
+{
+    "name": "Negative to positive",
+    "description": "Image is a negative but should be positive",
+    "invertImg": true,
+    "invertCanvas": false,
+    "mirror": false
+}

@@ -1,0 +1,3 @@
+#!/bin/bash
+dtc -@ -Hepapr -I dts -O dtb -o qwicktrace-hat.dtbo qwicktrace-hat-overlay.dts 
+sudo cp qwicktrace-hat.dtbo /boot/overlays

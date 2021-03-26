@@ -1,0 +1,7 @@
+{
+    "name": "Positive to negative",
+    "description": "Traces white on black",
+    "invertImg": false,
+    "invertCanvas": true,
+    "mirror": false
+}

@@ -1,0 +1,24 @@
+{
+    "super" : {
+        "width": 1760,
+        "height": 2560,
+        "fullScreen": true,
+        "debug": false,
+        "frame": false
+    },
+
+    "mask" : {
+       "marginX": 26,
+       "marginY": 43,
+       "ppmmWidth": 21.15158636,
+       "ppmmHeight": 21.16402116,
+       "ppinWidth": 537.250293,
+       "ppinHeight":  537.566137464       
+    },
+
+    "pigpio": {
+       "host": "127.0.0.1",
+       "port": 8888
+    }
+}
+

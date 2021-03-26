@@ -1,0 +1,122 @@
+<div id="exposurePage" class="page">
+    <style type="text/css"> 
+
+        #exposurePage .page-body {
+            display: grid;
+            grid-template-areas:
+               'displayArea'
+               'buttonArea';
+            grid-template-rows: 1fr 1fr;
+        }
+
+        #exposurePage .display-area {
+            grid-area: displayArea;
+            display: grid;
+            grid-template-areas:
+               'labelArea fNameArea'
+               'progBarArea progBarArea'
+               'progValArea progValArea';
+            grid-template-columns: 1fr 3fr;
+            font-size: 20px;
+        }
+
+        #exposurePage .label {
+            grid-area: labelArea;
+            color: #4CAF50;
+            text-align: right;
+            margin-right: 5px;
+        }
+
+        #expFName2 {
+            grid-area: fNameArea;
+            color: white;
+            white-space: nowrap;
+        }
+
+        #expProgressBar {
+            grid-area: progBarArea;
+            border: 1px solid grey;
+            margin-left: 10px;
+            margin-right: 10px;
+            height: 80%;
+        }
+
+        #expProgressBarPct {
+            border: 1px solid #4CAF50;
+            background-color: #4CAF50;
+            color: white;
+            width: 0%;
+            height: 100%;
+            text-align: center;
+            font-size: 25px;
+        }
+
+        #expProgressVal {
+            grid-area: progValArea;
+            margin: auto;
+        }
+
+
+        #exposurePage .button-area {
+            grid-area: buttonArea;
+            margin-top: 10px
+        }
+
+        #exposurePage .button-area button {
+            margin: auto;
+            height: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           Exposure
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="display-area">
+            <div class="label">File:</div>
+            <div id="expFName2" class="fName">file name</div>
+            <div id="expProgressBar">
+                <div id="expProgressBarPct">
+                    0%
+                </div>
+            </div>
+            <div id="expProgressVal"></div>
+        </div>
+        <div class="button-area">
+            <button id="expBtnCancel" type="button" class="btn w3" onClick="ui.cancelExposure()">Cancel</button>
+            <button id="expBtnDone" type="button" class="btn w3" onClick="ui.showPage('filePage')">Done</button>
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['exposurePage'] = function() {
+            ui.startExposure();
+            $('#expFName2').html(ui.state.file.value);
+
+            $('#expBtnCancel').show();
+            $('#expBtnDone').hide();
+        };
+
+        ui.subscribe('ui-exposure-update', (event, exposure) => {
+            let remainMin = Math.trunc(exposure.remain / 60);
+            let remainSec = exposure.remain % 60;
+            let strRemain = ('0' + remainMin).slice(-2) + ":" + ('0' + remainSec).slice(-2);
+            $('#expProgressVal').html(strRemain);
+
+            let ptc = 1.0 - (exposure.remain / exposure.time);
+            let strPct = Math.trunc(ptc * 100) + '%';
+            $('#expProgressBarPct').html(strPct);
+            $('#expProgressBarPct').width(strPct);
+
+            if (exposure.remain <= 0) {
+                $('#expBtnCancel').hide();
+                $('#expBtnDone').show();
+            }
+        });
+
+    </script>
+</div>
