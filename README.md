@@ -7,7 +7,7 @@ This is a very rough list of things needed to do to setup the Raspberry Pi and i
 
 1. Download and use "Raspberry Pi Imager" to flash an SD card from your desktop computer. Use recommended 32 bit OS on main menu. You need the OS 'with Desktop Software'.
 
-2. Before installing the SD card in the Pi, create the file 'ssh' in the root directory of the SD card. This can be done on a Mac by using Terminal, then typing `echo >/Volumes/boot/ssh`
+2. Before installing the SD card in the Pi, create the file `ssh` in the root directory of the SD card. This can be done on a Mac by using Terminal, then typing `echo >/Volumes/boot/ssh`
 
 3. On the same SD card, create the file `wpa_supplicant.conf` with the following contents:
 ```
@@ -38,9 +38,11 @@ sudo apt full-upgrade
 9. Configure the system with raspi-config:
 ```
 sudo raspi-config
+
+   *  Use the System Options to specify "Boot to command line" (in case something weird goes wrong)
+   
+   *  Change the host name to `pcb`
 ```
-    9. Use the System Options to specify "Boot to command line" (in case something weird goes wrong)
-    9. Change the host name to `pcb`
 
 10. Install required software and utilities:
 ```
