@@ -81,8 +81,9 @@ hdmi_timings=1440 0 112 160 272 2560 0 4 4 3 0 0 0 48 0 244940000 3
 
 
 ## TFT screen configuration--------
-dtoverlay=qwicktrace-hat
-dtoverlay=spi0-2cs,cs0_pin=17,cs1_pin=6
+# Uncomment these lines once the dts file has been compiled and installed.
+#dtoverlay=qwicktrace-hat
+#dtoverlay=spi0-2cs,cs0_pin=17,cs1_pin=6
 
 ## Framebuffers must match for X11 to run
 framebuffer_depth=16
