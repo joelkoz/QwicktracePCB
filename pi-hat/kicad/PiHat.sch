@@ -27,10 +27,10 @@ $EndComp
 Text Notes 1250 1000 0    50   ~ 10
 12v_-_24v_Regulated_Power
 $Comp
-L Device:R_Small_US R4
+L Device:R_Small_US R1
 U 1 1 5FD96372
 P 4850 4250
-F 0 "R4" V 5025 4200 50  0000 L CNN
+F 0 "R1" V 5025 4200 50  0000 L CNN
 F 1 "1k" V 4950 4150 50  0000 L CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" H 4850 4250 50  0001 C CNN
 F 3 "~" H 4850 4250 50  0001 C CNN

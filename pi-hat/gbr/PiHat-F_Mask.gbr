@@ -2,7 +2,7 @@
 %TF.CreationDate,2021-03-29T15:35:27-04:00*%
 %TF.ProjectId,PiHat,50694861-742e-46b6-9963-61645f706362,rev?*%
 %TF.SameCoordinates,PX9b0780PY44cb540*%
-%TF.FileFunction,Soldermask,Bot*%
+%TF.FileFunction,Soldermask,Top*%
 %TF.FilePolarity,Negative*%
 %FSLAX46Y46*%
 G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
