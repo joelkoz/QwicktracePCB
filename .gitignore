@@ -106,3 +106,8 @@ dist
 .history
 notes.txt
 package-lock.json
+pi-hat/kicad/CAM
+pi-hat/PiHat.zip
+pi-hat/kicad/PiHat-cache.lib
+*.*-bak
+
