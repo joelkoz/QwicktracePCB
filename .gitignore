@@ -111,3 +111,4 @@ pi-hat/PiHat.zip
 pi-hat/kicad/PiHat-cache.lib
 *.*-bak
 
+pi-hat/kicad/fp-info-cache
