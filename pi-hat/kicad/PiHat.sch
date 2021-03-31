@@ -366,11 +366,11 @@ Text GLabel 3075 4475 2    50   Input ~ 0
 SLCK
 Text GLabel 5700 1700 3    50   Input ~ 0
 CS
-Text GLabel 5100 1200 1    50   Input ~ 0
+Text GLabel 5100 1700 3    50   Input ~ 0
 T_CS
-Text GLabel 5600 1700 3    50   Input ~ 0
-DC
 Text GLabel 5500 1700 3    50   Input ~ 0
+DC
+Text GLabel 5600 1700 3    50   Input ~ 0
 RESET
 $Comp
 L power:+3.3V #PWR0102
@@ -419,16 +419,14 @@ Text GLabel 5200 1700 3    50   Input ~ 0
 SLCK
 Text GLabel 1475 3475 0    50   Input ~ 0
 CS
-Text GLabel 3075 3775 2    50   Input ~ 0
+Text GLabel 3075 3875 2    50   Input ~ 0
 T_IRQ
-Text GLabel 1475 4675 0    50   Input ~ 0
-DC
 Text GLabel 1475 4175 0    50   Input ~ 0
-RESET
+DC
 NoConn ~ 1475 3775
 NoConn ~ 1475 3875
 NoConn ~ 1475 3975
-Text GLabel 3075 3875 2    50   Input ~ 0
+Text GLabel 3075 3775 2    50   Input ~ 0
 T_CS
 $Comp
 L power:GND #PWR0107
@@ -441,7 +439,7 @@ F 3 "" H 5700 1200 50  0001 C CNN
 	1    5700 1200
 	-1   0    0    1   
 $EndComp
-Text GLabel 5100 1700 3    50   Input ~ 0
+Text GLabel 5100 1200 1    50   Input ~ 0
 T_IRQ
 NoConn ~ 2375 5275
 NoConn ~ 1875 5275
@@ -450,4 +448,6 @@ NoConn ~ 2050 5275
 NoConn ~ 2175 5275
 NoConn ~ 2475 5275
 NoConn ~ 2275 5275
+Text GLabel 1475 4675 0    50   Input ~ 0
+RESET
 $EndSCHEMATC

@@ -112,3 +112,5 @@ pi-hat/kicad/PiHat-cache.lib
 *.*-bak
 
 pi-hat/kicad/fp-info-cache
+pi-hat/kicad/TFT/fp-info-cache
+pi-hat/kicad/TFT/TFT-cache.lib
