@@ -1,3 +1,4 @@
 #!/bin/bash
 export DISPLAY=:0
-/usr/bin/npm start > pcb.log 2&1 &
+cd /home/pi/QwicktracePCB
+/usr/bin/npm run start >pcb.log 2&1 &
