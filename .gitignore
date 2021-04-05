@@ -106,3 +106,11 @@ dist
 .history
 notes.txt
 package-lock.json
+pi-hat/kicad/CAM
+pi-hat/PiHat.zip
+pi-hat/kicad/PiHat-cache.lib
+*.*-bak
+
+pi-hat/kicad/fp-info-cache
+pi-hat/kicad/TFT/fp-info-cache
+pi-hat/kicad/TFT/TFT-cache.lib

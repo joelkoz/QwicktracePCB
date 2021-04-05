@@ -40,7 +40,7 @@
 			};
 
 			ads7846_pins: ads7846_pins {
-				brcm,pins = <5>; /* illegal default value */
+				brcm,pins = <6>; /* illegal default value */
 				brcm,function = <0>; /* in */
 				brcm,pull = <2>; /* none */
 			};
@@ -66,8 +66,8 @@
 				bgr;
 				fps = <30>;
 				buswidth = <8>;
-				reset-gpios = <&gpio 22 1>;
-				dc-gpios = <&gpio 27 0>;
+				reset-gpios = <&gpio 27 1>;
+				dc-gpios = <&gpio 22 0>;
 				led-gpios = <&gpio 18 0>;
 				debug = <0>;
 			};
@@ -79,9 +79,9 @@
 				pinctrl-0 = <&ads7846_pins>;
 
 				spi-max-frequency = <2000000>;
-				interrupts = <5 2>; /* high-to-low edge triggered */
+				interrupts = <6 2>; /* high-to-low edge triggered */
 				interrupt-parent = <&gpio>;
-				pendown-gpio = <&gpio 5 1>;
+				pendown-gpio = <&gpio 6 1>;
 				ti,y-min = /bits/ 16 <433>;
 				ti,x-min = /bits/ 16 <240>;
 				ti,y-max = /bits/ 16 <3894>;
