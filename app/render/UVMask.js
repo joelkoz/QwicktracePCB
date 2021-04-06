@@ -28,7 +28,8 @@ window.innerHeight: 2560
 class UVMask {
 
    constructor(config) {
-        this.config = config;
+        this.config = config.mask;
+        this.config.height = config.super.height;
         this.paintCtx = { url: null};
 
         let canvas = document.getElementById('uv-mask');
@@ -98,21 +99,35 @@ class UVMask {
          return;
       }
    
+      let dx = 0;
+      let dy = 0;
+      let xScale = 1;
+      let yScale = 1;
+
       if (this.paintCtx.profile.mirror) {
-         ctx.scale(-1,1);
-         let x;
-         if (process.platform == 'darwin') {
-            // Mirror image left edge calc is different on Mac OS X Chrome...
-            x = this.config.marginX - this.paintCtx.width / 2
-         }
-         else {
-            x = -this.config.marginX;
-         }
-         ctx.drawImage(this.paintCtx.img, x, this.config.marginY, -this.paintCtx.width, this.paintCtx.height);
+         xScale = -1;
+         dx = -(this.config.width - this.config.marginX - this.paintCtx.minX);
       }
       else {
-         ctx.drawImage(this.paintCtx.img, this.config.marginX, this.config.marginY, this.paintCtx.width, this.paintCtx.height);
+         xScale = 1;
+         dx = this.config.marginX + this.paintCtx.minX;
       }
+
+      yScale = 1;
+      dy = this.config.height - this.config.marginY - this.paintCtx.height  - this.paintCtx.minY;
+
+      ctx.save();
+      ctx.scale(xScale,yScale);
+         // let x;
+         // if (process.platform == 'darwin') {
+         //    // Mirror image left edge calc is different on Mac OS X Chrome...
+         //    minX = this.config.marginX - this.paintCtx.width / 2
+         // }
+         // else {
+         //    minX = -minX;
+         // }
+      ctx.drawImage(this.paintCtx.img, dx, dy, this.paintCtx.width, this.paintCtx.height);
+      ctx.restore();
    }
 
    
@@ -139,6 +154,7 @@ class UVMask {
       this.resetPaintCtx();
       this.paintCtx.profile = renderObj.profile;
       this.paintCtx.url = URL.createObjectURL(new Blob([renderObj.svg], { type: 'image/svg+xml' }));
+      this.paintCtx.viewBox = renderObj.viewBox;
    
       let thiz = this;
       this.paintCtx.img = new Image();
@@ -148,6 +164,14 @@ class UVMask {
          thiz.paintCtx.width = this.naturalWidth;
          thiz.paintCtx.height = this.naturalHeight;
    
+         // What are the multipliers for the view box width and height?
+         let mw = renderObj.viewBox[2] / renderObj.width;
+         let mh = renderObj.viewBox[3] / renderObj.height;
+
+         // Convert view box offsets to their natural numbers...
+         let minX = renderObj.viewBox[0] / mw;
+         let minY = renderObj.viewBox[1] / mh;
+
          if (renderObj.units) {
             switch (renderObj.units) {
    
@@ -155,18 +179,24 @@ class UVMask {
                   console.log('SVG size specified in mm');
                   thiz.paintCtx.width = renderObj.width * thiz.config.ppmmWidth;
                   thiz.paintCtx.height = renderObj.height * thiz.config.ppmmHeight;
+                  thiz.paintCtx.minX = minX * thiz.config.ppmmWidth;
+                  thiz.paintCtx.minY = minY * thiz.config.ppmmHeight;
                   break;
    
                case 'cm':
                   console.log('SVG size specified in cm');
                   thiz.paintCtx.width = renderObj.width * thiz.config.ppmmWidth * 10.0;
                   thiz.paintCtx.height = renderObj.height * thiz.config.ppmmHeight * 10.0;
+                  thiz.paintCtx.minX = minX * thiz.config.ppmmWidth * 10.0;
+                  thiz.paintCtx.minY = minY * thiz.config.ppmmHeight * 10.0;
                   break;
       
                case 'in':
                   console.log('SVG size specified in inches');
                   thiz.paintCtx.width = renderObj.width * thiz.config.ppinWidth;
                   thiz.paintCtx.height = renderObj.height * thiz.config.ppinHeight;
+                  thiz.paintCtx.minX = minX * thiz.config.ppinWidth;
+                  thiz.paintCtx.minY = minY * thiz.config.ppinHeight;
                   break;
       
             }

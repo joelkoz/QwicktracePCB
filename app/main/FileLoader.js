@@ -9,7 +9,7 @@ const units = require('units-css/lib');
 
 const dropDir = "./pcb-files/";
 
-const MainSubProcess = require('./MainSubProcess.js')
+const MainSubProcess = require('./MainSubProcess.js');
 
 
 class FileLoader  extends MainSubProcess {
@@ -60,11 +60,12 @@ class FileLoader  extends MainSubProcess {
             let obj = {
                "width": converter.width,
                "height": converter.height,
+               "viewBox": converter.viewBox,
                "units": converter.units,
                "svg": buffer,
                "profile": profile
             };
-      
+
             console.log('SVG render complete');
             thiz.ipcSend('mask-load-svg', obj);
          });
@@ -99,12 +100,14 @@ class FileLoader  extends MainSubProcess {
          try {
             let jxml = fastXmlParser.parse(buffer, options);
       
-            var pWidth = unitsParser.parse(jxml.svg?.attr?.width);
-            var pHeight = unitsParser.parse(jxml.svg?.attr?.height);
+            let pWidth = unitsParser.parse(jxml.svg?.attr?.width);
+            let pHeight = unitsParser.parse(jxml.svg?.attr?.height);
+            let sViewBox = jxml.svg?.attr?.viewBox;
       
             let obj = {
                "width": pWidth?.value,
                "height": pHeight?.value,
+               "viewBox": sViewBox?.split(' '),
                "units": (pWidth?.unit ? pWidth?.unit : pHeight?.unit),
                "svg": buffer,
                "profile": profile
