@@ -62,10 +62,16 @@ class UIController {
          
          
         ipcRenderer.on('ui-page-add', (event, pageContents) => {
-            console.log(`event ui-page-add`);
-            let _ui = $('#ui');
-            let newPage = _ui.append(pageContents);
-            newPage.show();
+            try {
+                console.log(`event ui-page-add`);
+                let _ui = $('#ui');
+                let newPage = _ui.append(pageContents);
+                newPage.show();
+            }
+            catch (err) {
+                console.log(`Error adding UI page ${pageContents}`);
+                console.error(err);
+             }            
         });
          
 
@@ -157,7 +163,7 @@ class UIController {
            let ext = fileName.slice(ndx+1);
            if (ext.toLowerCase() === 'gbr') {
                 // Check for KiCad file naming...
-                let dash = base.indexOf('-');
+                let dash = base.lastIndexOf('-');
                 if (dash >= 0) {
                     if (base.slice(dash, dash+5) == '-B_Cu') {
                         return 'Back:' + base.slice(0, dash);

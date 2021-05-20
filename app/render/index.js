@@ -23,7 +23,7 @@ document.addEventListener('keydown', (event) => {
 
  
 ipcRenderer.on('render-start', (event, config) => {
-   uvMask = new UVMask(config.mask);
+   uvMask = new UVMask(config);
    uiController = new UIController();
    ipcRenderer.invoke('render-start-done');
 });

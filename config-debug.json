@@ -1,10 +1,10 @@
 {
     "super" : {
         "width": 1760,
-        "height": 2560,
-        "fullScreen": true,
-        "debug": false,
-        "frame": false
+        "height": 1200,
+        "fullScreen": false,
+        "debug": true,
+        "frame": true
     },
 
     "mask" : {

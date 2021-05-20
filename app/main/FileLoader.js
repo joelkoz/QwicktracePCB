@@ -9,7 +9,7 @@ const units = require('units-css/lib');
 
 const dropDir = "./pcb-files/";
 
-const MainSubProcess = require('./MainSubProcess.js')
+const MainSubProcess = require('./MainSubProcess.js');
 
 
 class FileLoader  extends MainSubProcess {
@@ -46,27 +46,34 @@ class FileLoader  extends MainSubProcess {
             }
         };
      
-        let converter = gerberToSvg(strmGerber, options);
-     
-        let buffer = '';
-     
-        converter.on('data', (chunk) => {
-           buffer += chunk;
-        });
-     
-        let thiz = this;        
-        converter.on('end', () => {
-           let obj = {
-              "width": converter.width,
-              "height": converter.height,
-              "units": converter.units,
-              "svg": buffer,
-              "profile": profile
-           };
-     
-           console.log('SVG render complete');
-           thiz.ipcSend('mask-load-svg', obj);
-        });
+        try {
+         let converter = gerberToSvg(strmGerber, options);
+      
+         let buffer = '';
+      
+         converter.on('data', (chunk) => {
+            buffer += chunk;
+         });
+      
+         let thiz = this;        
+         converter.on('end', () => {
+            let obj = {
+               "width": converter.width,
+               "height": converter.height,
+               "viewBox": converter.viewBox,
+               "units": converter.units,
+               "svg": buffer,
+               "profile": profile
+            };
+
+            console.log('SVG render complete');
+            thiz.ipcSend('mask-load-svg', obj);
+         });
+      }
+      catch (err) {
+         console.log(`Error loading GBR file ${fileName}`);
+         console.error(err);
+      }      
     }
      
     
@@ -89,22 +96,30 @@ class FileLoader  extends MainSubProcess {
            parseAttributeValue : false,
            trimValues: true,
          };
-       
-         let jxml = fastXmlParser.parse(buffer, options);
-     
-         var pWidth = unitsParser.parse(jxml.svg?.attr?.width);
-         var pHeight = unitsParser.parse(jxml.svg?.attr?.height);
-     
-         let obj = {
-           "width": pWidth?.value,
-           "height": pHeight?.value,
-           "units": (pWidth?.unit ? pWidth?.unit : pHeight?.unit),
-           "svg": buffer,
-           "profile": profile
-        };
-     
-        console.log('SVG loaded');
-        thiz.ipcSend('mask-load-svg', obj);
+
+         try {
+            let jxml = fastXmlParser.parse(buffer, options);
+      
+            let pWidth = unitsParser.parse(jxml.svg?.attr?.width);
+            let pHeight = unitsParser.parse(jxml.svg?.attr?.height);
+            let sViewBox = jxml.svg?.attr?.viewBox;
+      
+            let obj = {
+               "width": pWidth?.value,
+               "height": pHeight?.value,
+               "viewBox": sViewBox?.split(' '),
+               "units": (pWidth?.unit ? pWidth?.unit : pHeight?.unit),
+               "svg": buffer,
+               "profile": profile
+            };
+      
+            console.log('SVG loaded');
+            thiz.ipcSend('mask-load-svg', obj);
+        }
+        catch (err) {
+           console.log(`Error parsing SVG file ${fileName}`);
+           console.error(err);
+        }
        });
     }
      

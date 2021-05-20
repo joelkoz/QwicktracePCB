@@ -29,12 +29,18 @@ class ProfileLoader extends MainSubProcess {
                 fs.stat(profileDir + file, false, (err, fstat) => {
                    if (fstat.mtimeMs > msLastSync) {
                      fs.readFile(profileDir + file, 'utf8', (err, json) => {
-                          let profile = JSON.parse(json);
-                          profile.fileName = path.basename(file);
-                          thiz.ipcSend('ui-profile-update', profile);
-                          if (path.basename(file) == 'default.json') {
-                               thiz.ipcSend('mask-profile-default', profile);
+                          try {
+                            let profile = JSON.parse(json);
+                            profile.fileName = path.basename(file);
+                            thiz.ipcSend('ui-profile-update', profile);
+                            if (path.basename(file) == 'default.json') {
+                                thiz.ipcSend('mask-profile-default', profile);
+                            }
                           }
+                          catch (err) {
+                            console.log(`Error loading profile ${fileName}`);
+                            console.error(err);
+                          }                          
                      });
                    }
                 });
