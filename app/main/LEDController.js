@@ -24,9 +24,10 @@ class LEDController  extends MainSubProcess {
         });
 
         this.pigpio.once('connected', () => {
-            thiz.led = thiz.pigpio.gpio(26);
+            thiz.led = thiz.pigpio.gpio(14);
             thiz.led.modeSet('output');
             console.log('LED control successfully initialized');
+            thiz.led.analogWrite(0);
         });
 
         this.pigpio.once('error', (error) => {
