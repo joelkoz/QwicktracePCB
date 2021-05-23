@@ -14,7 +14,7 @@ ready.then(async (info) => {
   // display information on pigpio and connection status
   console.log(JSON.stringify(info,null,2));
  
-    // control an LED on GPIO 26
+    // control an LED on GPIO 14
   const led = pigpio.gpio(14);
   await led.modeSet('output');
   console.log('LED on');
