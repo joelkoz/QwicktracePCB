@@ -1,12 +1,14 @@
 const ADS1115 = require('ads1115')
+const readline = require('readline');
+const fs = require('fs');
 
 const connection = [1, 0x48, 'i2c-bus']
 
+const CAL_FILE = "joystick.json";
 
 function cls() {
    process.stdout.write('\033[2J');
 }
-
 
 var xCal = {
   min: 99999,
@@ -50,7 +52,6 @@ function calibrate(cal, val) {
 
 function stickVal(cal, raw) {
 
-
    let mid;
    if (raw <= cal.mid) {
       mid = cal.mid - cal.deadLo;
@@ -80,17 +81,55 @@ function stickVal(cal, raw) {
 }
 
 
+function readJoystickCalibration() {
+    if (fs.existsSync(CAL_FILE)) {
+      let json = fs.readFileSync(CAL_FILE);
+      let joystick = JSON.parse(json);
+      xCal = joystick.xCal;
+      yCal = joystick.yCal;
+    }
+}
+
+
+function saveJoystickCalibration() {
+    let joystick = { xCal, yCal };
+    let json = JSON.stringify(joystick);
+    fs.writeFileSync(CAL_FILE, json + '\n');
+    out(1, 7, "Calibration data saved to joystick.json");
+    setTimeout(() => { out(1, 7, " ".repeat(50))}, 4000);
+}
+
+var appRunning = true;
+
+readline.emitKeypressEvents(process.stdin);
+process.stdin.setRawMode(true);
+
+process.stdin.on('keypress', (str, key) => {
+
+  if ((key.ctrl && key.name === 'c') || (key.name === 'x') || (key.name ==='q')) {
+    appRunning = false;
+    cls();
+    process.exit();
+  } else if (key.name === 's') {
+     // Write out joystick calibration data...
+     saveJoystickCalibration();
+  }
+});
+
 
 ADS1115.open(...connection).then(async (ads1115) => {
   ads1115.gain = 1
  
   cls();
-
   out(1, 1, "X:");
   out(1, 2, "Y:");
   out(1, 3, "Btn:");
 
-  while (true) {
+  out(1, 5, "Press S to save calibration data, X to exit.");
+
+  readJoystickCalibration();
+
+  while (appRunning) {
     let rawX = await ads1115.measure('0+GND')
     calibrate(xCal, rawX);
 
