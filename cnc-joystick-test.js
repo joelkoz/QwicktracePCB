@@ -2,24 +2,10 @@ const Kefir = require('kefir');
 const readline = require('readline');
 const Joystick = require('./app/main/Joystick');
 const CNC = require('./app/main/CNC');
+const LaserPointer = require('./app/main/LaserPointer');
 
-const pigpioClient = require('pigpio-client');
-const pigpio = pigpioClient.pigpio({host: '127.0.0.1'});
-var laser;
-var laserOn = false;
 
-pigpio.once('connected', () => {
-  laser = pigpio.gpio(26);
-  laser.modeSet('output');
-  console.log('Laser control successfully initialized');
-  laserOn = false;
-  setLaser(laserOn);
-});
-
-function setLaser(val) {
-  laser.write(val ? 1 : 0);
-}
-
+var pointer = new LaserPointer();
 
 function cls() {
   process.stdout.write('\033[2J');
@@ -37,6 +23,10 @@ function outVal(x, y, num) {
 
 
 function shallowEqual(object1, object2) {
+  if (typeof object1 !== typeof object2) {
+     return false;
+  }
+
   const keys1 = Object.keys(object1);
   const keys2 = Object.keys(object2);
 
@@ -71,6 +61,37 @@ process.stdin.on('keypress', (str, key) => {
   if (str === ' ') {
      console.log('');
   }
+
+  if (key.name === 'r') {
+     console.log('Reset...');
+     cnc.reset();
+  }
+
+  if (key.name === 'h') {
+    console.log('Home...');
+    cnc.home();
+  }
+
+  if (str === '?') {
+    console.log('Request report...');
+    cnc.report();
+  }
+
+  if (str === '!') {
+    console.log('Hold...');
+    cnc.hold();
+  }
+
+  if (str === '~') {
+    console.log('Resume...');
+    cnc.resume();
+  }
+
+  if (str === 'u') {
+    console.log('Unlock...');
+    cnc.unlock();
+  }
+
 });
 
 
@@ -117,21 +138,35 @@ let stickBtn = Kefir.fromPoll(msStickCheck, Joystick.btnVal).filter(hasChanged()
 
 
 stick.onValue(stick => {
-
+    cnc.jog(-stick.x, stick.y);
 });
 
+
 stickBtn.onValue(pressed => {
-//  out(5, 3, pressed ? "PRESSED" : "       ");
     if (pressed) {
-       laserOn = !laserOn;
-       setLaser(laserOn);
-       console.log(`Laser is ${laserOn ? 'ON' : 'OFF'}`);
+      pointer.laser = !pointer.laser;
+      console.log(`Laser is ${pointer.laser ? 'ON' : 'OFF'}`);
     }
 });
 
 
 
 let cnc = new CNC();
+
+cnc.on('ready', ()=> {
+   console.log('CNC ready for use.');
+   cnc.sendGCode('G21');
+   cnc.unlock();
+});
+
+cnc.on('alarm', (msg) => {
+   console.log(`CNC alarm detected: ${msg}`);
+});
+
+
+cnc.on('msg', (msg) => {
+  console.log(`CNC msg: ${msg}`);
+});
 
 
 let statestickY = Kefir.fromEvents(cnc, 'state').filter(hasChanged());
