@@ -136,16 +136,18 @@ let stickBtn = Kefir.fromPoll(msStickCheck, Joystick.btnVal).filter(hasChanged()
 //  outVal(4, 2, y * 100);
 //});
 
+let jogZ = false;
 
 stick.onValue(stick => {
-    cnc.jog(-stick.x, stick.y);
+    cnc.jog(-stick.x, stick.y, jogZ);
 });
 
 
 stickBtn.onValue(pressed => {
     if (pressed) {
-      pointer.laser = !pointer.laser;
-      console.log(`Laser is ${pointer.laser ? 'ON' : 'OFF'}`);
+      // pointer.laser = !pointer.laser;
+      // console.log(`Laser is ${pointer.laser ? 'ON' : 'OFF'}`);
+      jogZ = !jogZ;
     }
 });
 

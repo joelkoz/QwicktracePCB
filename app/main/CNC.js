@@ -339,14 +339,15 @@ class CNC extends EventEmitter {
     /**
      * Commands the spindle to jog, but only if the status is idle or in jog mode. Arguments of (0, 0)
      * will immediately cancel any jog in progress.
+     * If jogZ is TRUE, stickY will be used to control the Z axis instead.
      */
-    jog(stickX, stickY) {
+    jog(stickX, stickY, jogZ) {
         if (stickX !== 0 || stickY !== 0) {
              if (this.canJog()) {
                 let fastestRate = Math.max(Math.abs(stickX), Math.abs(stickY));
                 let feedRate;
                 let multiplier;
-                if (fastestRate > 0.8) {
+                if (fastestRate > 0.8 && !jogZ) {
                     feedRate = 500;
                     multiplier = 2;
                 }
@@ -358,8 +359,18 @@ class CNC extends EventEmitter {
                     feedRate = 100;
                     multiplier = 0.5;
                 }
-                // let feedRate = Math.round(500 * fastestRate);
-                let jCmd = `$J=G91 G21 X${Math.sign(stickX)*multiplier} Y${Math.sign(stickY)*multiplier} F${feedRate}`;
+                
+                let jogLetter;
+                if (jogZ) {
+                    // Jog the Z axis instead...
+                    stickX = 0;
+                    stickY = -stickY;
+                    jogLetter = 'Z';
+                }
+                else {
+                    jogLetter = 'Y';
+                }
+                let jCmd = `$J=G91 G21 X${Math.sign(stickX)*multiplier} ${jogLetter}${Math.sign(stickY)*multiplier} F${feedRate}`;
                 this.jogInProgress = true;
                 this.jogWaiting = true;
                 this.sendGCode(jCmd);
