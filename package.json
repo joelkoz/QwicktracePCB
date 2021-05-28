@@ -5,11 +5,11 @@
   "main": "app/main/main.js",
   "dependencies": {
     "ads1115": "^1.2.0",
-    "cncjs-controller": "^2.0.0-alpha.2",
     "fast-xml-parser": "^3.18.0",
     "gerber-to-svg": "^4.2.5",
     "i2c-bus": "^5.2.2",
     "jquery": "^3.6.0",
+    "jsonwebtoken": "^8.5.1",
     "kefir": "^3.8.8",
     "pigpio-client": "^1.5.1",
     "set-interval-async": "^2.0.3",
