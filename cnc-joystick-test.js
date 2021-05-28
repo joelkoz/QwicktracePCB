@@ -7,20 +7,6 @@ const LaserPointer = require('./app/main/LaserPointer');
 
 var pointer = new LaserPointer();
 
-function cls() {
-  process.stdout.write('\033[2J');
-}
-
-function out(x, y, str) {
-  process.stdout.write('\033[' + y + ';' + x + 'H' + str + '  ');
-}
- 
-
-function outVal(x, y, num) {
-   let str = "    " + num.toFixed(2); 
-   out(x, y, str.slice(-7));
-}
-
 
 function shallowEqual(object1, object2) {
   if (typeof object1 !== typeof object2) {
@@ -45,12 +31,11 @@ function shallowEqual(object1, object2) {
 
 
 // Start program execution...
-
 var appRunning = true;
 
+// Define keypresses this app understands...
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
-
 process.stdin.on('keypress', (str, key) => {
 
   if ((key.ctrl && key.name === 'c') || (key.name === 'x') || (key.name ==='q')) {
@@ -92,18 +77,21 @@ process.stdin.on('keypress', (str, key) => {
     cnc.unlock();
   }
 
+  if (key.name === 'l') {
+      pointer.laser = !pointer.laser;
+      console.log(`Laser is ${pointer.laser ? 'ON' : 'OFF'}`);
+  }
+
+  if (key.name === 'z') {
+     // Zero out work coordinates...
+     cnc.sendGCode('G10 L20 P1 X0 Y0 Z0');    
+  }
+
 });
 
 
 
-// cls();
-// out(1, 1, "X:");
-// out(1, 2, "Y:");
-// out(1, 3, "Btn:");
-
-// out(1, 5, "Press X to exit.");
-
-
+// Kefir filter function...
 function hasChanged() {
    let last;
    return (val) => {
@@ -121,20 +109,8 @@ function hasChanged() {
 
 
 let msStickCheck = 100;
-// let stickX = Kefir.fromPoll(msStickCheck, Joystick.xVal).filter(hasChanged());
-// let stickY = Kefir.fromPoll(msStickCheck, Joystick.yVal).filter(hasChanged());
-
 let stick = Kefir.fromPoll(msStickCheck, Joystick.stickVal).filter(hasChanged());
 let stickBtn = Kefir.fromPoll(msStickCheck, Joystick.btnVal).filter(hasChanged());
-
-//stickX.onValue(x => {
-//  outVal(4, 1, x * 100);
-//});
-
-
-//stickY.onValue(y => {
-//  outVal(4, 2, y * 100);
-//});
 
 let jogZ = false;
 
@@ -145,12 +121,9 @@ stick.onValue(stick => {
 
 stickBtn.onValue(pressed => {
     if (pressed) {
-      // pointer.laser = !pointer.laser;
-      // console.log(`Laser is ${pointer.laser ? 'ON' : 'OFF'}`);
       jogZ = !jogZ;
     }
 });
-
 
 
 let cnc = new CNC();
