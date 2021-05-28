@@ -90,7 +90,12 @@ class Joystick {
       }
     }
  
+    
+    static stickVal() {
+       return { x: Joystick.xVal(), y: Joystick.yVal() };
+    }
  
+
     static btnVal() {
       if (Joystick.ready) {
          let thiz = Joystick.instance;
