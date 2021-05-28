@@ -1,6 +1,7 @@
 const { app, BrowserWindow, screen, ipcMain } = require('electron')
 const fs = require('fs');
 
+const GPIO = require('./GPIO.js');
 const FileLoader = require('./FileLoader.js');
 const ProfileLoader = require('./ProfileLoader.js');
 const UILoader = require('./UILoader.js');
@@ -15,6 +16,8 @@ let ledController = null;
 // Load in the base configuration...
 let jStr = fs.readFileSync('./config.json', 'utf8');
 let jConfig = JSON.parse(jStr);
+
+GPIO.setConfiguration(jConfig.pigpio);
 
 // Enable touch events...
 app.commandLine.appendSwitch('touch-events');

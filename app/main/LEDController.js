@@ -1,14 +1,14 @@
 const { ipcMain } = require('electron')
 const MainSubProcess = require('./MainSubProcess.js')
-const pigpioClient = require('pigpio-client');
+const GPIO = require('./GPIO.js');
 
 class LEDController  extends MainSubProcess {
 
-    constructor(win, config) {
+    constructor(win) {
         super(win);
 
         this.timer = null;
-        this.pigpio = pigpioClient.pigpio(config.pigpio);
+        this.pigpio = new GPIO();
 
         let thiz = this;
         ipcMain.handle('led-expose', (event, exposure) => {
@@ -23,7 +23,7 @@ class LEDController  extends MainSubProcess {
             thiz.peek();
         });
 
-        this.pigpio.once('connected', () => {
+        this.pigpio.whenReady(() => {
             thiz.led = thiz.pigpio.gpio(14);
             thiz.led.modeSet('output');
             console.log('LED control successfully initialized');
