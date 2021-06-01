@@ -143,8 +143,9 @@ ADS1115.open(...connection).then(async (ads1115) => {
 
     outVal(4, 1, x * 100);
     outVal(4, 2, y * 100);
-    let pressed = (btn < 200);
+
+    let pressed = (btn < 500);
     out(5, 3, pressed ? "PRESSED" : "       ");
-//    out(5, 3, btn);
+    // out(5, 3, btn);
   }
 })

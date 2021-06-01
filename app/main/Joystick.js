@@ -99,7 +99,7 @@ class Joystick {
     static btnVal() {
       if (Joystick.ready) {
          let thiz = Joystick.instance;
-         return (thiz.sampBtn < 200);
+         return (thiz.sampBtn < Joystick.btnPressThreshold);
       }
       else {
         return false;
@@ -169,5 +169,7 @@ class Joystick {
  
  }
  
+Joystick.btnPressThreshold = 500;
+
 let singleton = new Joystick();
 module.exports = Joystick;
