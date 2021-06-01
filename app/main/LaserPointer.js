@@ -21,15 +21,22 @@ class LaserPointer {
     set laser(newVal) {
         if (this.pin) {
             if (newVal) {
-                this.pin.write(1);
+                this.pin.analogWrite(LaserPointer.brightness);
                 this.laserOn = true;
             }
             else {
-                this.pin.write(0);
+                this.pin.analogWrite(0);
                 this.laserOn = false;
             }
         }
     }
 }
+
+LaserPointer.brightness = 15;
+
+// What is laser's position relative to spindle position?
+// "wpos":{"x":"20.850","y":"11.263"
+LaserPointer.offsetX = 20.850;
+LaserPointer.offsetY = 11.263;
 
 module.exports = LaserPointer;
