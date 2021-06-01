@@ -1,6 +1,7 @@
 const Kefir = require('kefir');
 const readline = require('readline');
 const Joystick = require('./app/main/Joystick');
+const ZProbe = require('./app/main/ZProbe');
 const CNC = require('./app/main/CNC');
 const LaserPointer = require('./app/main/LaserPointer');
 
@@ -78,7 +79,16 @@ process.stdin.on('keypress', (str, key) => {
   }
 
   if (key.name === 'l') {
-      pointer.laser = !pointer.laser;
+      if (!pointer.laser) {
+        // Laser is OFF, so turn it ON...
+        cnc.sendGCode(['G91', `G0 X${LaserPointer.offsetX} Y${LaserPointer.offsetY}`, 'G90']);
+        pointer.laser = true;
+      }
+      else {
+        // Laser is ON, so turn it OFF...
+        cnc.sendGCode(['G91', `G0 X${-LaserPointer.offsetX} Y${-LaserPointer.offsetY}`, 'G90']);
+        pointer.laser = false;
+      }
       console.log(`Laser is ${pointer.laser ? 'ON' : 'OFF'}`);
   }
 
@@ -155,6 +165,12 @@ cnc.on('data', (data) => {
 
 cnc.on('pos', (pos) => {
   console.log("pos: " + JSON.stringify(pos));
+});
+
+
+let zprobe = new ZProbe();
+zprobe.on(ZProbe.EVT_PRESSED, (pressed) => {
+    console.log('z probe: ' + (pressed ? "ON" : "OFF"));
 });
 
 
