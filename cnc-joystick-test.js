@@ -78,6 +78,17 @@ process.stdin.on('keypress', (str, key) => {
     cnc.unlock();
   }
 
+
+  if (key.name === 's') {
+    if (cnc.rpm === 0) {
+       // Toggle to ON...
+       cnc.rpm = 9500;
+    }
+    else {
+      cnc.rpm = 0;
+    }
+  }
+
   if (key.name === 'l') {
       if (!pointer.laser) {
         // Laser is OFF, so turn it ON...

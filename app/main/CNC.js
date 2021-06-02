@@ -224,7 +224,16 @@ class CNC extends EventEmitter {
         }
     }
 
+    set rpm(val) {
+       if (val > 0) {
+           this.sendGCode(`M03 S${val}`);
+       }
+       else {
+           this.sendGCode('M05');
+       }
+    }
 
+    
     disconnect() {
         if (this.socket) {
            this.socket.disconnect();
