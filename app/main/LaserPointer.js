@@ -35,8 +35,8 @@ class LaserPointer {
 LaserPointer.brightness = 15;
 
 // What is laser's position relative to spindle position?
-// "wpos":{"x":"20.850","y":"11.263"
-LaserPointer.offsetX = 20.850;
-LaserPointer.offsetY = 11.263;
+// "wpos":{"x":"22.073","y":"10.960",
+LaserPointer.offsetX = 22.073;
+LaserPointer.offsetY = 10.960;
 
 module.exports = LaserPointer;
