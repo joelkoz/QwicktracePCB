@@ -105,7 +105,18 @@ process.stdin.on('keypress', (str, key) => {
 
   if (key.name === 'z') {
      // Zero out work coordinates...
-     cnc.sendGCode('G10 L20 P1 X0 Y0 Z0');    
+     if (pointer.laser) {
+        // If laser pointer is active, set zero to where laser is pointing...
+        cnc.sendGCode(`G10 L20 P1 X${LaserPointer.offsetX} Y${LaserPointer.offsetY}`);
+     }
+     else {
+        cnc.sendGCode('G10 L20 P1 X0 Y0');    
+     }
+  }
+
+  if (key.name === 'w') {
+     // Go to work coordinates 0,0...
+     cnc.sendGCode('G0 X0 Y0');
   }
 
 });
