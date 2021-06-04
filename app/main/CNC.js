@@ -25,7 +25,12 @@ function getAccessToken() {
     try {
       let config = JSON.parse(fs.readFileSync(cncrc, 'utf8'))
       let secret = config.secret;
-      let token = generateAccessToken({ id: '' , name: 'qwicktrace' }, secret, '30d');
+      let id, name;
+      if (config.users) {
+          id = config.users[0].id;
+          name = config.users[0].name;
+      }
+      let token = generateAccessToken({ id, name }, secret, '30d');
       return token;    
     } 
     catch (err) {
