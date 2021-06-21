@@ -12,17 +12,27 @@ class UILoader extends MainSubProcess {
     }
 
     loadUI() {
-      let files = fs.readdirSync(uiPageDir);
-      files.forEach(file => {
-        if (path.extname(file) == '.html') {
-            let strContents = fs.readFileSync(uiPageDir + "/" + file, 'utf8');
-            this.ipcSend('ui-page-add', strContents);
-        }
-      });
-
+      this.scanDir(uiPageDir);
       this.ipcSend('ui-start');
     }    
 
+
+    scanDir(dirName) {
+      let files = fs.readdirSync(dirName, { withFileTypes: true });
+      files.forEach(dirent => {
+        let file = dirent.name;
+        if (path.extname(file) == '.html') {
+            let fName = dirName + "/" + file
+            let strContents = fs.readFileSync(fName, 'utf8');
+            console.log(`adding ui page ${fName}`)
+            this.ipcSend('ui-page-add', strContents);
+        }
+        else if (dirent.isDirectory()) {
+          this.scanDir(dirName + "/" + file);
+        }
+      });
+
+    }    
 }
 
 module.exports = UILoader;
