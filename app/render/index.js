@@ -7,6 +7,7 @@ import { UIController } from './UIController.js'
 
 var uvMask = null;
 var uiController = null;
+var appConfig = null;
 
 document.addEventListener('keydown', (event) => {
 
@@ -23,8 +24,9 @@ document.addEventListener('keydown', (event) => {
 
  
 ipcRenderer.on('render-start', (event, config) => {
+   appConfig = config;
    uvMask = new UVMask(config);
-   uiController = new UIController();
+   uiController = new UIController(appConfig);
    ipcRenderer.invoke('render-start-done');
 });
 

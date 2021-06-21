@@ -2,11 +2,12 @@ const { ipcRenderer } = require('electron')
 
 class UIController {
 
-    constructor() {
+    constructor(appConfig) {
         this.profileList = {};
         this.fileList = {};
         this.state = {};
         window.ui = this;
+        window.appConfig = appConfig;
 
         this.profileUpdate = null;
         this.fileUpdate = null;

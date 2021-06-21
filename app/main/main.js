@@ -15,9 +15,9 @@ let ledController = null;
 
 // Load in the base configuration...
 let jStr = fs.readFileSync('./config.json', 'utf8');
-let jConfig = JSON.parse(jStr);
+let appConfig = JSON.parse(jStr);
 
-GPIO.setConfiguration(jConfig.pigpio);
+GPIO.setConfiguration(appConfig.pigpio);
 
 // Enable touch events...
 app.commandLine.appendSwitch('touch-events');
@@ -26,13 +26,13 @@ function createWindow () {
   win = new BrowserWindow({
     x: 0,
     y: 0,
-    width: jConfig.super.width,
-    height: jConfig.super.height,
-    minWidth: jConfig.super.width,
-    minHeight: jConfig.super.height,
-    fullscreen: jConfig.super.fullScreen,
+    width: appConfig.super.width,
+    height: appConfig.super.height,
+    minWidth: appConfig.super.width,
+    minHeight: appConfig.super.height,
+    fullscreen: appConfig.super.fullScreen,
     show: false,
-    frame: jConfig.super.frame,
+    frame: appConfig.super.frame,
     webPreferences: {
       nodeIntegration: true,
       // webSecurity: false
@@ -46,7 +46,7 @@ function createWindow () {
 
   win.show();
 
-  if (jConfig.super.debug) {
+  if (appConfig.super.debug) {
       win.webContents.openDevTools();
   }
 
@@ -78,7 +78,7 @@ app.on('activate', () => {
 
 
 ipcMain.handle('render-ready', event => {
-    win.webContents.send('render-start', jConfig);
+    win.webContents.send('render-start', appConfig);
 });
 
 
@@ -91,6 +91,6 @@ ipcMain.handle('render-start-done', () => {
   fileLoader = new FileLoader(win);
   profileLoader = new ProfileLoader(win);
   uiLoader = new UILoader(win);
-  ledController = new LEDController(win, jConfig);
+  ledController = new LEDController(win, appConfig);
 });    
 
