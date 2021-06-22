@@ -54,6 +54,11 @@ function createWindow () {
      win.webContents.openDevTools();
   });
 
+
+  ipcMain.handle('exit', () => {
+    win.close();
+    app.quit();
+  })
 }
 
 
