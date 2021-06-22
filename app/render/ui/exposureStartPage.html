@@ -64,7 +64,7 @@
 
     <script>
         uiPageActivate['exposureStartPage'] = function() {
-            ui.updateStateObjects();
+            ui.prepareExposure();
             $('#expFName').html(ui.state.file.value);
             $('#expPName').html(ui.state.profile.name);
         };

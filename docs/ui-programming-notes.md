@@ -20,7 +20,7 @@
 
   9. After the last .html file is processed, `UILoader()` invokes `ui-start`
 
- 10. `UIController` responds to `ui-start` by calling method `UILoader().start()`, which explicitly shows page `filePage`
+ 10. `UIController` responds to `ui-start` by calling method `UILoader().start()`, which explicitly shows page `appConfig.ui.startPageId`
 
 
 

@@ -1,0 +1,36 @@
+<div id="cncDrillAlignPage" class="page">
+    <style type="text/css"> 
+
+        #cncDrillAlignPage .page-body {
+            position: relative;
+            left: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+        }
+
+        #cncDrillAlignPage #drill-canvas {
+            position: relative;
+            left: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           <button type="button" class="btn w1 back" onClick="ui.showPage('cncDrillSidePage')">&#8592;</button>
+           Drill Holes
+        </div>
+    </div>
+    <div class="page-body">
+        <canvas id="drill-canvas"></canvas>
+    </div>
+
+    <script>
+        uiPageActivate['cncDrillAlignPage'] = function() {
+             console.log('Activate cncDrillAlignPage');
+        };
+    </script>
+</div>

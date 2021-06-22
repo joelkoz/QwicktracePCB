@@ -27,11 +27,20 @@ body {
      position:absolute;
      left: 1440px;
      top: 0px;
-     width: 320px;
-     height: 240px;
      background-color: blue;
      color: white;
  }
+
+ .ui320 #ui {
+    width: 320px;
+    height: 240px;
+ }
+
+ .ui480 #ui {
+    width: 480px;
+    height: 320px;
+ }
+
 
  .btn {
      height: 60px;
@@ -84,14 +93,22 @@ body {
  .page {
      display: grid;
      grid-gap: 5px;
-     width: 320px;
-     height: 240px;
      grid-template-areas:
      'pageHeader'
      'pageBody';
      grid-template-rows: 1fr 4fr;
      background-color: black;
      font-family: arial;
+ }
+
+ .ui320 .page {
+    width: 320px;
+    height: 240px;
+ }
+
+ .ui480 .page {
+    width: 480px;
+    height: 320px;
  }
 
  .page-header {

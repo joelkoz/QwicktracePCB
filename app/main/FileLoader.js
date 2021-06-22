@@ -2,6 +2,8 @@ const { ipcMain } = require('electron')
 
 const fs = require('fs');
 const gerberToSvg = require('gerber-to-svg');
+const whatsThatGerber = require('whats-that-gerber')
+const gerbValid = require('whats-that-gerber').validate;
 const path = require('path');
 const fastXmlParser = require("fast-xml-parser");
 const unitsParser = require('units-css');
@@ -10,6 +12,7 @@ const units = require('units-css/lib');
 const dropDir = "./pcb-files/";
 
 const MainSubProcess = require('./MainSubProcess.js');
+const GerberData = require('./GerberData.js');
 
 
 class FileLoader  extends MainSubProcess {
@@ -124,15 +127,35 @@ class FileLoader  extends MainSubProcess {
     }
      
      
-    loadFile(file, profile) {
-         let fileName = file.value;
 
-         let ext = path.extname(fileName);
-     
-         if (ext.toLowerCase() == '.gbr') {
-            this.loadGerberFile(dropDir + fileName, profile);
-         }
-         else if (ext.toLowerCase() == '.svg') {
+    loadDrillFile(fileName, profile) {
+         this.drillData = new GerberData([fileName]);
+         let thiz = this;
+         this.drillData.on('ready', () => {
+            if (profile === 'bottom') {
+               thiz.drillData.mirror();
+            }
+            thiz.ipcSend('drill-load',
+                     { "holes": thiz.drillData.holes, 
+                       "boundingBox": thiz.drillData.boundingBox, 
+                       "units": thiz.drillData.units,
+                       "drillSide": profile } );
+         });
+    }
+
+
+    loadFile(file, profile) {
+        let fileName = file.value;
+
+        let ext = path.extname(fileName);
+         
+        if (file.gerb.type === 'drill') {
+            this.loadDrillFile(dropDir + fileName, profile);
+        }
+        else if (file.gerb.type === 'copper') {
+           this.loadGerberFile(dropDir + fileName, profile);
+        }
+        else if (ext.toLowerCase() == '.svg') {
            this.loadSvgFile(dropDir + fileName, profile);
         }
         else {
@@ -146,11 +169,19 @@ class FileLoader  extends MainSubProcess {
       fs.readdir(dropDir, (err, files) => {
           let msLastSync = this.lastFileSyncMs;
           files.forEach(file => {
-            fs.stat(dropDir + file, false, (err, fstat) => {
+            let fileName = dropDir + file;
+            fs.stat(fileName, false, (err, fstat) => {
                if (fstat.mtimeMs > msLastSync) {
                   let fileObj = {};
                   fileObj.value = path.basename(file);
                   fileObj.mtimeMs = fstat.mtimeMs;
+
+                  let aType = whatsThatGerber([fileName]);
+                  let gType = aType[fileName];
+                  if (gerbValid(gType)) {
+                     fileObj.gerb = gType;
+                  }
+
                   thiz.ipcSend('ui-file-update', fileObj);
                }
             });

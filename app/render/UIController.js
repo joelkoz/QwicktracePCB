@@ -6,7 +6,13 @@ class UIController {
         this.profileList = {};
         this.fileList = {};
         this.state = {};
+
+        // Make this object available to the html scripts via
+        // the "ui" alias...
         window.ui = this;
+
+        // Make the "appConfig" object available to the html
+        // scripts via the "appConfig" alias...
         window.appConfig = appConfig;
 
         this.profileUpdate = null;
@@ -93,7 +99,9 @@ class UIController {
             $(this).trigger('click');
         });
 
-        this.showPage("filePage");
+        $('body').addClass(appConfig.ui.bodyClass);
+
+        this.showPage(appConfig.ui.startPageId);
         console.log('ui started');
     }
  
@@ -121,7 +129,7 @@ class UIController {
     }
 
 
-    updateStateObjects() {
+    prepareExposure() {
         this.state.file = this.fileList[this.state.fileName];
 
         // Merge the selected profile with the default profile...
@@ -141,6 +149,13 @@ class UIController {
     cancelExposure() {
         ipcRenderer.invoke('led-cancel');
         this.showPage('exposureStartPage');
+    }
+
+
+    prepareDrill() {
+        this.state.fileName = this.state.drillName;
+        this.state.file = this.fileList[this.state.drillName];
+        ipcRenderer.invoke('fileloader-load', { "file": this.state.file, "profile": this.state.drillSide })
     }
 
 

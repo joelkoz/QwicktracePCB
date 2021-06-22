@@ -1,0 +1,54 @@
+<div id="startPage" class="page">
+    <style type="text/css"> 
+
+        #startPage .page-body {
+            display: grid;
+            grid-template-areas:
+               'buttonArea';
+            grid-template-rows: 4fr;
+        }
+
+        #startPage .button-area {
+            grid-area: buttonArea;
+        }
+
+        #startPage .button-area button {
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 20px;
+            height: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        #startPage .btn {
+
+        }
+
+
+        #startPage .btn.pcb {
+            background: url(./ui/img/btn-circuit.png)
+        }
+
+        #startPage .btn.cnc {
+            background: url(./ui/img/btn-cnc.png)
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           Qwicktrace PCB
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="button-area">
+            <button type="button" class="btn w3" onClick="ui.showPage('filePage')">PCB</button>
+            <button type="button" class="btn w3" onClick="ui.showPage('cncDrillPage')">Drill</button>
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['startPage'] = function() {
+        };
+    </script>
+</div>

@@ -1,0 +1,24 @@
+<div id="cncDrillLoadingPage" class="page">
+    <style type="text/css"> 
+
+        #cncDrillLoadingPage .page-body {
+            text-align: center;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           Drill Holes
+        </div>
+    </div>
+    <div class="page-body">
+        Loading drill file...
+    </div>
+
+    <script>
+        uiPageActivate['cncDrillLoadingPage'] = function() {
+             console.log('Activate cncDrillLoadingPage');
+             ui.prepareDrill();
+        };
+    </script>
+</div>
