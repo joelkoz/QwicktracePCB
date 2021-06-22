@@ -3,6 +3,17 @@ const fs = require('fs')
 const gerberParser = require('gerber-parser')
 const whatsThatGerber = require('whats-that-gerber')
 
+
+// Example of what parsing gerber drill file looks like:
+// {"type":"tool","line":8,"code":"1","tool":{"shape":"circle","params":[0.4],"hole":[]}}
+// repeat:
+//    {"type":"set","line":17,"prop":"tool","value":"1"}
+//    repeat:
+//      {"type":"op","line":18,"op":"flash","coord":{"x":28,"y":27.75}}
+// {"type":"set","line":114,"prop":"tool","value":"0"}
+// {"type":"done","line":115}
+
+
 class GerberData extends EventEmitter {
 
     constructor(fileNames) {
