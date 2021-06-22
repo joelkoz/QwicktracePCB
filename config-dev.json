@@ -1,33 +1,34 @@
 {
-    "super" : {
-        "width": 1760,
-        "height": 1400,
-        "fullScreen": false,
-        "debug": true
-    },
+   "super" : {
+       "width": 1920,
+       "height": 1400,
+       "fullScreen": false,
+       "debug": true
+   },
 
-    "mask" : {
-       "marginX": 64,
-       "marginY": 64,
-       "ppmmWidth": 4.2,
-       "ppmmHeight": 4.2,
-       "ppinWidth": 109,
-       "ppinHeight":  109        
-    },
+   "mask" : {
+      "marginX": 64,
+      "marginY": 64,
+      "ppmmWidth": 4.2,
+      "ppmmHeight": 4.2,
+      "ppinWidth": 109,
+      "ppinHeight":  109        
+   },
 
-    "app": {
-       "hasCNC": true,
-       "hasPCB": true
-    },
+   "app": {
+      "hasCNC": true,
+      "hasPCB": true
+   },
 
-    "ui": {
-       "startPageId": "filePage",
-       "bodyClass": "ui320"
-    },
+   "ui": {
+      "startPageId": "startPage",
+      "bodyClass": "ui480",
+      "width": 480,
+      "height": 320
+   },
 
-    "pigpio": {
-       "host": "pcb.local",
-       "port": 8888
-    }
+   "pigpio": {
+      "host": "pcb.local",
+      "port": 8888
+   }
 }
-
