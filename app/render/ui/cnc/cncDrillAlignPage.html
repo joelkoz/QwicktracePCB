@@ -50,15 +50,18 @@
     </div>
 
     <script>
-        $("#drill-canvas").click(function(e) {
-            let canvas = document.getElementById("drill-canvas");
-            let rect = canvas.getBoundingClientRect();
-            let scaleX = canvas.width / rect.width;
-            let scaleY = canvas.height / rect.height;
-            let mouseX = (e.clientX - rect.left) * scaleX;
-            let mouseY = (e.clientY - rect.top) * scaleY;
-            drillController.mouseDown({ "x": mouseX, "y": mouseY });
-        })
+        if (appConfig.super.debug) {
+            // For using mouse when debugging alignment code...
+            $("#drill-canvas").click(function(e) {
+                let canvas = document.getElementById("drill-canvas");
+                let rect = canvas.getBoundingClientRect();
+                let scaleX = canvas.width / rect.width;
+                let scaleY = canvas.height / rect.height;
+                let mouseX = (e.clientX - rect.left) * scaleX;
+                let mouseY = (e.clientY - rect.top) * scaleY;
+                drillController.mouseDown({ "x": mouseX, "y": mouseY });
+            })
+        }
 
         uiPageActivate['cncDrillAlignPage'] = function() {
              console.log('Activate cncDrillAlignPage');
