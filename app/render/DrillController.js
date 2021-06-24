@@ -54,6 +54,7 @@ class DrillController {
 
         // For the UI input of skew correction...
         this.deskewIndex = -1;
+        this.deskew = null;
 
         this.positionNext();
     }
@@ -82,7 +83,31 @@ class DrillController {
         let B = this.deskewData[1];
         let dresult = deskew(A.sample, B.sample, A.actual, B.actual);
         console.log(`Deskew results: ${JSON.stringify(dresult)}`);
+        this.deskew = dresult;
 
+        this.setDeskewClient(A);
+        this.setDeskewClient(B);
+
+        // Redraw the holes...
+        this.paint();
+        this.redrawAlignmentHole(A);
+        this.redrawAlignmentHole(B);
+    }
+
+
+    setDeskewClient(sample) {
+        let pcbCoord = sample.actual;
+        let canvasCoord = this.toCanvas(pcbCoord);
+        let clientCoord = this.canvasToClient(canvasCoord);
+        sample.client = clientCoord;
+    }
+
+    redrawAlignmentHole(sample) {
+        let clientCoord = sample.client;
+        let canvasCoord = this.clientToCanvas(clientCoord);
+        let pcbCoord = this.toPCB(canvasCoord);
+        let ctx = this.canvas.getContext('2d');
+        this.drawHole(ctx, pcbCoord, 'red');
     }
 
 
@@ -169,7 +194,6 @@ class DrillController {
         let truePixelWidth = this.ppmm * bbWidth;
         this.marginWidth = (maxPixelHeight - truePixelHeight) / 2;
         this.marginHeight = (maxPixelWidth - truePixelWidth) / 2;
-
     }
 
 
@@ -268,6 +292,14 @@ class DrillController {
         ctx.translate(this.marginWidth, this.marginHeight);
         ctx.scale(1, -1);
         ctx.rotate(270 * Math.PI / 180);
+
+        if (this.deskew) {
+            // Apply additional deskew transformation as this
+            // must be a repaint...
+            ctx.rotate(2*Math.PI + this.deskew.rotation);
+            ctx.translate(this.deskew.offset.x* this.ppmm, this.deskew.offset.y* this.ppmm);
+        }        
+    
     }
 
 
