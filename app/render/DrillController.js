@@ -12,8 +12,9 @@ const CANVAS_HOLE_COLOR = '#DEB887';
 const msBLINK_INTERVAL = 500;
 
 const DRAW_HOLE_DIAMETER = 4;
-const DRAW_BLINK_DIAMETER = 10;
+const DRAW_BLINK_DIAMETER = 6;
 const DRAW_BLINK_WIDTH = 2;
+
 
 class DrillController {
 
@@ -30,18 +31,17 @@ class DrillController {
             this.paint();
         });
         
-        
         this.saveImage = document.createElement('canvas');
         this.saveImage.width = CANVAS_SAVE_WIDTH;
         this.saveImage.height = CANVAS_SAVE_WIDTH;
-        this.saveCtx = this.saveImage.getContext('2d');
-        this.saveCtx.imageSmoothingEnabled = false;
 
         this.blinkPoint = null;
     }
 
 
     initAlignment() {
+        this.canvas = document.getElementById('drill-canvas');
+
         this.drawingPreCalc();
 
         let bb = this.drillObj.boundingBox;
@@ -86,7 +86,8 @@ class DrillController {
     }
 
 
-    mouseDown(canvasCoord) {
+    mouseDown(mouseCoord) {
+      let canvasCoord = this.clientToCanvas(mouseCoord);
       let pcbCoord = this.toPCB(canvasCoord);
       this.setDeskew(pcbCoord);
     }
@@ -98,8 +99,7 @@ class DrillController {
 
             // Draw the newly posistioned hole...
             this.blinkOff(false);
-            const canvas = document.getElementById('drill-canvas');
-            const ctx = canvas.getContext('2d');
+            const ctx = this.canvas.getContext('2d')
             this.drawHole(ctx, pcbCoord, 'red');
 
             this.positionNext();
@@ -133,7 +133,7 @@ class DrillController {
         let jCanvasDiv = $('#cncDrillAlignPage .canvas-area');
         let ow = jCanvasDiv.outerWidth(true);
         let oh = jCanvasDiv.outerHeight(true);
-        const canvas = document.getElementById('drill-canvas');
+        const canvas = this.canvas;
         canvas.width = ow;
         canvas.height = oh;
 
@@ -142,8 +142,8 @@ class DrillController {
         let max = bb.max;
 
         // Translation necessary to shift PCB origin to be (0,0)
-        this.shiftX = 0 - min.x;
-        this.shiftY = 0 - min.y;
+        this.normalizeX = 0 - min.x;
+        this.normalizeY = 0 - min.y;
 
         let bbWidth = max.x - min.x;
         let bbHeight = max.y - min.y;
@@ -167,8 +167,9 @@ class DrillController {
         // the board in the display canvas...
         let truePixelHeight = this.ppmm * bbHeight;
         let truePixelWidth = this.ppmm * bbWidth;
-        this.marginHeight = (maxPixelHeight - truePixelHeight) / 2 + 10;
-        this.marginWidth = (maxPixelWidth - truePixelWidth) / 2 + 10;
+        this.marginWidth = (maxPixelHeight - truePixelHeight) / 2;
+        this.marginHeight = (maxPixelWidth - truePixelWidth) / 2;
+
     }
 
 
@@ -180,23 +181,26 @@ class DrillController {
     blinkOn() {
         this.blinkOff();
         if (this.deskewIndex <= 1) {
-            let canvas = document.getElementById('drill-canvas');
-            const ctx = canvas.getContext('2d');
+            let canvas = this.canvas;
+            const ctx = this.canvas.getContext('2d')
             ctx.imageSmoothingEnabled = false;
 
             // Save the area we are about to draw on...
             // Clear the "save image" canvas...
             this.saveImage.width = CANVAS_SAVE_WIDTH;
+            const saveCtx = this.saveImage.getContext('2d')
+            
             let samplePoint = this.deskewData[this.deskewIndex].sample;
             let canvasCoord = this.toCanvas(samplePoint);
-            this.saveCtx.drawImage(canvas, canvasCoord.x - CANVAS_SAVE_WIDTH/2, canvasCoord.y - CANVAS_SAVE_WIDTH/2, CANVAS_SAVE_WIDTH, CANVAS_SAVE_WIDTH, 0, 0, CANVAS_SAVE_WIDTH, CANVAS_SAVE_WIDTH);
+            let blinkCoord = this.canvasToClient(canvasCoord);
+            saveCtx.drawImage(canvas, blinkCoord.x - CANVAS_SAVE_WIDTH/2, blinkCoord.y - CANVAS_SAVE_WIDTH/2, CANVAS_SAVE_WIDTH, CANVAS_SAVE_WIDTH, 0, 0, CANVAS_SAVE_WIDTH, CANVAS_SAVE_WIDTH);
 
             ctx.strokeStyle = 'red';
             ctx.lineWidth = DRAW_BLINK_WIDTH;
             ctx.beginPath();
             ctx.arc(canvasCoord.x , canvasCoord.y, DRAW_BLINK_DIAMETER, 0, 2.0*Math.PI);
             ctx.stroke();
-            this.blinkPoint = canvasCoord;
+            this.blinkPoint = blinkCoord;
             setTimeout(() => { this.blinkOff(true) }, msBLINK_INTERVAL)
         }
     }
@@ -204,14 +208,18 @@ class DrillController {
     
     blinkOff(repeatBlink) {
         if (this.blinkPoint) {
-            let canvas = document.getElementById('drill-canvas');
-            const ctx = canvas.getContext('2d');
-            ctx.imageSmoothingEnabled = false;
+            const canvas = this.canvas;
+            const ctx = this.canvas.getContext('2d');
 
+//            ctx.imageSmoothingEnabled = false;
+
+            ctx.save();
+            ctx.resetTransform();
             canvas.style.backgroundColor = CANVAS_BG_COLOR;
             let halfSaveWidth = CANVAS_SAVE_WIDTH/2
             ctx.clearRect(this.blinkPoint.x - halfSaveWidth, this.blinkPoint.y - halfSaveWidth, CANVAS_SAVE_WIDTH, CANVAS_SAVE_WIDTH);
             ctx.drawImage(this.saveImage, this.blinkPoint.x - halfSaveWidth, this.blinkPoint.y - halfSaveWidth, CANVAS_SAVE_WIDTH, CANVAS_SAVE_WIDTH);
+            ctx.restore();
             this.blinkPoint = null;
             if (repeatBlink) {
                 this.startBlink();
@@ -225,16 +233,17 @@ class DrillController {
         ctx.lineWidth = 1;
         const drillDiam = DRAW_HOLE_DIAMETER;
         ctx.beginPath();
-        let drill = this.toCanvas(pcbCoord);
-        ctx.arc(drill.x, drill.y, drillDiam, 0, 2.0*Math.PI);
+        let canvasCoord = this.toCanvas(pcbCoord);
+        ctx.arc(canvasCoord.x, canvasCoord.y, drillDiam, 0, 2.0*Math.PI);
         ctx.fill();
         ctx.stroke();
     }
 
 
     paint() {
-        const canvas = document.getElementById('drill-canvas');
-        const ctx = canvas.getContext('2d');
+        const canvas = this.canvas;
+        const ctx = this.canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
 
         // This is a hack to force a full screen repaint...
         canvas.width = canvas.width; 
@@ -242,31 +251,85 @@ class DrillController {
         canvas.style.backgroundColor = CANVAS_BG_COLOR;
         ctx.clearRect(0,0,canvas.width, canvas.height);
 
+        this.setTransform(ctx);
+
         let holes = this.drillObj.holes;
 
         holes.forEach(hole => {
-           // console.log(`   ${count}: x:${hole.coord.x}, y:${hole.coord.y} diam: ${hole.tool.params[0]}`)
            this.drawHole(ctx, hole.coord, CANVAS_HOLE_COLOR);
         });        
+
     }
 
 
-    // Translate PCB coordinate to UI display canvas coordinate
+    setTransform(ctx) {
+        // Origin at UL margin corner, x+ down, y+ right
+        ctx.resetTransform();
+        ctx.translate(this.marginWidth, this.marginHeight);
+        ctx.scale(1, -1);
+        ctx.rotate(270 * Math.PI / 180);
+    }
+
+
+    // Used for testing transformations...
+    drawTestAxis(ctx) {
+        // Draw axis...
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'red';
+        ctx.beginPath();
+        ctx.moveTo(0, 15);
+        ctx.lineTo(0, -15);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'purple';
+        ctx.beginPath();
+        ctx.moveTo(-15, 0);
+        ctx.lineTo(5, 0);
+        ctx.stroke();
+
+        this.drawHole(ctx, { x: -9, y: 9 }, 'red');
+        this.drawHole(ctx, { x: 9, y: 9 }, 'green');
+        this.drawHole(ctx, { x: 9, y: -9 }, 'blue');
+    }
+
+    // Translate PCB coordinates to UI display canvas coordinates
     toCanvas(pcbCoord) {
         return {
-            x: (pcbCoord.y + this.shiftY) * this.ppmm + this.marginHeight,
-            y: (pcbCoord.x + this.shiftX) * this.ppmm + this.marginWidth
+            x: (pcbCoord.x + this.normalizeY) * this.ppmm,
+            y: (pcbCoord.y + this.normalizeX) * this.ppmm,
         };
     }
 
+    // Translate canvas coordinates back to PCB coordinates
     toPCB(canvasCoord) {
-        let x = ((canvasCoord.x - this.marginHeight) / this.ppmm) - this.shiftY;
-        let y = ((canvasCoord.y - this.marginWidth) / this.ppmm) - this.shiftX;
+        let x = canvasCoord.x / this.ppmm - this.normalizeY;
+        let y = canvasCoord.y / this.ppmm - this.normalizeX;
 
         return {
-            "x": y,
-            "y": x
+            "x": x,
+            "y": y
         }
+    }
+
+    // Translate client coordinates (i.e. pixel coordinates like client position)
+    // to canvas coordinates.
+    clientToCanvas(clientCoord) {
+        const ctx = this.canvas.getContext('2d');
+        let matrix = ctx.getTransform();
+        var imatrix = matrix.invertSelf();
+        let x = clientCoord.x * imatrix.a + clientCoord.y * imatrix.c + imatrix.e;
+        let y = clientCoord.x * imatrix.b + clientCoord.y * imatrix.d + imatrix.f;
+        return { x, y };
+    }
+
+
+    // Translate canvas coordinates to client pixel coordinates
+    canvasToClient(canvasCoord) {
+        const ctx = this.canvas.getContext('2d');
+        let matrix = ctx.getTransform();
+        let x = canvasCoord.x * matrix.a + canvasCoord.y * matrix.c + matrix.e;
+        let y = canvasCoord.x * matrix.b + canvasCoord.y * matrix.d + matrix.f;
+        return { x: Math.round(x), y: Math.round(y) };
     }
 
     /**
