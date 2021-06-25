@@ -51,6 +51,8 @@ function uiInitList(listId, valueList, fnSort, nextPageId, fnFilter) {
         }
     });
 
+    ui.setActiveList(listId);
+
     // Mouse clicks (or touches) on individual options auto select them..
     $('#' + listId + ' option').on('click touchstart', function() {
         ui.publish('btn-press');

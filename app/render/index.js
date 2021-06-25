@@ -32,4 +32,10 @@ ipcRenderer.on('render-start', (event, config) => {
 });
 
 
+window.cncAvailable = false;
+ipcRenderer.on('render-cnc-state', (event, state) => {
+   window.cncAvailable = (state === 'Idle');
+});
+
+
 ipcRenderer.invoke('render-ready');

@@ -50,6 +50,10 @@
                  { "value": "bottom", "name": "Bottom side up" }
              ]
              uiInitList('drillSide', choices, undefined, 'cncDrillLoadingPage' );
+
+             // Cancel any active processes in case we have backed out
+             // of the alignment page...
+             drillController.cancelProcesses();
         };
     </script>
 </div>

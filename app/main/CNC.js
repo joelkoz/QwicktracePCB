@@ -82,6 +82,11 @@ class CNC extends EventEmitter {
     }
 
     connect() {
+        if (this.socket) {
+            // Ignore if we are already connected.
+            return;
+        }
+
         this.ready = false;
 
         this.socket = io.connect('ws://' + host + ':' + port, {
@@ -201,6 +206,18 @@ class CNC extends EventEmitter {
     }
 
 
+    // Moves the CNC machine to the specified work position.
+    // If the z position is specified, it will be set after
+    // the move completes...
+    goto(wpos) {
+       cnc.sendGCode(`G0 X${wpos.x} Y${wpos.y}`);
+
+       if (wpos.hasOwnProperty('z')) {
+            cnc.sendGCode(`G0 Z${wpos.z}`);
+       }
+    }
+
+    
     get mpos() {
         if (this.ctrlState) {
             return this.ctrlState.status.mpos;
@@ -238,11 +255,23 @@ class CNC extends EventEmitter {
        }
     }
 
-    
+
+    get isIdle() {
+        let state = this.state;
+        if (state) {
+            return (this.ready && state === CNC.CTRL_STATE_IDLE);
+        }
+        else {
+            return false;
+        }
+    }
+
+
     disconnect() {
         if (this.socket) {
            this.socket.disconnect();
            this.socket = null;
+           this.ready = false;
         }
     }
 

@@ -6,12 +6,14 @@ const FileLoader = require('./FileLoader.js');
 const ProfileLoader = require('./ProfileLoader.js');
 const UILoader = require('./UILoader.js');
 const LEDController = require('./LEDController.js');
+const CNCController = require('./CNCController.js');
 
 let win = null;
 let fileLoader = null;
 let profileLoader = null;
 let uiLoader = null;
 let ledController = null;
+let cncController = null;
 
 // Load in the base configuration...
 let jStr = fs.readFileSync('./config.json', 'utf8');
@@ -97,5 +99,10 @@ ipcMain.handle('render-start-done', () => {
   profileLoader = new ProfileLoader(win);
   uiLoader = new UILoader(win);
   ledController = new LEDController(win, appConfig);
+
+  if (appConfig?.app?.hasCNC) {
+     cncController = new CNCController(win, appConfig)
+  }
+
 });    
 

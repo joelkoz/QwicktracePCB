@@ -86,6 +86,15 @@ class UIController {
             thiz.start();
         });
 
+
+        ipcRenderer.on('ui-joystick', (event, stickPos) => {
+            // TODO handle joystick in UI
+        });
+
+        ipcRenderer.on('ui-joystick-press', (event) => {
+            // TODO handle joystick press in UI
+        });
+
     }
 
     start() {
@@ -118,9 +127,16 @@ class UIController {
         $("#"+pageId).show();
 
         this.state.page = pageId;
+
+        this.state.activeListId = null;
     }
 
 
+    setActiveList(listId) {
+        this.state.activeListId = listId;
+    }
+
+    
     select(listId, value, nextPageId) {
         this.state[listId] = value;
         if (nextPageId) {

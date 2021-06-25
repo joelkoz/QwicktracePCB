@@ -15,7 +15,10 @@ const DRAW_HOLE_DIAMETER = 4;
 const DRAW_BLINK_DIAMETER = 6;
 const DRAW_BLINK_WIDTH = 2;
 
-
+/**
+ * A UI controller for the CNC drill used to handle the deskew process
+ * as well as the actual drilling...
+ */
 class DrillController {
 
     constructor(config) {
@@ -30,6 +33,10 @@ class DrillController {
             thiz.initAlignment();
             this.paint();
         });
+
+        ipcRenderer.on('drill-aligned', (event, pcbCoord) => {
+            thiz.setDeskew(pcbCoord);
+        });
         
         this.saveImage = document.createElement('canvas');
         this.saveImage.width = CANVAS_SAVE_WIDTH;
@@ -38,7 +45,7 @@ class DrillController {
         this.blinkPoint = null;
     }
 
-
+    // Initializes the hole alignment process
     initAlignment() {
         this.canvas = document.getElementById('drill-canvas');
 
@@ -60,6 +67,7 @@ class DrillController {
     }
 
 
+    // Called when the next alignment position should be obtained.
     positionNext() {
         this.blinkOff(false);
         this.deskewIndex++;
@@ -67,6 +75,9 @@ class DrillController {
         if (this.deskewIndex <= 1) {
            $('#drill-align-instructions').text(`Adjust pointer to hole ${this.deskewIndex+1} and press joystick`);
            this.startBlink();
+           let thiz = this;
+           let sample = this.deskewData[this.deskewIndex].sample
+           ipcRenderer.invoke('cnc-align', { callbackName: 'drill-aligned', sampleCoord: sample } );
         }
         else {
             $('#drill-align-instructions').text(`Done`);
@@ -75,49 +86,8 @@ class DrillController {
     }
 
 
-    deskewDone() {
-        this.blinkOff(false);
-        console.log(`Deskew completed: ${JSON.stringify(this.deskewData)}`);
-
-        let A = this.deskewData[0];
-        let B = this.deskewData[1];
-        let dresult = deskew(A.sample, B.sample, A.actual, B.actual);
-        console.log(`Deskew results: ${JSON.stringify(dresult)}`);
-        this.deskew = dresult;
-
-        this.setDeskewClient(A);
-        this.setDeskewClient(B);
-
-        // Redraw the holes...
-        this.paint();
-        this.redrawAlignmentHole(A);
-        this.redrawAlignmentHole(B);
-    }
-
-
-    setDeskewClient(sample) {
-        let pcbCoord = sample.actual;
-        let canvasCoord = this.toCanvas(pcbCoord);
-        let clientCoord = this.canvasToClient(canvasCoord);
-        sample.client = clientCoord;
-    }
-
-    redrawAlignmentHole(sample) {
-        let clientCoord = sample.client;
-        let canvasCoord = this.clientToCanvas(clientCoord);
-        let pcbCoord = this.toPCB(canvasCoord);
-        let ctx = this.canvas.getContext('2d');
-        this.drawHole(ctx, pcbCoord, 'red');
-    }
-
-
-    mouseDown(mouseCoord) {
-      let canvasCoord = this.clientToCanvas(mouseCoord);
-      let pcbCoord = this.toPCB(canvasCoord);
-      this.setDeskew(pcbCoord);
-    }
-
-
+    // Sets the alignment data for the current sample hole to
+    // the specified PCB coordinate.
     setDeskew(pcbCoord) {
         if (this.deskewIndex >= 0 && this.deskewIndex <= 1) {
             this.deskewData[this.deskewIndex].actual = pcbCoord;
@@ -129,9 +99,65 @@ class DrillController {
 
             this.positionNext();
         }
+    }    
+
+
+    // Called when all alignment data has been obtained and completes
+    // the process.
+    deskewDone() {
+        this.blinkOff(false);
+        console.log(`Deskew completed: ${JSON.stringify(this.deskewData)}`);
+
+        let A = this.deskewData[0];
+        let B = this.deskewData[1];
+        let dresult = deskew(A.sample, B.sample, A.actual, B.actual);
+        console.log(`Deskew results: ${JSON.stringify(dresult)}`);
+        this.deskew = dresult;
+
+        this.setDeskewDataClient(A);
+        this.setDeskewDataClient(B);
+
+        // Redraw the holes...
+        this.paint();
+        this.redrawAlignmentHole(A);
+        this.redrawAlignmentHole(B);
+    }
+
+    // Computes the raw client pixel coordinates of
+    // the specified alignment sample then sets
+    // the "client" properties of that sample to
+    // the results
+    setDeskewDataClient(sample) {
+        let pcbCoord = sample.actual;
+        let canvasCoord = this.toCanvas(pcbCoord);
+        let clientCoord = this.canvasToClient(canvasCoord);
+        sample.client = clientCoord;
+    }
+
+    // Draws an alingment hole for the specified sample
+    // using the "client" pixel coordinates of the sample
+    // This allows a sample to be drawn in the correct
+    // spot even if the pcb and/or canvas coordinate 
+    // transformations have changed.
+    redrawAlignmentHole(sample) {
+        let clientCoord = sample.client;
+        let canvasCoord = this.clientToCanvas(clientCoord);
+        let pcbCoord = this.toPCB(canvasCoord);
+        let ctx = this.canvas.getContext('2d');
+        this.drawHole(ctx, pcbCoord, 'red');
     }
 
 
+    // Responds to simulated alignment selection during debugging by
+    // using the mouse as a proxy for the CNC positioning laser...
+    mouseDown(mouseCoord) {
+      let canvasCoord = this.clientToCanvas(mouseCoord);
+      let pcbCoord = this.toPCB(canvasCoord);
+      this.setDeskew(pcbCoord);
+    }
+
+
+    // Preliminary calculations for drawing the drill holes and
     drawingPreCalc() {
         // There are three coordinate systems at play. the PCB's
         // coordinate system assumes (0,0) in lower left
@@ -197,11 +223,15 @@ class DrillController {
     }
 
 
+    // Starts the "blink indicator" on the current sample hole
+    // used for alignment data.
     startBlink() {
         this.blinkOff(false);
         setTimeout(() => { this.blinkOn() }, msBLINK_INTERVAL)
     }
 
+    // Draws the actual blink indicator on the canvas, and
+    // sets a timer to turn it off after the blink interval
     blinkOn() {
         this.blinkOff();
         if (this.deskewIndex <= 1) {
@@ -229,7 +259,10 @@ class DrillController {
         }
     }
 
-    
+
+    // Removes the blink indicator drawn by blinkOn from the canvas. If
+    // repeatBlink is TRUE, the blink will be restarted after the
+    // blink interval has passed.
     blinkOff(repeatBlink) {
         if (this.blinkPoint) {
             const canvas = this.canvas;
@@ -251,6 +284,9 @@ class DrillController {
         }
     }
 
+
+    // Draws a drill hole for the specified pcb coordinate
+    // using the specified canvas draw context.
     drawHole(ctx, pcbCoord, holeColor) {
         ctx.fillStyle = holeColor;
         ctx.strokeStyle = holeColor;
@@ -264,6 +300,10 @@ class DrillController {
     }
 
 
+    // Paints the entire canvas will all of the holes that
+    // are to be drilled to give the user a visual indication
+    // of the final results, and to aid in locating the
+    // alignment holes being requested.
     paint() {
         const canvas = this.canvas;
         const ctx = this.canvas.getContext('2d');
@@ -381,6 +421,11 @@ class DrillController {
         });
 
         return nearest;
+    }
+
+
+    cancelProcesses() {
+        ipcRenderer.invoke('cnc-cancel');
     }
 }
 

@@ -43,12 +43,19 @@
     <div class="page-body">
         <div class="button-area">
             <button type="button" class="btn w3" onClick="ui.showPage('filePage')">PCB</button>
-            <button type="button" class="btn w3" onClick="ui.showPage('cncDrillPage')">Drill</button>
+            <button type="button" class="btn w3 cncBtn" onClick="ui.showPage('cncDrillPage')">Drill</button>
         </div>
     </div>
 
     <script>
+        let startPageStateUpdate;
         uiPageActivate['startPage'] = function() {
+            if (!startPageStateUpdate) {
+                startPageStateUpdate = setInterval(() => {
+                   $('#startPage .cncBtn').prop('disabled', !cncAvailable)
+                }, 2000);
+            }
         };
+
     </script>
 </div>
