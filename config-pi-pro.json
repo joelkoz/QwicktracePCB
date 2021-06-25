@@ -1,6 +1,6 @@
 {
     "super" : {
-        "width": 1760,
+        "width": 1920,
         "height": 2560,
         "fullScreen": true,
         "debug": false,
@@ -16,6 +16,18 @@
        "ppinWidth": 537.250293,
        "ppinHeight":  537.566137464       
     },
+
+    "app": {
+        "hasCNC": true,
+        "hasPCB": true
+     },
+ 
+     "ui": {
+        "startPageId": "startPage",
+        "bodyClass": "ui480",
+        "width": 480,
+        "height": 320
+     },
 
     "pigpio": {
        "host": "127.0.0.1",

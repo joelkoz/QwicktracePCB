@@ -17,6 +17,18 @@
        "ppinHeight":  537.566137464       
     },
 
+    "app": {
+        "hasCNC": false,
+        "hasPCB": true
+     },
+ 
+     "ui": {
+        "startPageId": "filePage",
+        "bodyClass": "ui320",
+        "width": 320,
+        "height": 280
+     },
+
     "pigpio": {
        "host": "127.0.0.1",
        "port": 8888
