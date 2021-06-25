@@ -131,3 +131,4 @@ pi-hat/kicad/QwickMill Pro/ProController/fp-info-cache
 pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-B_Cu.gbr_0.7000_iso_cnc.nc
 pi-hat/kicad/QwickMill Pro/ProController/ProController-cache.lib
 .vscode/launch.json
+config.json
