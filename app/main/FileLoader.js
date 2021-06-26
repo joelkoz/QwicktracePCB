@@ -14,6 +14,7 @@ const dropDir = "./pcb-files/";
 const MainSubProcess = require('./MainSubProcess.js');
 const GerberData = require('./GerberData.js');
 
+const MainMQ = require('./MainMQ.js');
 
 class FileLoader  extends MainSubProcess {
 
@@ -70,6 +71,7 @@ class FileLoader  extends MainSubProcess {
             };
 
             console.log('SVG render complete');
+            MainMQ.emit('load-svg', obj);
             thiz.ipcSend('mask-load-svg', obj);
          });
       }
@@ -117,6 +119,7 @@ class FileLoader  extends MainSubProcess {
             };
       
             console.log('SVG loaded');
+            MainMQ.emit('load-svg', obj);
             thiz.ipcSend('mask-load-svg', obj);
         }
         catch (err) {
@@ -132,14 +135,18 @@ class FileLoader  extends MainSubProcess {
          this.drillData = new GerberData([fileName]);
          let thiz = this;
          this.drillData.on('ready', () => {
+
             if (profile === 'bottom') {
                thiz.drillData.mirror();
             }
-            thiz.ipcSend('drill-load',
-                     { "holes": thiz.drillData.holes, 
-                       "boundingBox": thiz.drillData.boundingBox, 
-                       "units": thiz.drillData.units,
-                       "drillSide": profile } );
+
+            let drillLoadInfo = { "holes": thiz.drillData.holes, 
+                                  "boundingBox": thiz.drillData.boundingBox, 
+                                  "units": thiz.drillData.units,
+                                  "drillSide": profile };
+
+            MainMQ.emit('load-drill', drillLoadInfo);
+            thiz.ipcSend('drill-load', drillLoadInfo);
          });
     }
 

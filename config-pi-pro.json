@@ -1,37 +1,60 @@
 {
-    "super" : {
-        "width": 1920,
-        "height": 2560,
-        "fullScreen": true,
-        "debug": false,
-        "frame": false
+   "super" : {
+       "width": 1920,
+       "height": 2560,
+       "fullScreen": true,
+       "debug": false,
+       "frame": false
+   },
+
+   "mask" : {
+      "marginX": 26,
+      "marginY": 20,
+      "width": 1440,
+      "ppmmWidth": 21.15158636,
+      "ppmmHeight": 21.16402116,
+      "ppinWidth": 537.250293,
+      "ppinHeight":  537.566137464       
+   },
+
+   "app": {
+       "hasCNC": true,
+       "hasPCB": true
     },
 
-    "mask" : {
-       "marginX": 26,
-       "marginY": 20,
-       "width": 1440,
-       "ppmmWidth": 21.15158636,
-       "ppmmHeight": 21.16402116,
-       "ppinWidth": 537.250293,
-       "ppinHeight":  537.566137464       
+    "ui": {
+       "startPageId": "startPage",
+       "bodyClass": "ui480",
+       "width": 480,
+       "height": 320
     },
 
-    "app": {
-        "hasCNC": true,
-        "hasPCB": true
-     },
- 
-     "ui": {
-        "startPageId": "startPage",
-        "bodyClass": "ui480",
-        "width": 480,
-        "height": 320
+    "cnc": {
+     "locations": {
+        "ur": { "x": -3.7, "y": -7.7 },
+        "zpad": { "x": -15.7, "y": -3.7 },
+        "maxLL": { "x": -100, "y": -85 },
+        "load": { "x": 0, "y": -15 }
      },
 
-    "pigpio": {
-       "host": "127.0.0.1",
-       "port": 8888
-    }
+     "zheight": {
+        "safe": -10,
+        "zpad": { "startZ": -15, "lastZ": -18.853 },
+        "pcb": { "lastZ": -31.115 }
+     },
+
+     "pointer": {
+        "offset": { "x": 20.3, "y": 7.3 }
+     },
+
+     "pcbFrame": {
+        "margin": 2
+     }
+  },
+
+   "pigpio": {
+      "host": "127.0.0.1",
+      "port": 8888
+   }
 }
 

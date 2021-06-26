@@ -84,14 +84,17 @@ class CNC extends EventEmitter {
     connect() {
         if (this.socket) {
             // Ignore if we are already connected.
+            console.log('Aready connected to CNC. Ignoring connect() call.');
             return;
         }
 
+        console.log('Connecting to CNC...');
         this.ready = false;
 
         this.socket = io.connect('ws://' + host + ':' + port, {
             'query': 'token=' + this.token
         });
+
 
         let thiz = this;
         this.socket.on('connect', () => {
@@ -180,6 +183,9 @@ class CNC extends EventEmitter {
     }
 
     home() {
+        if (this.state === CNC.CTRL_STATE_IDLE) {
+           this.emit('state', CNC.CTRL_STATE_HOME);
+        }
         this.sendCommand('homing');
     }
 
