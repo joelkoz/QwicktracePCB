@@ -329,7 +329,7 @@ class DrillController {
 
 
     // JSFiddle for experimenting with transforms:
-    // https://jsfiddle.net/joelkoz/xbtvsjfr/115/
+    // https://jsfiddle.net/joelkoz/4gfbczk2/
 
 
     // Sets the transformation matrix for the UI display.
