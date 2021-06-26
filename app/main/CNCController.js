@@ -1,7 +1,8 @@
 const { ipcMain } = require('electron');
+const { rotate, translate, transform, applyToPoint } = require('transformation-matrix');
 const LaserPointer = require('./LaserPointer');
 const MainSubProcess = require('./MainSubProcess.js')
-
+const MainMQ = require('./MainMQ.js')
 
 // An "equals" function that does a "shallow" comparison
 // of objects, ensuring all keys of one object exists in
@@ -51,10 +52,11 @@ let CNC = null;
 
 class CNCController  extends MainSubProcess {
 
-    constructor(win) {
+    constructor(win, config) {
         super(win);
 
         console.log('Initializing CNC mill...');
+        this.config = config;
 
         const Joystick = require('./Joystick');
         const ZProbe = require('./ZProbe');
@@ -63,7 +65,7 @@ class CNCController  extends MainSubProcess {
         const Kefir = require('kefir');
         
         this.cnc = new CNC();
-        this.pointer = new LaserPointer();
+        this.pointer = new LaserPointer(config);
 
         const thiz = this;
 
@@ -74,17 +76,17 @@ class CNCController  extends MainSubProcess {
         this.jogMode = false;
         this.jogZ = false;
 
-        stick.onValue(stick => {
+        this.stick.onValue(stick => {
             if (thiz.jogMode) {
-               thiz.cnc.jog(-stick.x, stick.y, jogZ);
+               thiz.cnc.jog(stick.x, stick.y, thiz.jogZ);
             }
             else {
-                ipcMain.invoke('ui-joystick', stick);
+                thiz.ipcSend('ui-joystick', stick);
             }
         });
         
         
-        stickBtn.onValue(pressed => {
+        this.stickBtn.onValue(pressed => {
             if (pressed) {
               if (thiz.alignmentMode) {
                  thiz.finishAlignment();
@@ -93,14 +95,19 @@ class CNCController  extends MainSubProcess {
                  thiz.jogZ = !thiz.jogZ;
               }
               else {
-                  ipcMain.invoke('ui-joystick-press');
+                thiz.ipcSend('ui-joystick-press');
               }
             }
         });
 
-        ipcMain.handle('cnc-align', (event, paramObj) => {
+        ipcMain.handle('cnc-get-align', (event, paramObj) => {
             thiz.getAlignmentHole(paramObj.callbackName, paramObj.sampleCoord);
         });
+
+        ipcMain.handle('cnc-set-deskew', (event, deskew) => {
+            thiz.setDeskew(deskew);
+        });
+
 
         ipcMain.handle('cnc-cancel', (event, paramObj) => {
             thiz.cancelProcesses();
@@ -133,19 +140,86 @@ class CNCController  extends MainSubProcess {
                     // We just finished doing a home
                     // Zero out the work coordinates...
                     thiz.homeInProgress = false;
-                    cnc.sendGCode('G10 L20 P1 X0 Y0');
+                    thiz.cnc.sendGCode('G10 L20 P1 X0 Y0');
+                    console.log('Home completed');
                 }
             }
 
-            ipcMain.invoke('render-cnc-state', state);
+            thiz.ipcSend('render-cnc-state', state);
+        });
+
+        MainMQ.on('load-drill', (drillObj) => {
+            thiz.initState(drillObj);
         });
 
         this.cnc.connect();
-
-
     }
 
+
+    setState(drillObj) {
+        this.state = {};
+
+        this.state.drillObj = drillObj;
+
+        // Extract bounding box info...
+        let bb = drillObj.boundingBox;
+        let min = bb.min;
+        let max = bb.max;
+        this.state.bbWidth = max.x - min.x;
+        this.state.bbHeight = max.y - min.y;
+        let boardHeight = this.state.bbHeight;
+
+
+        // Translation necessary to shift PCB origin to be (0,0)
+        // (i.e. don't allow negative coordinates)
+        let normalizeX = 0 - min.x;
+        let normalizeY = 0 - min.y;
+        let normalizeOrigin = translate(normalizeX, normalizeY);
+
+        // Calculate the transfomation matrix to convert PCB
+        // coordinates into CNC mill positions. Start with 
+        // upper right hand coordinates of the frame...
+        let frameUpperRight = this.config.cnc.locations.ur;
+
+        // The PCB's copper is actually UNDER the frame by
+        // a small amount. Adjust the frameUpperRight to match
+        // the true location of the copper board's corner...
+        let boardUR_x =  frameUpperRight.x + this.config.cnc.pcbFrame.margin;
+        let boardUR_y =  frameUpperRight.y - this.config.cnc.pcbFrame.margin;
+
+        // Compute a transformation to relocate the origin of 
+        // the mill to the frame's UR...
+        let originRelocate = translate(boardUR_x, boardUR_y);
+
+
+        // Combine those above with a transform to move to the left
+        // by the height of the board, then rotate the board 
+        // clockwise 90 degrees (270 degrees counterclockwise)
+        // So that the upper left hand corner of the board is
+        // at the frameUpperRight. After rotation, the PCB's Y+ 
+        // will correspond to the cnc's X+, and the PCB's X+ 
+        // will be along the cnc's Y-
+        this.state.mtxPCBtoCNC = transform(
+            normalizeOrigin,
+            originRelocate,
+            translate(-boardHeight, 0),
+            rotate(270 * Math.PI / 180)
+        );
+
+        // Also compute a matrix that can convert in the opposite
+        // direction (i.e. from cnc coordinates to PCB coordinates)
+        this.state.mtxCNCtoPCB = inverse(this.state.mtxPCBtoCNC);
+    }
+
+
+
+    setDeskew(deskew) {
+        this.state.deskew = deskew;
+    }
+
+
     cancelProcesses() {
+
         if (this.alignmentMode) {
            console.log("Canceling active CNC alignment.");
            this.alignmentMode = false;
@@ -162,12 +236,12 @@ class CNCController  extends MainSubProcess {
         this.alignmentMode = true;
         this.jogMode = true;
         this.pointer.laser = true;
+        this.alignmentCallbackName = callbackName;
 
         // Set the laser to point to the sample hole...
-        let cncCoord = toCNC(sampleCoord);
-        cncCoord.x += LaserPointer.offsetX;
-        cncCoord.y += LaserPointer.offsetY;
-        this.cnc.goto(cncCoord)
+        let cncCoord = this.toCNC(sampleCoord);
+        let laserCoord  = this.pointer.toLaserPos(cncCoord);
+        this.cnc.goto(laserCoord)
     }
 
 
@@ -175,19 +249,21 @@ class CNCController  extends MainSubProcess {
         this.alignmentMode = false;
         this.jogMode = false;
         this.pointer.laser = false;
-        let cncCoord = Object.assign({}, this.cnc.wpos);
-        cncCoord.x -= LaserPointer.offsetX;
-        cncCoord.y -= LaserPointer.offsetY;
+        let laserCoord = Object.assign({}, this.cnc.wpos);
+        let cncCoord = this.pointer.toSpindlePos(laserCoord);
         let pcbCoord = this.toPCB(cncCoord);
-        ipcMain.invoke(callbackName, pcbCoord);
+        this.ipcSend(this.alignmentCallbackName, pcbCoord);
     }
 
     toCNC(pcbCoord) {
+        return applyToPoint(this.state.mtxPCBtoCNC, pcbCoord);
     }
 
 
     toPCB(cncCoord) {
+        return applyToPoint(this.state.mtxCNCtoPCB, cncCoord);
     }
+
 }
 
 module.exports = CNCController;

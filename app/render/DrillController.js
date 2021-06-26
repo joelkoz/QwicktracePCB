@@ -77,7 +77,7 @@ class DrillController {
            this.startBlink();
            let thiz = this;
            let sample = this.deskewData[this.deskewIndex].sample
-           ipcRenderer.invoke('cnc-align', { callbackName: 'drill-aligned', sampleCoord: sample } );
+           ipcRenderer.invoke('cnc-get-align', { callbackName: 'drill-aligned', sampleCoord: sample } );
         }
         else {
             $('#drill-align-instructions').text(`Done`);
@@ -113,6 +113,8 @@ class DrillController {
         let dresult = deskew(A.sample, B.sample, A.actual, B.actual);
         console.log(`Deskew results: ${JSON.stringify(dresult)}`);
         this.deskew = dresult;
+
+        ipcRenderer.invoke('cnc-set-deskew', dresult);
 
         this.setDeskewDataClient(A);
         this.setDeskewDataClient(B);
@@ -326,6 +328,11 @@ class DrillController {
     }
 
 
+    // JSFiddle for experimenting with transforms:
+    // https://jsfiddle.net/joelkoz/xbtvsjfr/115/
+
+
+    // Sets the transformation matrix for the UI display.
     setTransform(ctx) {
         // Origin at UL margin corner, x+ down, y+ right
         ctx.resetTransform();
