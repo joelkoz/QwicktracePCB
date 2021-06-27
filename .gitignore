@@ -111,24 +111,10 @@ pi-hat/PiHat.zip
 pi-hat/kicad/PiHat-cache.lib
 *.*-bak
 
-pi-hat/kicad/fp-info-cache
-pi-hat/kicad/TFT/fp-info-cache
-pi-hat/kicad/TFT/TFT-cache.lib
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-B_Cu.gbr
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-B_Mask.gbr
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-B_Paste.gbr
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-B_SilkS.gbr
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-Edge_Cuts.gbr
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-F_Cu.gbr
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-F_Mask.gbr
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-F_Paste.gbr
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-F_SilkS.gbr
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-job.gbrjob
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController.drl
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController.drl_cnc.nc
-pi-hat/kicad/QwickMill Pro/ProController/CAM/Project_20210518_175314.FlatPrj
-pi-hat/kicad/QwickMill Pro/ProController/fp-info-cache
-pi-hat/kicad/QwickMill Pro/ProController/CAM/ProController-B_Cu.gbr_0.7000_iso_cnc.nc
-pi-hat/kicad/QwickMill Pro/ProController/ProController-cache.lib
+pi-hat/kicad/**/fp-info-cache
+pi-hat/kicad/**/CAM/*
+pi-hat/kicad/**/*-cache.lib
+
+
 .vscode/launch.json
 config.json
