@@ -15,7 +15,7 @@ class MillController {
         ipcRenderer.on('mill-load-svg', (event, renderObj) => {
             thiz.gerberCanvas.reset();
             thiz.gerberCanvas.setSVG(renderObj);
-            ui.showPage('millAlignPage');
+            ui.showPage('millAlignPage', false);
 
             // Request the holes also...
             thiz.loadHoles();

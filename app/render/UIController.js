@@ -10,6 +10,7 @@ class UIController {
         this.profileList = {};
         this.projectList = {};
         this.state = {};
+        this.clearPageStack();
 
         // Make this object available to the html scripts via
         // the "ui" alias...
@@ -110,6 +111,7 @@ class UIController {
 
     start() {
         this.state = {}
+        let thiz = this;
 
         // The touchscreen on the Pi will not register mouse clicks
         // like one would expect. Make all our buttons respond
@@ -121,12 +123,28 @@ class UIController {
 
         $('body').addClass(appConfig.ui.bodyClass);
 
+        $(".btn.back").on("click", () => { thiz.backPage() });
+
         this.showPage(appConfig.ui.startPageId);
         console.log('ui started');
     }
  
+    clearPageStack() {
+        this.pageStack = [ appConfig.ui.startPageId ];
+    }
 
-    showPage(pageId) {
+    popPage() {
+        this.pageStack.pop();
+    }
+
+    backPage() {
+        if (this.pageStack.length > 0) {
+            let pageId = this.pageStack.pop();
+            this.showPage(pageId, false);
+        }
+    }
+
+    showPage(pageId, pushOld = true) {
 
         $(".page").hide();
 
@@ -135,8 +153,11 @@ class UIController {
             fnActivate();
         }
 
-        $("#"+pageId).show();
+        if (pushOld) {
+            this.pageStack.push(this.state.page);
+        }
 
+        $("#"+pageId).show();
         this.state.page = pageId;
 
         this.state.activeListId = null;
@@ -229,15 +250,15 @@ class UIController {
 
     setSide(side) {
         this.state.side = side;
-        this.dispatchToProcessStart();
+        this.dispatchToProcessStart(this.getAvailableSides().length > 1);
     }
 
 
-    dispatchToProcessStart() {
+    dispatchToProcessStart(pushOld = true) {
 
         let dispatchPage = window.uiActionStartPage[this.state.action];
         if (dispatchPage) {
-            this.showPage(dispatchPage);
+            this.showPage(dispatchPage, pushOld);
         }
     }
 

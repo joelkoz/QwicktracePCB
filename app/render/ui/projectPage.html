@@ -27,7 +27,7 @@
     </style>
     <div class="page-header">
         <div class="header-area">
-           <button type="button" class="btn w1 back" onClick="ui.showPage('startPage')">&#8592;</button>
+           <button type="button" class="btn w1 back">&#8592;</button>
            Select project
         </div>
     </div>
@@ -47,6 +47,7 @@
         uiPageActivate['projectPage'] = function() {
              console.log('Activate projectPage');
              ui.clearState('projectId');
+             ui.clearPageStack();
              uiInitList('projectId', ui.projectList, (f1, f2) => f1.mtime < f2.mtime ? 1 : -1, 'actionPage');
         };
     </script>

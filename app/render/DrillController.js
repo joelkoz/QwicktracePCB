@@ -29,7 +29,7 @@ class DrillController {
         ipcRenderer.on('drill-load', (event, drillObj) => {
             thiz.blinkOff(false);
             thiz.drillObj = drillObj;
-            ui.showPage('drillAlignPage');
+            ui.showPage('drillAlignPage', false);
             thiz.initAlignment();
             this.paint();
         });
