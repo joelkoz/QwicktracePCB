@@ -1,7 +1,7 @@
-<div id="cncDrillLoadingPage" class="page">
+<div id="drillLoadingPage" class="page">
     <style type="text/css"> 
 
-        #cncDrillLoadingPage .page-body {
+        #drillLoadingPage .page-body {
             text-align: center;
         }
 
@@ -16,9 +16,11 @@
     </div>
 
     <script>
-        uiPageActivate['cncDrillLoadingPage'] = function() {
-             console.log('Activate cncDrillLoadingPage');
-             ui.prepareDrill();
+        uiPageActivate['drillLoadingPage'] = function() {
+             console.log('Activate drillLoadingPage');
+             uiDrill.prepareDrill();
         };
+
+        uiActionStartPage['drill'] = 'drillLoadingPage';
     </script>
 </div>

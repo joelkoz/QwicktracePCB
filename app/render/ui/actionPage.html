@@ -1,0 +1,91 @@
+<div id="actionPage" class="page">
+    <style type="text/css"> 
+
+        #actionPage .page-body {
+            display: grid;
+            grid-template-areas:
+               'displayArea'
+               'buttonArea';
+            grid-template-rows: 1fr 5fr;
+        }
+
+        #actionPage .button-area {
+            grid-area: buttonArea;
+        }
+
+        #actionPage .display-area {
+            grid-area: displayArea;
+        }
+
+        #actionPage .button-area button {
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 20px;
+            height: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        #actionPage .button-area .btn {
+            width: 40%;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           <button type="button" class="btn w1 back" onClick="ui.showPage('projectPage')">&#8592;</button>
+           Select process
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="display-area">
+            <table>
+                <tr>
+                    <th>Project:</th>
+                    <td class="projectName">project name</td>
+                </tr>
+            </table>
+         </div>        
+        <div class="button-area">
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['actionPage'] = function() {
+            console.log('Activate action page');
+
+            ui.clearState('action');
+            $('.projectName').html(ui.projectName);
+
+            const divSelector = '#actionPage .button-area';
+            const nextPageId = 'sidePage';
+            $(divSelector).empty();
+
+            let lastAction;
+            let optionCount = 0;
+            if (ui.isOptionExpose()) {
+                optionCount++;
+                lastAction = 'expose';
+                uiAddButton(divSelector, 'Expose', () => { ui.setAction('expose', nextPageId); });
+            }
+
+            if (ui.isOptionMill()) {
+                optionCount++;
+                lastAction = 'mill';
+                uiAddButton(divSelector, 'Mill', () => { ui.setAction('mill', nextPageId); });
+            }
+
+            if (ui.isOptionDrill()) {
+                optionCount++;
+                lastAction = 'drill';
+                uiAddButton(divSelector, 'Drill', () => { ui.setAction('drill', nextPageId); });
+            }
+
+            if (optionCount === 1) {
+                ui.setAction(lastAction, nextPageId);
+            }
+
+        };
+
+    </script>
+</div>

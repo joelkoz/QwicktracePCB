@@ -21,40 +21,21 @@
             display: block;
         }
 
-        #startPage .btn {
-
-        }
-
-
-        #startPage .btn.pcb {
-            background: url(./ui/img/btn-circuit.png)
-        }
-
-        #startPage .btn.cnc {
-            background: url(./ui/img/btn-cnc.png)
-        }
-
     </style>
     <div class="page-header">
         <div class="header-area">
-           Qwicktrace PCB
+           QwickFab PCB
         </div>
     </div>
     <div class="page-body">
         <div class="button-area">
-            <button type="button" class="btn w3" onClick="ui.showPage('filePage')">PCB</button>
-            <button type="button" class="btn w3 cncBtn" onClick="ui.showPage('cncDrillPage')">Drill</button>
+            <button type="button" class="btn w3" onClick="ui.showPage('projectPage')">Make PCB</button>
+            <button type="button" class="btn w3" onClick="ui.showPage('settingsPage')">Settings</button>
         </div>
     </div>
 
     <script>
-        let startPageStateUpdate;
         uiPageActivate['startPage'] = function() {
-            if (!startPageStateUpdate) {
-                startPageStateUpdate = setInterval(() => {
-                   $('#startPage .cncBtn').prop('disabled', !cncAvailable)
-                }, 2000);
-            }
         };
 
     </script>

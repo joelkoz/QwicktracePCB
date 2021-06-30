@@ -7,7 +7,8 @@ const { deskew } = require('deskew')
 const CANVAS_SAVE_WIDTH = 24;
 
 const CANVAS_BG_COLOR = '#FFF8DC';
-const CANVAS_HOLE_COLOR = '#DEB887';
+const CANVAS_TRACE_COLOR = '#DEB887';
+const CANVAS_HOLE_COLOR = 'black';
 
 const msBLINK_INTERVAL = 500;
 
@@ -16,53 +17,36 @@ const DRAW_BLINK_DIAMETER = 6;
 const DRAW_BLINK_WIDTH = 2;
 
 /**
- * A UI controller for the CNC drill used to handle the deskew process
- * as well as the actual drilling...
+ * A class that represents a Gerber file and is capable of rendering
+ * both the the traces and the drilled holes of the PCB. It also
+ * can optionally handle deskew.
  */
-class DrillController {
+class GerberCanvas {
 
-    constructor(config) {
+    constructor(canvasId, instructionsDivId) {
+
+        this.canvasId = canvasId;
+        this.instructionsDivId = instructionsDivId;
+
+        let config = window.appConfig;
         this.uiWidth = config.ui.width;
         this.uiHeight = config.ui.height;
-
-        let thiz = this;
-        ipcRenderer.on('drill-load', (event, drillObj) => {
-            thiz.blinkOff(false);
-            thiz.drillObj = drillObj;
-            ui.showPage('drillAlignPage');
-            thiz.initAlignment();
-            this.paint();
-        });
-
-        ipcRenderer.on('drill-aligned', (event, pcbCoord) => {
-            thiz.setDeskew(pcbCoord);
-        });
         
         this.saveImage = document.createElement('canvas');
         this.saveImage.width = CANVAS_SAVE_WIDTH;
         this.saveImage.height = CANVAS_SAVE_WIDTH;
 
         this.blinkPoint = null;
-    }
 
-
-    prepareDrill() {
-        let state = window.uiController.state;
-        let projectId = state.projectId;
-        let fileDef = { projectId, "side": 'drill' };
-        let callbackEvt = "drill-load";
-        let profile = { "drillSide": state.side };
-        ipcRenderer.invoke('fileloader-load', { fileDef, profile, callbackEvt })
+        ipcRenderer.on('hole-aligned', (event, pcbCoord) => {
+            thiz.setDeskew(pcbCoord);
+        });        
     }
 
 
     // Initializes the hole alignment process
     initAlignment() {
-        this.canvas = document.getElementById('drill-canvas');
-
-        this.drawingPreCalc();
-
-        let bb = this.drillObj.boundingBox;
+        let bb = this.boundingBox;
 
         // For skew correction, we need two points...
         this.deskewData = [
@@ -83,15 +67,16 @@ class DrillController {
         this.blinkOff(false);
         this.deskewIndex++;
 
+        let instructionsSelector = '#' + this.instructionsDivId;
         if (this.deskewIndex <= 1) {
-           $('#drill-align-instructions').text(`Adjust pointer to hole ${this.deskewIndex+1} and press joystick`);
+           $(instructionsSelector).text(`Adjust pointer to hole ${this.deskewIndex+1} and press joystick`);
            this.startBlink();
            let thiz = this;
            let sample = this.deskewData[this.deskewIndex].sample
-           ipcRenderer.invoke('cnc-get-align', { callbackName: 'drill-aligned', sampleCoord: sample } );
+           ipcRenderer.invoke('cnc-get-align', { callbackName: 'hole-aligned', sampleCoord: sample } );
         }
         else {
-            $('#drill-align-instructions').text(`Done`);
+            $(instructionsSelector).text(`Done`);
             this.deskewDone();
         }
     }
@@ -193,17 +178,23 @@ class DrillController {
         // for display and milling sideways (i.e. the pcb's
         // X axis plotted along display and mill's Y axis)...
 
-        // Set the canvas to its maximum pixel size...
-        let jCanvasDiv = $('#drillAlignPage .canvas-area');
+
+        this.canvas = document.getElementById(this.canvasId);
+
+        // Set the canvas to its maximum pixel size
+        // which is the pixel size of the parent div
+        let jCanvasDiv = $(this.canvas).parent();
+
         let ow = jCanvasDiv.outerWidth(true);
         let oh = jCanvasDiv.outerHeight(true);
         const canvas = this.canvas;
         canvas.width = ow;
         canvas.height = oh;
 
-        let bb = this.drillObj.boundingBox;
-        let min = bb.min;
-        let max = bb.max;
+        let bb = this.viewBox;
+        let min = { x: bb[0] /1000, y: bb[1] / 1000 };
+        let max = { x: bb[2]/ 1000, y: bb[3] / 1000 };
+        this.boundingBox = { min, max }
 
         // Translation necessary to shift PCB origin to be (0,0)
         this.normalizeX = 0 - min.x;
@@ -229,10 +220,10 @@ class DrillController {
 
         // Finally, calculate a pixel margin that will center
         // the board in the display canvas...
-        let truePixelHeight = this.ppmm * bbHeight;
-        let truePixelWidth = this.ppmm * bbWidth;
-        this.marginWidth = (maxPixelHeight - truePixelHeight) / 2;
-        this.marginHeight = (maxPixelWidth - truePixelWidth) / 2;
+        this.truePixelHeight = this.ppmm * bbHeight;
+        this.truePixelWidth = this.ppmm * bbWidth;
+        this.marginWidth = (maxPixelHeight - this.truePixelHeight) / 2;
+        this.marginHeight = (maxPixelWidth - this.truePixelWidth) / 2;
     }
 
 
@@ -281,8 +272,6 @@ class DrillController {
             const canvas = this.canvas;
             const ctx = this.canvas.getContext('2d');
 
-//            ctx.imageSmoothingEnabled = false;
-
             ctx.save();
             ctx.resetTransform();
             canvas.style.backgroundColor = CANVAS_BG_COLOR;
@@ -330,13 +319,18 @@ class DrillController {
 
         this.setTransform(ctx);
 
-        let holes = this.drillObj.holes;
+        if (this.img) {
+            ctx.drawImage(this.img, 0, 0, this.truePixelWidth, this.truePixelHeight);
+        }
 
-        holes.forEach(hole => {
-           this.drawHole(ctx, hole.coord, CANVAS_HOLE_COLOR);
-        });        
+        if (this.holeList) {
 
+            this.holeList.forEach(hole => {
+               this.drawHole(ctx, hole.coord, CANVAS_HOLE_COLOR);
+            });
+        }
     }
+
 
 
     // JSFiddle for experimenting with transforms:
@@ -361,26 +355,58 @@ class DrillController {
     }
 
 
-    // Used for testing transformations...
-    drawTestAxis(ctx) {
-        // Draw axis...
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'red';
-        ctx.beginPath();
-        ctx.moveTo(0, 15);
-        ctx.lineTo(0, -15);
-        ctx.stroke();
-
-        ctx.strokeStyle = 'purple';
-        ctx.beginPath();
-        ctx.moveTo(-15, 0);
-        ctx.lineTo(5, 0);
-        ctx.stroke();
-
-        this.drawHole(ctx, { x: -9, y: 9 }, 'red');
-        this.drawHole(ctx, { x: 9, y: 9 }, 'green');
-        this.drawHole(ctx, { x: 9, y: -9 }, 'blue');
+    reset() {
+        if (this.svgURL != null) {
+           URL.revokeObjectURL(this.svgURL);
+        }
+     
+        this.img = null;
+        this.svgURL = null;
+        this.holeList = undefined;
+        this.viewBox = undefined;
     }
+   
+
+
+    setSVG(renderObj) {
+     
+        this.reset();
+        this.svgURL = URL.createObjectURL(new Blob([renderObj.svg], { type: 'image/svg+xml' }));
+        this.viewBox = renderObj.viewBox;
+
+        let thiz = this;
+        this.img = new Image();
+        this.img.onload = function() {
+           // This is called after the
+           // svg data has been processed
+           // following setting the Image()
+           // object's src property...
+           thiz.drawingPreCalc();
+           thiz.paint();
+        }
+
+        // Initiate image processing by setting
+        // the src attribute...
+        this.img.src = this.svgURL;
+    }          
+
+
+    setHoles(drillObj) {
+
+        if (!this.viewBox) {
+            // The GerberFile has not been loaded yet. 
+            // this.viewBox is necessary for drawingPreCalc()
+            // to run, so fake it using the drill's bounding box
+            let bb = drillObj.boundingBox;
+            this.viewBox = [ bb.min.x, bb.min.y, bb.max.x, bb.max.y ];
+            this.drawingPreCalc();
+        }
+
+        this.holeList = drillObj.holes;
+
+        this.paint();
+    }
+
 
     // Translate PCB coordinates to UI display canvas coordinates
     toCanvas(pcbCoord) {
@@ -422,29 +448,31 @@ class DrillController {
         return { x: Math.round(x), y: Math.round(y) };
     }
 
+
     /**
      * Returns the hole closest to the specified coordinate
      */
-    closestTo(pcbCoord) {
+     closestTo(pcbCoord) {
         let dist = 99999;
         let nearest = null;
-        this.drillObj.holes.forEach(hole => {
-            let a = hole.coord.x - pcbCoord.x;
-            let b = hole.coord.y - pcbCoord.y;
-            let c = Math.sqrt(a*a + b*b);
-            if (c < dist) {
-                nearest = hole;
-                dist = c;
-            }
-        });
+
+        if (this.holeList) {
+            this.holeList.forEach(hole => {
+                let a = hole.coord.x - pcbCoord.x;
+                let b = hole.coord.y - pcbCoord.y;
+                let c = Math.sqrt(a*a + b*b);
+                if (c < dist) {
+                    nearest = hole;
+                    dist = c;
+                }
+            });
+        }
 
         return nearest;
-    }
-
-
-    cancelProcesses() {
-        ipcRenderer.invoke('cnc-cancel');
-    }
+    }    
 }
 
-export { DrillController }
+
+GerberCanvas.TRACE_COLOR = CANVAS_TRACE_COLOR
+
+export { GerberCanvas }

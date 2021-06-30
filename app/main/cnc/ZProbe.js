@@ -1,4 +1,4 @@
-const GPIO = require('./GPIO.js');
+const GPIO = require('../GPIO.js');
 const EventEmitter = require('events')
 
 

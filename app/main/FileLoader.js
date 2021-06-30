@@ -2,17 +2,13 @@ const { ipcMain } = require('electron')
 
 const fs = require('fs');
 const gerberToSvg = require('gerber-to-svg');
-const whatsThatGerber = require('whats-that-gerber')
-const gerbValid = require('whats-that-gerber').validate;
 const path = require('path');
 const fastXmlParser = require("fast-xml-parser");
 const unitsParser = require('units-css');
-const units = require('units-css/lib');
-
-const dropDir = "./pcb-files/";
 
 const MainSubProcess = require('./MainSubProcess.js');
-const GerberData = require('./GerberData.js');
+const GerberData = require('./pcb/GerberData.js');
+const ProjectLoader = require('./ProjectLoader.js');
 
 const MainMQ = require('./MainMQ.js');
 
@@ -22,23 +18,15 @@ class FileLoader  extends MainSubProcess {
 
       super(win);
 
-      this.lastFileSyncMs = 0;
-
       let thiz = this;
       ipcMain.handle('fileloader-load', (event, data) => {
-         thiz.loadFile(data.file, data.profile);
+         thiz.loadFile(data);
       });
 
-       // Do a file list refresh now...
-      this.refreshFileList();
-
-       // And every 6 seconds after this...
-      setInterval(() => { thiz.refreshFileList(); }, 6000);
     }
 
 
-
-    loadGerberFile(fileName, profile) {
+    loadGerberFile(fileName, profile, callbackEvt) {
 
         console.log(`Creating SVG from Gerber file ${fileName}`);
      
@@ -46,7 +34,7 @@ class FileLoader  extends MainSubProcess {
      
         let options = {
             attributes: {
-               color: 'black'
+               color: (profile.traceColor ? profile.traceColor : 'black')
             }
         };
      
@@ -71,8 +59,7 @@ class FileLoader  extends MainSubProcess {
             };
 
             console.log('SVG render complete');
-            MainMQ.emit('load-svg', obj);
-            thiz.ipcSend('mask-load-svg', obj);
+            thiz.ipcSend(callbackEvt, obj);
          });
       }
       catch (err) {
@@ -82,7 +69,7 @@ class FileLoader  extends MainSubProcess {
     }
      
     
-    loadSvgFile(fileName, profile) {
+    loadSvgFile(fileName, profile, callbackEvt) {
      
        console.log(`Loading SVG from ${fileName}`);
      
@@ -119,8 +106,7 @@ class FileLoader  extends MainSubProcess {
             };
       
             console.log('SVG loaded');
-            MainMQ.emit('load-svg', obj);
-            thiz.ipcSend('mask-load-svg', obj);
+            thiz.ipcSend(callbackEvt, obj);
         }
         catch (err) {
            console.log(`Error parsing SVG file ${fileName}`);
@@ -131,71 +117,39 @@ class FileLoader  extends MainSubProcess {
      
      
 
-    loadDrillFile(fileName, profile) {
+    loadDrillFile(fileName, profile, callbackEvt) {
          this.drillData = new GerberData([fileName]);
          let thiz = this;
          this.drillData.on('ready', () => {
 
-            if (profile === 'bottom') {
+            if (profile.drillSide === 'bottom') {
                thiz.drillData.mirror();
             }
 
             let drillLoadInfo = { "holes": thiz.drillData.holes, 
                                   "boundingBox": thiz.drillData.boundingBox, 
                                   "units": thiz.drillData.units,
-                                  "drillSide": profile };
+                                  "drillSide": profile.drillSide };
 
-            MainMQ.emit('load-drill', drillLoadInfo);
-            thiz.ipcSend('drill-load', drillLoadInfo);
+            thiz.ipcSend(callbackEvt, drillLoadInfo);
          });
     }
 
 
-    loadFile(file, profile) {
-        let fileName = file.value;
+    loadFile({fileDef, profile, callbackEvt}) {
+
+        let fileName = ProjectLoader.getFileName(fileDef.projectId, fileDef.side);
 
         let ext = path.extname(fileName);
          
-        if (file.gerb.type === 'drill') {
-            this.loadDrillFile(dropDir + fileName, profile);
-        }
-        else if (file.gerb.type === 'copper') {
-           this.loadGerberFile(dropDir + fileName, profile);
-        }
-        else if (ext.toLowerCase() == '.svg') {
-           this.loadSvgFile(dropDir + fileName, profile);
+        if (fileDef.side  === 'drill') {
+            this.loadDrillFile(fileName, profile, callbackEvt);
         }
         else {
-           console.log(`Unknown file type (${ext}) for file ${fileName}`);
+           this.loadGerberFile(fileName, profile, callbackEvt);
         }
     }
-     
 
-    refreshFileList() {
-      let thiz = this;
-      fs.readdir(dropDir, (err, files) => {
-          let msLastSync = this.lastFileSyncMs;
-          files.forEach(file => {
-            let fileName = dropDir + file;
-            fs.stat(fileName, false, (err, fstat) => {
-               if (fstat.mtimeMs > msLastSync) {
-                  let fileObj = {};
-                  fileObj.value = path.basename(file);
-                  fileObj.mtimeMs = fstat.mtimeMs;
-
-                  let aType = whatsThatGerber([fileName]);
-                  let gType = aType[fileName];
-                  if (gerbValid(gType)) {
-                     fileObj.gerb = gType;
-                  }
-
-                  thiz.ipcSend('ui-file-update', fileObj);
-               }
-            });
-          });
-          this.lastFileSyncMs = Date.now();
-      });  
-    }     
 }
 
 module.exports = FileLoader;

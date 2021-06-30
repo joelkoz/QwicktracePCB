@@ -4,14 +4,22 @@
         #profilePage .page-body {
             display: grid;
             grid-template-areas:
+               'displayArea buttonsLeft'
                'listArea buttonsLeft';
-            grid-template-columns: 3fr 1fr;
+            grid-template-columns: 5fr 1fr;
+            grid-template-rows: 1fr 5fr;
         }
 
         #profilePage .list-area {
             grid-area: listArea;
             margin-right: 5px;
         }
+
+        #profilePage .display-area {
+            grid-area: displayArea;
+            margin-right: 5px;
+        }
+
 
         #profilePage .buttons-left {
             grid-area: buttonsLeft;
@@ -27,14 +35,21 @@
     </style>
     <div class="page-header">
         <div class="header-area">
-           <button type="button" class="btn w1 back" onClick="ui.showPage('filePage')">&#8592;</button>
+           <button type="button" class="btn w1 back" onClick="ui.showPage(ui.getAvailableSides().length > 1 ? 'sidePage' : 'actionPage')">&#8592;</button>
            Select profile
         </div>
     </div>
     <div class="page-body">
+        <div class="display-area">
+            <table>
+                <tr>
+                    <th>Project:</th>
+                    <td class="projectName">project name</td>
+                </tr>
+            </table>
+         </div>            
         <div class="list-area">
-            <select name="profileName" id="profileName" class="list" size="3">
-            </select>
+            <select id="profileName" class="list" size="3"></select>
         </div>
         <div class="buttons-left">
             <button type="button" class="btn w1" onClick="uiListUp('profileName')">&#8593;</button>
@@ -44,7 +59,13 @@
 
     <script>
         uiPageActivate['profilePage'] = function() {
+            ui.clearState('profileName');
+            $('.projectName').html(ui.projectName);            
+
              uiInitList('profileName', ui.profileList, (p1, p2) => p1.name < p2.name ? -1 : 1, 'exposureStartPage');
         };
+
+        uiActionStartPage['expose'] = 'profilePage';
+            
     </script>
 </div>

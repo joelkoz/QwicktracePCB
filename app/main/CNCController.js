@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
 const { rotate, translate, transform, applyToPoint } = require('transformation-matrix');
-const LaserPointer = require('./LaserPointer');
+const LaserPointer = require('./cnc/LaserPointer');
 const MainSubProcess = require('./MainSubProcess.js')
 const MainMQ = require('./MainMQ.js')
 
@@ -59,9 +59,9 @@ class CNCController  extends MainSubProcess {
         this.config = config;
 
         const Joystick = require('./Joystick');
-        const ZProbe = require('./ZProbe');
-        CNC = require('./CNC');
-        const LaserPointer = require('./LaserPointer');
+        const ZProbe = require('./cnc/ZProbe');
+        CNC = require('./cnc/CNC');
+        const LaserPointer = require('../LaserPointer');
         const Kefir = require('kefir');
         
         this.cnc = new CNC();

@@ -26,16 +26,6 @@
             display: block;
         }
 
-        #exposureStartPage .display-area th {
-            color: #4CAF50;
-            text-align: right;
-        }
-
-        #exposureStartPage .display-area td {
-            color: white;
-            white-space: nowrap;
-        }
-
     </style>
     <div class="page-header">
         <div class="header-area">
@@ -47,7 +37,7 @@
         <div class="display-area">
            <table>
                <tr>
-                   <th>File:</th>
+                   <th>Project:</th>
                    <td id="expFName">file name</td>
                </tr>
                <tr>
@@ -58,15 +48,15 @@
         </div>
         <div class="button-area">
             <button type="button" class="btn w3" onClick="ui.showPage('exposurePage')">Start exposure</button>            
-            <button type="button" class="btn w3" onClick="ui.peek()">Peek</button>
+            <button type="button" class="btn w3" onClick="uiExpose.peek()">Peek</button>
         </div>
     </div>
 
     <script>
         uiPageActivate['exposureStartPage'] = function() {
-            ui.prepareExposure();
-            $('#expFName').html(ui.state.file.value);
-            $('#expPName').html(ui.state.profile.name);
+            uiExpose.prepareExposure();
+            $('#expFName').html(ui.projectName);
+            $('#expPName').html(ui.state.profileName);
         };
     </script>
 </div>

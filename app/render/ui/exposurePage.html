@@ -87,15 +87,15 @@
             <div id="expProgressVal"></div>
         </div>
         <div class="button-area">
-            <button id="expBtnCancel" type="button" class="btn w3" onClick="ui.cancelExposure()">Cancel</button>
-            <button id="expBtnDone" type="button" class="btn w3" onClick="ui.showPage('filePage')">Done</button>
+            <button id="expBtnCancel" type="button" class="btn w3" onClick="uiExpose.cancelExposure()">Cancel</button>
+            <button id="expBtnDone" type="button" class="btn w3" onClick="ui.showPage('actionPage')">Done</button>
         </div>
     </div>
 
     <script>
         uiPageActivate['exposurePage'] = function() {
-            ui.startExposure();
-            $('#expFName2').html(ui.state.file.value);
+            uiExpose.startExposure();
+            $('#expFName2').html(ui.state.projectId);
 
             $('#expBtnCancel').show();
             $('#expBtnDone').hide();

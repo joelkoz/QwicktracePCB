@@ -1,0 +1,26 @@
+<div id="millLoadingPage" class="page">
+    <style type="text/css"> 
+
+        #millLoadingPage .page-body {
+            text-align: center;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           Mill PCB
+        </div>
+    </div>
+    <div class="page-body">
+        Loading PCB file...
+    </div>
+
+    <script>
+        uiPageActivate['millLoadingPage'] = function() {
+             console.log('Activate millLoadingPage');
+             uiMill.prepareMill();
+        };
+
+        uiActionStartPage['mill'] = 'millLoadingPage';
+    </script>
+</div>

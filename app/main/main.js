@@ -2,6 +2,7 @@ const { app, BrowserWindow, screen, ipcMain } = require('electron')
 const fs = require('fs');
 
 const GPIO = require('./GPIO.js');
+const ProjectLoader = require('./ProjectLoader.js');
 const FileLoader = require('./FileLoader.js');
 const ProfileLoader = require('./ProfileLoader.js');
 const UILoader = require('./UILoader.js');
@@ -11,6 +12,7 @@ const CNCController = require('./CNCController.js');
 let win = null;
 let fileLoader = null;
 let profileLoader = null;
+let projectLoader = null;
 let uiLoader = null;
 let ledController = null;
 let cncController = null;
@@ -95,6 +97,7 @@ ipcMain.handle('btn-press', event => {
 
 
 ipcMain.handle('render-start-done', () => {
+  projectLoader = new ProjectLoader(win);
   fileLoader = new FileLoader(win);
   profileLoader = new ProfileLoader(win);
   uiLoader = new UILoader(win);
@@ -105,4 +108,3 @@ ipcMain.handle('render-start-done', () => {
   }
 
 });    
-

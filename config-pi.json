@@ -23,7 +23,7 @@
      },
  
      "ui": {
-        "startPageId": "filePage",
+        "startPageId": "startPage",
         "bodyClass": "ui320",
         "width": 320,
         "height": 280

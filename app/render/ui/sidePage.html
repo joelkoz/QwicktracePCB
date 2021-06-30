@@ -1,0 +1,81 @@
+<div id="sidePage" class="page">
+    <style type="text/css"> 
+
+        #sidePage .page-body {
+            display: grid;
+            grid-template-areas:
+               'displayArea'
+               'buttonArea';
+            grid-template-rows: 1fr 5fr;
+        }
+
+        #sidePage .button-area {
+            grid-area: buttonArea;
+        }
+
+        #sidePage .display-area {
+            grid-area: displayArea;
+        }
+
+
+        #sidePage .button-area button {
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 20px;
+            height: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        #sidePage .button-area .btn {
+            width: 40%;
+        }        
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           <button type="button" class="btn w1 back" onClick="ui.showPage('actionPage')">&#8592;</button>
+           Which side?
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="display-area">
+            <table>
+                <tr>
+                    <th>Project:</th>
+                    <td class="projectName">project name</td>
+                </tr>
+            </table>
+         </div>        
+        <div class="button-area">
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['sidePage'] = function() {
+            console.log('Activate side page');
+
+            // Cancel any active processes in case we have backed out
+            // of some process "in proegress"...
+            ui.cancelProcesses();
+
+            ui.clearState('side');
+            $('.projectName').html(ui.projectName);
+
+            const divSelector = '#sidePage .button-area';
+            $(divSelector).empty();
+
+            let sides = ui.getAvailableSides();
+            if (sides.length > 1) {
+               sides.forEach(side => {
+                   uiAddButton(divSelector, side, () => { ui.setSide(side); });
+               });
+            }
+            else {
+               // There is only one side available. Auto-select it
+               setTimeout(() => { ui.setSide(sides[0]); }, 500);
+            }
+
+        };
+
+    </script>
+</div>

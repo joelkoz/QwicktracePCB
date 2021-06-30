@@ -1,10 +1,14 @@
 const { ipcRenderer } = require('electron')
 
+/**
+ * Class for handling the display logic for the UI, maintaining
+ * state of the UI, and communicating with the main process.
+ */
 class UIController {
 
     constructor(appConfig) {
         this.profileList = {};
-        this.fileList = {};
+        this.projectList = {};
         this.state = {};
 
         // Make this object available to the html scripts via
@@ -16,7 +20,7 @@ class UIController {
         window.appConfig = appConfig;
 
         this.profileUpdate = null;
-        this.fileUpdate = null;
+        this.projectUpdate = null;
 
         let thiz = this;
 
@@ -44,25 +48,26 @@ class UIController {
         });
          
 
-        ipcRenderer.on('ui-file-update', (event, fileObj) => {
+        ipcRenderer.on('ui-project-update', (event, projObj) => {
 
-            console.log(`event file-update: ${fileObj.value}`);
-            fileObj.name = thiz.circuitDisplayName(fileObj.value);
-            thiz.fileList[fileObj.value] = fileObj;
+            console.log(`event project-update: ${projObj.projectId}`);
+            projObj.name = projObj.projectId;
+            projObj.value = projObj.projectId;
+            thiz.projectList[projObj.projectId] = projObj;
 
-            if (thiz.state?.page === 'filePage') {
+            if (thiz.state?.page === 'startPage') {
                 // The file page is the current page.
                 // It needs a refresh (but delay this refresh)
                 // in case more data is coming...
-                if (thiz.fileUpdate !== null) {
-                    console.log('extending file refresh delay');
-                    clearTimeout(thiz.fileUpdate);
+                if (thiz.projectUpdate !== null) {
+                    console.log('extending project refresh delay');
+                    clearTimeout(thiz.projectUpdate);
                 }
 
-                thiz.fileUpdate = setTimeout(() => {
-                    console.log('File refresh');
-                    thiz.showPage('filePage');
-                    thiz.fileUpdate = null;
+                thiz.projectUpdate = setTimeout(() => {
+                    console.log('Project list refresh');
+                    thiz.showPage('startPage');
+                    thiz.projectUpdate = null;
                 }, 500);
             }
         });
@@ -95,6 +100,12 @@ class UIController {
             // TODO handle joystick press in UI
         });
 
+    }
+
+    cancelProcesses() {
+        if (this.state.action = 'drill') {
+            window.uiDrill.cancelProcesses();
+        }
     }
 
     start() {
@@ -144,41 +155,27 @@ class UIController {
         }
     }
 
-
-    prepareExposure() {
-        this.state.file = this.fileList[this.state.fileName];
-
-        // Merge the selected profile with the default profile...
-        this.state.profile = Object.assign({}, this.profileList['default.json']);
-        Object.assign(this.state.profile, this.profileList[this.state.profileName]);
-
-        ipcRenderer.invoke('fileloader-load', { "file": this.state.file, "profile": this.state.profile });        
+    clearState(propertyName) {
+        this.state[propertyName] = undefined;
     }
 
 
-    startExposure() {
-       let exposure = this.state.profile.exposure;
-       ipcRenderer.invoke('led-expose', exposure);
+    get projectName() {
+        let projectId = this.state.projectId;
+        let project = this.projectList[projectId];
+        let name = '';
+        if (project) {
+            name = project.projectId + '';
+            if (this.state.action) {
+                name += ` (${this.state.action}`;
+                if (this.state.side) {
+                    name += ` ${this.state.side}`;
+                }
+                name += ')';
+            }
+        }
+        return name;
     }
-
-
-    cancelExposure() {
-        ipcRenderer.invoke('led-cancel');
-        this.showPage('exposureStartPage');
-    }
-
-
-    prepareDrill() {
-        this.state.fileName = this.state.drillName;
-        this.state.file = this.fileList[this.state.drillName];
-        ipcRenderer.invoke('fileloader-load', { "file": this.state.file, "profile": this.state.drillSide })
-    }
-
-
-    peek() {
-       ipcRenderer.invoke('led-peek');
-    }
-
 
     publish(event, data) {
         ipcRenderer.invoke(event, data);
@@ -188,29 +185,69 @@ class UIController {
         ipcRenderer.on(event, callback);
     }    
 
-    circuitDisplayName(fileName) {
-        let ndx = fileName.indexOf('.');
-        if (ndx >= 0) {
-           let base = fileName.slice(0, ndx);
-           let ext = fileName.slice(ndx+1);
-           if (ext.toLowerCase() === 'gbr') {
-                // Check for KiCad file naming...
-                let dash = base.lastIndexOf('-');
-                if (dash >= 0) {
-                    if (base.slice(dash, dash+5) == '-B_Cu') {
-                        return 'Back:' + base.slice(0, dash);
-                    }
-                    else if (base.slice(dash, dash+5) == '-F_Cu') {
-                        return 'Frnt:' + base.slice(0, dash);
-                    }
-                }
-           }
-           return base;
-        }
-        else {
-            return fileName;
+ 
+    isOptionExpose() {
+        let appConfig = window.appConfig;
+        let projectId = this.state.projectId;
+        let project = this.projectList[projectId];
+        return (appConfig.app.hasPCB && project.sides.length > 0);
+    }
+
+    isOptionMill() {
+        let appConfig = window.appConfig;
+        let projectId = this.state.projectId;
+        let project = this.projectList[projectId];
+        return (appConfig.app.hasCNC && project.sides.length > 0);
+    }
+
+    isOptionDrill() {
+        let appConfig = window.appConfig;
+        let projectId = this.state.projectId;
+        let project = this.projectList[projectId];
+        return (appConfig.app.hasCNC && project.hasDrill);
+    }
+   
+    setAction(action, nextPageId) {
+        this.state.action = action;
+        if (nextPageId) {
+            this.showPage(nextPageId);
         }
     }
+
+    getAvailableSides() {
+        let sides;
+        if (this.state.action === 'drill') {
+            sides = [ 'top', 'bottom' ];
+        }
+        else {
+            let projectId = this.state.projectId;
+            let project = this.projectList[projectId];
+            sides = project.sides;
+        }
+        return sides;
+    }
+
+    setSide(side) {
+        this.state.side = side;
+        this.dispatchToProcessStart();
+    }
+
+
+    dispatchToProcessStart() {
+
+        let dispatchPage = window.uiActionStartPage[this.state.action];
+        if (dispatchPage) {
+            this.showPage(dispatchPage);
+        }
+    }
+
+
+    cancelProcesses() {
+        if (this.state.action === 'drill') {
+            window.uiDrill.cancelProcesses();
+        }
+    }
+
 }
 
 export { UIController }

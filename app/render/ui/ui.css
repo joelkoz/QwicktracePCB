@@ -152,3 +152,14 @@ body {
  .list option:checked {
     background: #4CAF50 linear-gradient(0deg, #4CAF50 0%, #4CAF50 100%);
  }        
+
+
+.display-area th {
+    color: #4CAF50;
+    text-align: right;
+}
+
+.display-area td {
+    color: white;
+    white-space: nowrap;
+} 

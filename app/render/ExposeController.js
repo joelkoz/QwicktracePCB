@@ -25,7 +25,7 @@ window.innerHeight: 2560
 // const ppinHeight = 109;
 
 
-class UVMask {
+class ExposeController {
 
    constructor(config) {
         this.config = config.mask;
@@ -55,6 +55,39 @@ class UVMask {
         this.resetPaintCtx();
    }
 
+   prepareExposure() {
+      let ui = window.uiController;
+
+      let projectId = ui.state.projectId;
+
+      // Merge the selected profile with the default profile...
+      this.exposureProfile = Object.assign({}, ui.profileList['default.json']);
+      Object.assign(this.exposureProfile, ui.profileList[ui.state.profileName]);
+
+      let fileDef = { projectId, "side": ui.state.side };
+      let callbackEvt = "mask-load-svg";
+      let profile = this.exposureProfile;                        
+      ipcRenderer.invoke('fileloader-load', { fileDef, profile, callbackEvt });        
+  }
+
+
+  startExposure() {
+     let ui = window.uiController;
+     let exposure = this.exposureProfile.exposure;
+     ipcRenderer.invoke('led-expose', exposure);
+  }
+
+
+  cancelExposure() {
+     let ui = window.uiController;
+     ipcRenderer.invoke('led-cancel');
+     ui.showPage('exposureStartPage');
+  }
+
+
+  peek() {
+     ipcRenderer.invoke('led-peek');
+  }   
 
    invertImage() {
         this.paintCtx.profile.invertImg = !this.paintCtx.profile.invertImg;
@@ -216,4 +249,4 @@ class UVMask {
      
 }
 
-export { UVMask }
+export { ExposeController }

@@ -1,9 +1,10 @@
 "use strict"
 
 const { ipcRenderer } = require('electron')
-import { UVMask } from './UVMask.js'
+import { ExposeController } from './ExposeController.js'
 import { UIController } from './UIController.js'
 import { DrillController } from './DrillController.js';
+import { MillController } from './MillController.js';
 
 document.addEventListener('keydown', (event) => {
 
@@ -25,9 +26,10 @@ document.addEventListener('keydown', (event) => {
  
 ipcRenderer.on('render-start', (event, config) => {
    window.appConfig = config;
-   window.uvMask = new UVMask(config);
+   window.uiExpose = new ExposeController(config);
    window.uiController = new UIController(config);
-   window.drillController = new DrillController(config);
+   window.uiDrill = new DrillController(config);
+   window.uiMill = new MillController(config);
    ipcRenderer.invoke('render-start-done');
 });
 

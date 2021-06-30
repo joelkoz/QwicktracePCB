@@ -1,24 +1,24 @@
-<div id="filePage" class="page">
+<div id="projectPage" class="page">
     <style type="text/css"> 
 
-        #filePage .page-body {
+        #projectPage .page-body {
             display: grid;
             grid-template-areas:
                'listArea buttonsLeft';
             grid-template-columns: 3fr 1fr;
         }
 
-        #filePage .list-area {
+        #projectPage .list-area {
             grid-area: listArea;
             margin-right: 5px;
         }
 
-        #filePage .buttons-left {
+        #projectPage .buttons-left {
             grid-area: buttonsLeft;
             margin: auto auto auto auto;
         }
 
-        #filePage .buttons-left button {
+        #projectPage .buttons-left button {
             display: block;
             margin-bottom: 25px;
             font-weight: bold;
@@ -28,25 +28,26 @@
     <div class="page-header">
         <div class="header-area">
            <button type="button" class="btn w1 back" onClick="ui.showPage('startPage')">&#8592;</button>
-           Circuit file
+           Select project
         </div>
     </div>
     <div class="page-body">
         <div class="list-area">
-            <select name="fileName" id="fileName" class="list" size="3">
+            <select id="projectId" class="list" size="3">
                 <option>test</option>
             </select>
         </div>
         <div class="buttons-left">
-            <button type="button" class="btn w1" onClick="uiListUp('fileName')">&#8593;</button>
-            <button type="button" class="btn w1" onClick="uiListDown('fileName')">&#8595;</button>
+            <button type="button" class="btn w1" onClick="uiListUp('projectName')">&#8593;</button>
+            <button type="button" class="btn w1" onClick="uiListDown('projectName')">&#8595;</button>
         </div>
     </div>
 
     <script>
-        uiPageActivate['filePage'] = function() {
-             console.log('Activate filePage');
-             uiInitList('fileName', ui.fileList, (f1, f2) => f1.mtime < f2.mtime ? 1 : -1, 'profilePage', (fileObj) => { return !(fileObj.gerb.type === 'drill') });
+        uiPageActivate['projectPage'] = function() {
+             console.log('Activate projectPage');
+             ui.clearState('projectId');
+             uiInitList('projectId', ui.projectList, (f1, f2) => f1.mtime < f2.mtime ? 1 : -1, 'actionPage');
         };
     </script>
 </div>
