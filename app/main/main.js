@@ -6,7 +6,7 @@ const ProjectLoader = require('./ProjectLoader.js');
 const FileLoader = require('./FileLoader.js');
 const ProfileLoader = require('./ProfileLoader.js');
 const UILoader = require('./UILoader.js');
-const LEDController = require('./LEDController.js');
+const UVController = require('./UVController.js');
 const CNCController = require('./CNCController.js');
 
 let win = null;
@@ -14,7 +14,7 @@ let fileLoader = null;
 let profileLoader = null;
 let projectLoader = null;
 let uiLoader = null;
-let ledController = null;
+let uvController = null;
 let cncController = null;
 
 // Load in the base configuration...
@@ -101,9 +101,13 @@ ipcMain.handle('render-start-done', () => {
   fileLoader = new FileLoader(win);
   profileLoader = new ProfileLoader(win);
   uiLoader = new UILoader(win);
-  ledController = new LEDController(win, appConfig);
 
-  if (appConfig?.app?.hasCNC) {
+
+  if (appConfig.app.hasPCB) {
+     uvController = new UVController(win, appConfig);
+  }
+
+  if (appConfig.app.hasCNC) {
      cncController = new CNCController(win, appConfig)
   }
 

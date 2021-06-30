@@ -74,19 +74,19 @@ class ExposeController {
   startExposure() {
      let ui = window.uiController;
      let exposure = this.exposureProfile.exposure;
-     ipcRenderer.invoke('led-expose', exposure);
+     ipcRenderer.invoke('uv-expose', exposure);
   }
 
 
   cancelExposure() {
      let ui = window.uiController;
-     ipcRenderer.invoke('led-cancel');
+     ipcRenderer.invoke('uv-cancel');
      ui.showPage('exposureStartPage');
   }
 
 
   peek() {
-     ipcRenderer.invoke('led-peek');
+     ipcRenderer.invoke('uv-peek');
   }   
 
    invertImage() {
