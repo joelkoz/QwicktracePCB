@@ -1,0 +1,22 @@
+## Default options passed to pcb2gcode when generating
+metric=true
+metricoutput=true
+
+# For use with grbl
+software=custom
+nog64=true
+nog81=true
+
+# Engraving traces
+zwork=-0.28
+zsafe=1.7
+mill-feed=100
+mill-speed=9500
+offset=0.35
+
+# Drilling holes
+zdrill=-2.1
+zchange=1.0
+drill-feed=95
+drill-speed=9500
+onedrill=true
