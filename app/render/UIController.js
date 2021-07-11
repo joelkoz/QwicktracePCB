@@ -136,13 +136,6 @@ class UIController {
     }
 
 
-    cancelProcesses() {
-        if (this.state.action === 'drill') {
-            window.uiDrill.cancelProcesses();
-        }
-    }
-
-
     start() {
         this.state = {}
         let thiz = this;
@@ -248,11 +241,6 @@ class UIController {
         }
 
     }
-
-
-
-
-
 
 
     setActiveList(listId) {
