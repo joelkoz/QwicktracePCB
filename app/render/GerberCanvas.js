@@ -27,6 +27,7 @@ class GerberCanvas {
 
         this.canvasId = canvasId;
         this.instructionsDivId = instructionsDivId;
+        this.holeAlignmentCallback = `${this.canvasId}-hole-aligned`;
 
         let config = window.appConfig;
         this.uiWidth = config.ui.width;
@@ -38,14 +39,18 @@ class GerberCanvas {
 
         this.blinkPoint = null;
 
-        ipcRenderer.on('hole-aligned', (event, pcbCoord) => {
+        ipcRenderer.on(this.holeAlignmentCallback, (event, pcbCoord) => {
             thiz.setDeskew(pcbCoord);
-        });        
+        });
+
     }
 
 
-    // Initializes the hole alignment process
-    initAlignment() {
+    // Initializes the hole alignment process. fnAlignmentComplete
+    // will be called when the alignment process has finished.
+    initAlignment(fnAlignmentComplete) {
+        this.fnAlignmentComplete = fnAlignmentComplete;
+
         let bb = this.boundingBox;
 
         // For skew correction, we need two points...
@@ -73,7 +78,7 @@ class GerberCanvas {
            this.startBlink();
            let thiz = this;
            let sample = this.deskewData[this.deskewIndex].sample
-           ipcRenderer.invoke('cnc-get-align', { callbackName: 'hole-aligned', sampleCoord: sample } );
+           ipcRenderer.invoke('cnc-get-align', { callbackName: this.holeAlignmentCallback, sampleCoord: sample } );
         }
         else {
             $(instructionsSelector).text(`Done`);
@@ -110,8 +115,6 @@ class GerberCanvas {
         console.log(`Deskew results: ${JSON.stringify(dresult)}`);
         this.deskew = dresult;
 
-        ipcRenderer.invoke('cnc-set-deskew', dresult);
-
         this.setDeskewDataClient(A);
         this.setDeskewDataClient(B);
 
@@ -119,6 +122,8 @@ class GerberCanvas {
         this.paint();
         this.redrawAlignmentHole(A);
         this.redrawAlignmentHole(B);
+
+        this.fnAlignmentComplete(dresult);
     }
 
     // Computes the raw client pixel coordinates of
@@ -177,7 +182,6 @@ class GerberCanvas {
         // Calculations here assume the PCB will be oriented
         // for display and milling sideways (i.e. the pcb's
         // X axis plotted along display and mill's Y axis)...
-
 
         this.canvas = document.getElementById(this.canvasId);
 
@@ -307,6 +311,11 @@ class GerberCanvas {
     // of the final results, and to aid in locating the
     // alignment holes being requested.
     paint() {
+        if (!this.canvas) {
+            console.log('WARNING! GerberCanvas paint requested prior to drawingPreCalc(). Ignoring.');
+            return;
+        }
+
         const canvas = this.canvas;
         const ctx = this.canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false;
@@ -339,11 +348,12 @@ class GerberCanvas {
 
     // Sets the transformation matrix for the UI display.
     setTransform(ctx) {
-        // Origin at UL margin corner, x+ down, y+ right
+        // Origin at LL margin corner, x+ right, y+ up
         ctx.resetTransform();
-        ctx.translate(this.marginWidth, this.marginHeight);
         ctx.scale(1, -1);
-        ctx.rotate(270 * Math.PI / 180);
+        ctx.translate(0, -this.canvas.height);        
+        ctx.translate(this.marginWidth, this.marginHeight);
+        // ctx.rotate(270 * Math.PI / 180);
 
         if (this.deskew) {
             // Apply additional deskew transformation as this
