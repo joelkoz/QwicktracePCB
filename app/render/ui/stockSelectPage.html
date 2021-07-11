@@ -1,24 +1,24 @@
-<div id="projectPage" class="page">
+<div id="stockSelectPage" class="page">
     <style type="text/css"> 
 
-        #projectPage .page-body {
+        #stockSelectPage .page-body {
             display: grid;
             grid-template-areas:
                'listArea buttonsLeft';
             grid-template-columns: 3fr 1fr;
         }
 
-        #projectPage .list-area {
+        #stockSelectPage .list-area {
             grid-area: listArea;
             margin-right: 5px;
         }
 
-        #projectPage .buttons-left {
+        #stockSelectPage .buttons-left {
             grid-area: buttonsLeft;
             margin: auto auto auto auto;
         }
 
-        #projectPage .buttons-left button {
+        #stockSelectPage .buttons-left button {
             display: block;
             margin-bottom: 25px;
             font-weight: bold;
@@ -28,27 +28,27 @@
     <div class="page-header">
         <div class="header-area">
            <button type="button" class="btn w1 back">&#8592;</button>
-           Select project
+           Stock to use
         </div>
     </div>
     <div class="page-body">
         <div class="list-area">
-            <select id="projectId" class="list" size="3">
+            <select id="stockId" class="list" size="3">
                 <option>test</option>
             </select>
         </div>
         <div class="buttons-left">
-            <button type="button" class="btn w1" onClick="uiListUp('projectId')">&#8593;</button>
-            <button type="button" class="btn w1" onClick="uiListDown('projectId')">&#8595;</button>
+            <button type="button" class="btn w1" onClick="uiListUp('stockId')">&#8593;</button>
+            <button type="button" class="btn w1" onClick="uiListDown('stockId')">&#8595;</button>
         </div>
     </div>
 
     <script>
-        uiPageActivate['projectPage'] = function() {
-             console.log('Activate projectPage');
-             ui.clearState('projectId');
-             ui.clearPageStack();
-             uiInitList('projectId', ui.projectList, (f1, f2) => f1.mtime < f2.mtime ? 1 : -1, 'actionPage');
+        uiPageActivate['stockSelectPage'] = function() {
+             console.log('Activate stockSelectPage');
+             ui.clearState('stockId');
+             let stockList = ui.getStockList();
+             uiInitList('stockId', ui.getStockList(), null, 'initProcessPage');
         };
     </script>
 </div>

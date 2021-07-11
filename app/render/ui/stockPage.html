@@ -1,7 +1,7 @@
-<div id="actionPage" class="page">
+<div id="stockPage" class="page">
     <style type="text/css"> 
 
-        #actionPage .page-body {
+        #stockPage .page-body {
             display: grid;
             grid-template-areas:
                'displayArea'
@@ -9,15 +9,15 @@
             grid-template-rows: 1fr 5fr;
         }
 
-        #actionPage .button-area {
+        #stockPage .button-area {
             grid-area: buttonArea;
         }
 
-        #actionPage .display-area {
+        #stockPage .display-area {
             grid-area: displayArea;
         }
 
-        #actionPage .button-area button {
+        #stockPage .button-area button {
             margin-left: auto;
             margin-right: auto;
             margin-top: 20px;
@@ -26,7 +26,7 @@
             display: block;
         }
 
-        #actionPage .button-area .btn {
+        #stockPage .button-area .btn {
             width: 40%;
         }
 
@@ -34,7 +34,7 @@
     <div class="page-header">
         <div class="header-area">
            <button type="button" class="btn w1 back">&#8592;</button>
-           Select process
+           Stock to use
         </div>
     </div>
     <div class="page-body">
@@ -51,38 +51,35 @@
     </div>
 
     <script>
-        uiPageActivate['actionPage'] = function() {
-            console.log('Activate action page');
+        uiPageActivate['stockPage'] = function() {
+            console.log('Activate stock page');
 
-            ui.clearState('action');
+            // Cancel any active processes in case we have backed out
+            // of some process "in progress"...
+            ui.cancelProcesses();
+
+            ui.clearState('stockId');
             $('.projectName').html(ui.projectName);
 
-            const divSelector = '#actionPage .button-area';
-            const nextPageId = 'sidePage';
+            const divSelector = '#stockPage .button-area';
             $(divSelector).empty();
 
-            let lastAction;
             let optionCount = 0;
-            if (ui.isOptionExpose()) {
+            if (ui.isOptionStockContinue()) {
                 optionCount++;
-                lastAction = 'expose';
-                uiAddButton(divSelector, 'Expose', () => { ui.setAction('expose', nextPageId); });
+                uiAddButton(divSelector, 'Continue with current side', () => { ui.stockContinue(); });
             }
 
-            if (ui.isOptionMill()) {
+            if (ui.isOptionStockFlip()) {
                 optionCount++;
-                lastAction = 'mill';
-                uiAddButton(divSelector, 'Mill', () => { ui.setAction('mill', nextPageId); });
+                uiAddButton(divSelector, 'Use other side of current stock', () => { ui.stockFlip(); });
             }
 
-            if (ui.isOptionDrill()) {
-                optionCount++;
-                lastAction = 'drill';
-                uiAddButton(divSelector, 'Drill', () => { ui.setAction('drill', nextPageId); });
-            }
+            optionCount++;
+            uiAddButton(divSelector, 'Load new stock', () => { ui.showPage('stockSelectPage'); });
 
             if (optionCount === 1) {
-                setTimeout(() => { ui.setAction(lastAction, nextPageId, false); }, 10);
+                setTimeout(() => { ui.showPage('stockSelectPage', false); }, 10);
             }
 
         };

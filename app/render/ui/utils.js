@@ -1,6 +1,5 @@
 
 var uiPageActivate = {};
-var uiActionStartPage = {};
 
 function uiListDown(listId) {
     let selector = '#' + listId;
@@ -43,8 +42,16 @@ function uiListUp(listId) {
 function uiInitList(listId, valueList, fnSort, nextPageId, fnFilter) {
     let select = $('#' + listId);
     select.empty();
-    let list = Object.values(valueList);
-    list.sort(fnSort);
+    let list;
+    if (Array.isArray(valueList)) {
+        list = valueList;
+    }
+    else {
+       list = Object.values(valueList);
+    }
+    if (fnSort) {
+       list.sort(fnSort);
+    }
     list.forEach(entry => {
         if (entry.name.toLowerCase() !== 'default' &&
             ((typeof fnFilter == 'undefined') || fnFilter(entry))  ) {

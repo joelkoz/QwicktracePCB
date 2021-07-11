@@ -1,0 +1,8 @@
+{
+    "material": {
+        "name": "2 sides photo positive",
+        "actions": ["expose", "drill"],
+        "sides": 2,
+        "thickness": 1.5
+    }
+}

@@ -65,14 +65,15 @@
             $(divSelector).empty();
 
             let sides = ui.getAvailableSides();
+            const nextPageId = 'stockPage';
             if (sides.length > 1) {
                sides.forEach(side => {
-                   uiAddButton(divSelector, side, () => { ui.setSide(side); });
+                   uiAddButton(divSelector, side, () => { ui.setSide(side, nextPageId); });
                });
             }
             else {
                // There is only one side available. Auto-select it
-               setTimeout(() => { ui.setSide(sides[0]); }, 500);
+               setTimeout(() => { ui.setSide(sides[0], nextPageId, false); }, 10);
             }
 
         };

@@ -26,8 +26,10 @@ document.addEventListener('keydown', (event) => {
  
 ipcRenderer.on('render-start', (event, config) => {
    window.appConfig = config;
-   window.uiExpose = new ExposeController(config);
+   window.uiDispatch = {};
+   window.uiCancelProcess = {};
    window.uiController = new UIController(config);
+   window.uiExpose = new ExposeController(config);
    window.uiDrill = new DrillController(config);
    window.uiMill = new MillController(config);
    ipcRenderer.invoke('render-start-done');

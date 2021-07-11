@@ -31,7 +31,7 @@ class ProfileLoader extends MainSubProcess {
                      fs.readFile(profileDir + file, 'utf8', (err, json) => {
                           try {
                             let profile = JSON.parse(json);
-                            profile.fileName = path.basename(file);
+                            profile.id = path.parse(file).name;
                             thiz.ipcSend('ui-profile-update', profile);
                             if (path.basename(file) == 'default.json') {
                                 thiz.ipcSend('mask-profile-default', profile);

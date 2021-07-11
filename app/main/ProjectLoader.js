@@ -1,18 +1,22 @@
 const { ipcMain } = require('electron')
 
-const fs = require('fs');
+const fse = require('fs-extra');
 const whatsThatGerber = require('whats-that-gerber')
 const gerbValid = require('whats-that-gerber').validate;
 const path = require('path');
 
+
 const dropDir = "./pcb-files/";
+const workDir = "./temp/";
 
 
 const MainSubProcess = require('./MainSubProcess.js');
 const PCBProject = require('./pcb/PCBProject.js');
+const GerberUtils = require('./pcb/GerberUtils.js');
 
 let _projectCache = {};
 let _filesToProject = {};
+let _currentProject = {};
 
 class ProjectLoader  extends MainSubProcess {
 
@@ -61,6 +65,91 @@ class ProjectLoader  extends MainSubProcess {
     }
 
 
+    /**
+     * Initializes the project work directory by creating transformed files ready
+     * for use by the system. Two files are created: side.gbr and side.drl. If
+     * the side is bottom, it is mirrored.
+     * @param {object} profile 
+     */
+    static async prepareForWork(profile) {
+        let state = profile.state;
+        let projectId = state.projectId;
+        let project = _projectCache[projectId];
+
+        try {
+            let originalSize = await project.getSize();
+
+            // Make sure board is wider than it is taller...
+            let rotateBoard = (originalSize.y > originalSize.x);
+            const clockwise = true;
+
+            if (_currentProject.projectId != projectId) {
+                // Start work on a new project...
+                await fse.emptyDir(workDir);
+
+                _currentProject = { projectId };
+                if (rotateBoard) {
+                    _currentProject.originalSize = { "x": originalSize.y, "y": originalSize.x };
+                }
+                else {
+                    _currentProject.originalSize = { "x": originalSize.x, "y": originalSize.y };
+                }
+            }
+
+            // Place a copy of gbr and drill files in the work directory.
+            let side = state.side;
+            let mirror = (side === 'bottom');
+            let gbrTarget = workDir + side + ".gbr";
+            let results = {};
+
+            if (!fse.existsSync(gbrTarget)) {
+               let fileName = project.getSideFile(side);
+               if (fileName) {
+                    let gbrSource = project.dirName + "/" + fileName;
+                    if (rotateBoard) {
+                        // Copy and rotate the files
+                        await GerberUtils.rotateGbr90(gbrSource, gbrTarget, originalSize.x, originalSize.y, clockwise, mirror);
+                    }
+                    else {
+                        // Copy the files as is...
+                        await GerberUtils.transGbr(gbrSource, gbrTarget, 0, 0, 0, mirror);
+                    }
+                    results.gbr = gbrTarget;
+                }
+            }
+            else {
+                results.gbr = gbrTarget;
+            }
+
+
+            let drlTarget = workDir + side + ".drl";
+            if (!fse.existsSync(drlTarget)) {
+               if (project.drillFile) {
+                    let drlSource = project.dirName + "/" + project.drillFile;
+                    if (rotateBoard) {
+                        // Copy and rotate the files
+                        await GerberUtils.rotateGbr90(drlSource, drlTarget, originalSize.x, originalSize.y, clockwise, mirror);
+                    }
+                    else {
+                        // Copy the files as is...
+                        await GerberUtils.transGbr(drlSource, drlTarget, 0, 0, 0, mirror);
+                    }
+                    results.drl = drlTarget;
+                }
+            }
+            else {
+                results.drl = drlTarget;
+            }
+
+            return results;
+
+        }
+        catch (err) {
+            console.error(err);
+        }
+    }
+
+
     checkProjectFile(fileName) {
         let project = new PCBProject(fileName);
         let projId = project.projectId;
@@ -99,6 +188,11 @@ class ProjectLoader  extends MainSubProcess {
         if (modified || drillWasUpdated) {
             let uiObj = project.getUiObj();
             thiz.ipcSend('ui-project-update', uiObj);
+
+            if (project.projectId === _currentProject.projectId) {
+                // Time to re-create the project work files...
+                _currentProject = {};
+            }
         }
     }
 
@@ -143,13 +237,13 @@ class ProjectLoader  extends MainSubProcess {
 
     refreshFileList() {
       let thiz = this;
-      fs.readdir(dropDir, (err, files) => {
+      fse.readdir(dropDir, (err, files) => {
           let msLastSync = this.lastFileSyncMs;
           let jobList = [];
           let gbrList = [];
           files.forEach(file => {
             let fileName = dropDir + file;
-            let fstat = fs.statSync(fileName, false);
+            let fstat = fse.statSync(fileName, false);
             if (fstat.mtimeMs > msLastSync) {
                 let ext = path.extname(fileName);
                 if (ext === '.gbrjob') {
@@ -173,5 +267,7 @@ class ProjectLoader  extends MainSubProcess {
       });  
     }     
 }
+
+ProjectLoader.workDir = workDir;
 
 module.exports = ProjectLoader;
