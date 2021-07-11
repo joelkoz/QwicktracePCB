@@ -1,0 +1,32 @@
+<div id="setting1Page" class="page">
+    <style type="text/css"> 
+
+        #setting1Page .page-body {
+            text-align: center;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+            <button type="button" class="btn w1 back">&#8592;</button>
+           Setting 1
+        </div>
+    </div>
+    <div class="page-body">
+        TODO: Setting 1
+    </div>
+
+    <script>
+        uiPageActivate['setting1Page'] = function() {
+             console.log('Activate setting1');
+
+             ui.popupMessage({
+                 message: "This is a test message",
+                 buttonDefs: [
+                    { "label": 'Continue', "callbackEvt": "main-event-test", "callbackData": { "data": "test data" } }, 
+                    { "label": 'Cancel', "pageId": "startPage"}
+                 ]
+             });
+        };
+    </script>
+</div>

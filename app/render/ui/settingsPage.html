@@ -1,0 +1,58 @@
+<div id="settingsPage" class="page">
+    <style type="text/css"> 
+
+        #settingsPage .page-body {
+            display: grid;
+            grid-template-areas:
+               'listArea buttonsLeft';
+            grid-template-columns: 3fr 1fr;
+        }
+
+        #settingsPage .list-area {
+            grid-area: listArea;
+            margin-right: 5px;
+        }
+
+        #settingsPage .buttons-left {
+            grid-area: buttonsLeft;
+            margin: auto auto auto auto;
+        }
+
+        #settingsPage .buttons-left button {
+            display: block;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           <button type="button" class="btn w1 back">&#8592;</button>
+           Settings
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="list-area">
+            <select id="settingId" class="list" size="3">
+            </select>
+        </div>
+        <div class="buttons-left">
+            <button type="button" class="btn w1" onClick="uiListUp('settingId')">&#8593;</button>
+            <button type="button" class="btn w1" onClick="uiListDown('settingId')">&#8595;</button>
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['settingsPage'] = function() {
+             console.log('Activate settingsPage');
+             ui.clearPageStack();
+
+             const options = [
+                { "name": "Setting 1", "value": "setting1Page" },
+                { "name": "Setting 2", "value": "setting2Page" }
+             ];
+
+             uiInitList('settingId', options, null, (nextPageId) => { ui.showPage(nextPageId); } );
+        };
+    </script>
+</div>
