@@ -228,7 +228,7 @@ class UIController {
         this.popupMessage(popupData);
     }
 
-    
+
     onPopupButton(btnDef) {
         $(".popup").hide();
         $("#"+this.state.page).css({ pointerEvents: "auto"});    
@@ -372,11 +372,6 @@ class UIController {
     }
 
 
-    addStockOption(list, stock) {
-
-    }
-
-
     getStockList() {
         let list = [];
 
@@ -414,6 +409,7 @@ class UIController {
         let material = this.profileList[stock.materialId].material;
         let defaults = this.profileList.default;
 
+        // Build the complete profile used by all processing of this action...
         let profile = Object.assign({}, defaults, { material }, { stock }, { state });
         profile.state.initStock = initStock;
 
