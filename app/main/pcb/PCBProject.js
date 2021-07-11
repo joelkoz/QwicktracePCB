@@ -3,6 +3,7 @@ const path = require('path');
 
 const whatsThatGerber = require('whats-that-gerber')
 const gerbValid = require('whats-that-gerber').validate;
+const GerberData = require('./GerberData.js');
 
 class PCBProject {
 
@@ -54,6 +55,40 @@ class PCBProject {
         return undefined;
     }
 
+
+    // Method is guaranteed to succeed in that if the
+    // size is not specified, the Gerber files are 
+    // parsed so the size can be deduced.
+    async getSize() {
+        let size = this.size;
+
+        if (!size) {
+            console.log(`No size data for project ${this.projectId} - parsing gerber files.`);
+            let projectFiles = [];
+            let thiz = this;
+            this.fileList.forEach(fileName => {
+                projectFiles.push(thiz.dirName + "/" + fileName)
+            })
+            let gerberData = new GerberData(projectFiles);
+
+            await new Promise((resolve, reject) => {
+                gerberData.once('ready', resolve);
+            });
+
+            let bb = gerberData.boundingBox;
+            let width = bb.max.x - Math.min(0, bb.min.x);
+            let height = bb.max.y - Math.min(0, bb.min.y);
+
+            this.gbrjob.GeneralSpecs.Size = { X: width, Y: height };
+
+            size = { x: width, y: height }
+
+        }
+
+        return size;
+    }
+
+
     get gbrjob() {
         return this._gbrjob;
     }
@@ -94,7 +129,7 @@ class PCBProject {
             for (let i=0; i < this.gbrjob.FilesAttributes.length; i++) {
                 let attr = this.gbrjob.FilesAttributes[i];
                 let ff = attr.FileFunction.toLowerCase();
-                if (ff.indexOf(search) >= 0) {
+                if (ff.indexOf('copper') >= 0 && ff.indexOf(search) >= 0) {
                     return attr.Path;
                 }
             };
