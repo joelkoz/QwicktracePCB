@@ -1,30 +1,20 @@
 const util = require('util');
 const exec = util.promisify(require("child_process").exec);
 
-class GCodeGenerator {
+class GerberUtils {
 
-    constructor(jsonJob) {
-        this.jsonJob = jsonJob;
-        this.projectId = this.jsonJob.GeneralSpecs.ProjectId.Name;
-        this.width = this.jsonJob.GeneralSpecs.Size.X;
-        this.height = this.jsonJob.GeneralSpecs.Size.Y;
-        this.workDir = "./";
-    }
-
-    setWorkDir(workDir) {
-        this.workDir = workDir;
-    }
-
-    async gbrToMill(inputFileName, outputFileName) {
+    static async gbrToMill(inputFileName, outputFileName) {
 
         let cmd = `pcb2gcode --front ${inputFileName} --front-output ${outputFileName}`;
+        console.log(`gbrToMill() ran ${cmd}`);
         await exec(cmd);
     }
 
 
-    async drlToDrill(inputFileName, outputFileName) {
+    static async drlToDrill(inputFileName, outputFileName) {
 
         let cmd = `pcb2gcode --drill-side front --drill ${inputFileName} --drill-output ${outputFileName}`;
+        console.log(`drlToDrill() ran ${cmd}`);
         await exec(cmd);
     }
 
@@ -38,31 +28,37 @@ class GCodeGenerator {
      * @param {number} ty amount to translate Y axis
      * @param {boolean} mirror True if the results should be mirrored (i.e. for the back)
      */
-    async transGbr(inputFileName, outputFileName, degRotate=0, tx=0, ty=0, mirror=false) {
+    static async transGbr(inputFileName, outputFileName, degRotate=0, tx=0, ty=0, mirror=false) {
 
         let isDrill = (inputFileName.indexOf('.drl') > 0);
         let absRot = (degRotate >= 0) ? degRotate : 360 + degRotate;
 
+mirror = false;        
         let mirrorParam = mirror ? "-m Y" : ""
         let exportType = isDrill ? "drill" : "rs274x";
 
         let cmd = `gerbv -u mm -x ${exportType} ${mirrorParam} -T "${tx}x${ty}r${absRot}" -o "${outputFileName}" "${inputFileName}"`;
+        console.log(`transGbr() ran ${cmd}`);
         await exec(cmd);
     }
 
 
-    async rotateGbr90(inputFileName, outputFileName, clockwise=true, mirror=true) {
+    static async rotateGbr90(inputFileName, outputFileName, inputWidth, inputHeight, clockwise=true, mirror=false) {
 
-        let degRotage = clockwise ? -90 : 90;
+        let degRotate = clockwise ? -90 : 90;
         let tx = 0;
         let ty = 0;
         if (clockwise) {
-            ty = this.width;
+            ty = inputWidth;
         }
         else {
-            tx = this.height;
+            tx = inputHeight;
         }
         await this.transGbr(inputFileName, outputFileName, degRotate, tx, ty, mirror);
     }
 
+
 }
+
+
+module.exports = GerberUtils;
