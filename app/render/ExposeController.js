@@ -35,38 +35,41 @@ class ExposeController {
         let canvas = document.getElementById('uv-mask');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+
+        let thiz = this;
      
         window.addEventListener('resize', () => {
            canvas.width = window.innerWidth;
            canvas.height = window.innerHeight;
-           this.paint();
+           thiz.paint();
         });
      
         ipcRenderer.on('mask-load-svg', (event, renderObj) => {
-            this.renderSVG(renderObj);
+            thiz.renderSVG(renderObj);
         });
 
         ipcRenderer.on('mask-profile-default', (event, profileDefault) => {
            console.log('event mask-profile-default');
-           this.defaultProfile = profileDefault;
-           this.resetPaintCtx();
+           thiz.defaultProfile = profileDefault;
+           thiz.resetPaintCtx();
          });
      
         this.resetPaintCtx();
+
+        window.uiDispatch.expose = (profile) => {
+         thiz.prepareExposure(profile);
+        }
    }
 
-   prepareExposure() {
+
+   prepareExposure(profile) {
       let ui = window.uiController;
 
       let projectId = ui.state.projectId;
 
-      // Merge the selected profile with the default profile...
-      this.exposureProfile = Object.assign({}, ui.profileList['default.json']);
-      Object.assign(this.exposureProfile, ui.profileList[ui.state.profileName]);
+      this.exposureProfile = profile;
 
-      let fileDef = { projectId, "side": ui.state.side };
       let callbackEvt = "mask-load-svg";
-      let profile = this.exposureProfile;                        
       ipcRenderer.invoke('fileloader-load', { fileDef, profile, callbackEvt });        
   }
 
