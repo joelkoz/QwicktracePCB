@@ -102,7 +102,7 @@ class UIController {
         });
 
 
-        ipcRenderer.on('ui-process-done', (event, profile) => {
+        ipcRenderer.on('ui-process-done', (event) => {
             try {
                 console.log(`event ui-process-done`);
                 thiz.state.lastProjectId = this.state.projectId;
@@ -133,6 +133,9 @@ class UIController {
             thiz.popupMessage(data);
         });
 
+        ipcRenderer.on('ui-wizard-next', (event, data) => {
+            thiz.wizardNext();
+        });
     }
 
 
@@ -233,13 +236,96 @@ class UIController {
         if (btnDef.pageId) {
             this.showPage(btnDef.pageId, btnDef.pushOld);
         }
-        else if (btnDef.callbackEvt) {
-            this.publish(btnDef.callbackEvt, btnDef.callbackData);
+        else if (btnDef.invoke) {
+            this.publish(btnDef.invoke.evtName, btnDef.invoke.data);
         }
         else if (btnDef.fnAction) {
             btnDef.fnAction();
         }
 
+    }
+
+
+    startWizard(wizard) {
+        this.wizard = wizard;
+        this.setWizardState(wizard.steps[0].id);
+    }
+
+
+    setWizardState(wizardStepId) {
+        this.closeCurrentWizard();
+        this.wizardStepId = wizardStepId;
+        let thiz = this;
+        setTimeout(() => { thiz.showPage('wizardPage', false)}, 10);
+    }
+
+
+    getWizardData(wizardStepId) {
+
+        if (!wizardStepId) {
+            // If no parameter specified, use the current step Id...
+            wizardStepId = this.wizardStepId;
+        }
+
+        let wdata = this.wizard.steps.find((e) => { 
+            return (e.id === wizardStepId);
+        });
+
+        if (wdata) {
+            return Object.assign({}, wdata, { title: this.wizard.title });
+        }
+        else {
+            this.popupMessage({ message: `Can not find wizard step ${wizardStepId}` });
+            return {};
+        }
+    }
+
+
+    closeCurrentWizard() {
+        if (this.wizard && this.wizardStepId) {
+            let wiz = this.getWizardData(this.wizardStepId);
+            if (wiz.onDeactivate) {
+                wiz.onDeactivate(wiz);
+            }
+        }
+    }
+
+
+    wizardNext() {
+
+        let thiz = this;
+        let wNdx = this.wizard.steps.findIndex((e) => { 
+            return (e.id === thiz.wizardStepId) 
+        });
+
+        if (wNdx >= 0) {
+            wNdx++;
+            if (wNdx < this.wizard.steps.length) {
+                this.setWizardState(this.wizard.steps[wNdx].id);
+            }
+            else {
+                console.log('wizardNext() called at end of wizard list.');
+            }
+        }
+        else {
+            console.log('Could not locate current wizard page.');
+        }
+    }
+
+
+    onWizardButton(btnDef) {
+        if (btnDef.next) {
+            this.wizardNext();
+        }
+        else {
+           this.doButtonAction(btnDef);
+        }
+    }
+
+    cancelWizard() {
+        this.closeCurrentWizard();
+        delete this.wizard;
+        this.showPage('actionPage', false);
     }
 
 
@@ -353,7 +439,7 @@ class UIController {
     }
 
 
-    isOptionStockFlip() {
+    isOptionStockProcessed() {
         let state = this.state;
         return (state.projectId === state.lastProjectId &&
                 state.side != state.lastSide);
@@ -368,14 +454,13 @@ class UIController {
         profiles.forEach(profile => {
             if (profile.hasOwnProperty('stock')) {
                 let stock = profile.stock;
-                let material = this.profileList[stock.materialId].material;
-                if (material.actions.includes(this.state.action)) {
+                let material = thiz.profileList[stock.materialId].material;
+                if (material.actions.includes(thiz.state.action)) {
                    let name = `${stock.width}mm x ${stock.height}mm, ${material.name} `
                    list.push({"name": name, "value": profile.id});
                 }
             }
         });
-
         return list;
     }
 
@@ -385,12 +470,12 @@ class UIController {
     }
 
 
-    stockFlip() {
+    stockProcessed() {
         this.initProcessing(true);
     }
 
 
-    initProcessing(initStock = true) {
+    initProcessing(alignStock = true) {
 
         let state = this.state;
         let stock = this.profileList[state.stockId].stock;
@@ -399,7 +484,7 @@ class UIController {
 
         // Build the complete profile used by all processing of this action...
         let profile = Object.assign({}, defaults, { material }, { stock }, { state });
-        profile.state.initStock = initStock;
+        profile.state.alignStock = alignStock;
 
         // Remove superfluous values that came from from defaults...
         delete profile.id;
@@ -418,6 +503,14 @@ class UIController {
         }
     }
 
+    startJogMode() {
+        ipcRenderer.invoke('cnc-jog-mode');
+    }
+
+    endJogMode() {
+        ipcRenderer.invoke('cnc-cancel');
+        this.showPage('settingsPage', false);
+    }
 }
 
 export { UIController }

@@ -1,4 +1,5 @@
-const ADS1115 = require('ads1115')
+//const ADS1115 = require('ads1115')
+const ADS1115 = require('./ads1115-client.js')
 const fs = require('fs');
 const { setIntervalAsync } = require('set-interval-async/fixed')
 const { clearIntervalAsync } = require('set-interval-async')

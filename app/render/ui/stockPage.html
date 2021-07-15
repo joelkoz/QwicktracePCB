@@ -54,10 +54,6 @@
         uiPageActivate['stockPage'] = function() {
             console.log('Activate stock page');
 
-            // Cancel any active processes in case we have backed out
-            // of some process "in progress"...
-            ui.cancelProcesses();
-
             ui.clearState('stockId');
             $('.projectName').html(ui.projectName);
 
@@ -70,13 +66,13 @@
                 uiAddButton(divSelector, 'Continue with current side', () => { ui.stockContinue(); });
             }
 
-            if (ui.isOptionStockFlip()) {
+            if (ui.isOptionStockProcessed()) {
                 optionCount++;
-                uiAddButton(divSelector, 'Use other side of current stock', () => { ui.stockFlip(); });
+                uiAddButton(divSelector, 'Use previously processed stock', () => { ui.stockProcessed(); });
             }
 
             optionCount++;
-            uiAddButton(divSelector, 'Load new stock', () => { ui.showPage('stockSelectPage'); });
+            uiAddButton(divSelector, 'Load blank stock', () => { ui.showPage('stockSelectPage'); });
 
             if (optionCount === 1) {
                 setTimeout(() => { ui.showPage('stockSelectPage', false); }, 10);

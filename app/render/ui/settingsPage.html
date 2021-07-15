@@ -48,11 +48,11 @@
              ui.clearPageStack();
 
              const options = [
-                { "name": "Setting 1", "value": "setting1Page" },
+                { "name": "Jog Spindle", "value": "jogPage" },
                 { "name": "Setting 2", "value": "setting2Page" }
              ];
 
-             uiInitList('settingId', options, null, (nextPageId) => { ui.showPage(nextPageId); } );
+             uiInitList('settingId', options, null, (nextPageId) => { ui.showPage(nextPageId, false); } );
         };
     </script>
 </div>

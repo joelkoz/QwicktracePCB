@@ -40,13 +40,14 @@ function getAccessToken() {
 }
 
   
-const host = '127.0.0.1';
+//const host = '127.0.0.1';
+const host = '192.168.0.160';
 const port = 8000;
 const serialPort = '/dev/ttyUSB0';
 const baudRate = 115200;
 const controllerType = 'Grbl';
 
-const RESERVED_EVENTS = [ 'error', 'ready', 'closed', 'state', 'sent', 'data', 'pos', 'mode', 'alarm', 'msg' ];
+const RESERVED_EVENTS = [ 'error', 'ready', 'closed', 'state', 'sent', 'data', 'pos', 'sender', 'feeder', 'alarm', 'msg', 'probe' ];
 
 
 const RESET_MSG = '[MSG:Reset to continue]';
@@ -63,9 +64,11 @@ const RESET_MSG = '[MSG:Reset to continue]';
  *   <li>sent - Reports data sent to the controller (i.e. written to the serial port)</li>
  *   <li>data - Reports raw data received from the controller (i.e. the serial port feed)</li>
  *   <li>pos - Reports an object with the mpos, wpos, and spindle speed at the current moment</li>
- *   <li>mode - Reports the workflow mode</li>
+ *   <li>sender - Reports the current state of the sender</li>
+ *   <li>feeder - Reports the current state of the feeder</li>
  *   <li>alarm - Reports any alarm received from the controller</li>
  *   <li>msg - Reports any messages received from the controller</li>
+ *   <li>probe - Reports any zprobe result messages received from the controller</li>
  * </ol>
  * 
  * In addition to the above primary events, any event defined by CNCjs for its socket communications API
@@ -138,11 +141,26 @@ class CNC extends EventEmitter {
         this.socket.on('serialport:error', function (options) {
             thiz.emit('error', new Error('Error opening serial port "' + options.port + '"'));
         });
-          
 
-        this.socket.on('workflow:state', (state) => {
-            thiz.wfMode = state;
-            this.emit('mode', thiz.mode);
+        
+        this.socket.on('serialport:close', function (options) {
+            thiz.emit('error', new Error('Unexpected closing of serial port "' + options.port + '"'));
+        });
+
+        this.socket.on('workflow:state', (data) => {
+            thiz.workflow = data;
+            thiz.checkSenderStatus(false);
+        });
+
+        this.socket.on('feeder:status', (data) => {
+            thiz.feeder = data;
+            this.emit('feeder', data);
+        });
+
+
+        this.socket.on('sender:status', (data) => {
+            thiz.sender = data;
+            thiz.checkSenderStatus(true);
         });
 
 
@@ -176,11 +194,65 @@ class CNC extends EventEmitter {
                 else if (data.startsWith('[MSG:')) {
                     this.emit('msg', data.substring(5, data.length - 1))
                 }
+                else if (data.startsWith('[PRB:')) {
+                    // [PRB:-183.458,-179.270,-25.948:1]
+                    let pStr = data.substring(5, data.length-1);
+                    let values = pStr.split(',');
+                    let zVals = values[2].split(':');
+                    let results = { x: parseFloat(values[0]), y: parseFloat(values[1]), z: parseFloat(zVals[0]), ok: zVals[1] === '1' }
+                    this.emit('probe', results);
+                }
             }
 
         });
  
     }
+    
+    checkSenderStatus(alwaysEmit) {
+        let workflow = this.workflow;
+        let sender = this.sender;
+        if (workflow && sender) {
+            let oldStatus = this.senderStatus;
+            if (workflow === 'running') {
+                this.senderStatus = CNC.SENDER_RUNNING;
+            }
+            else if (workflow === 'paused') {
+                this.senderStatus = CNC.SENDER_PAUSED;
+            }
+            else {
+                // Workflow state is "idle", so sender is in
+                // one of its idle states...
+                if (sender.size === 0) {
+                    this.senderStatus = CNC.SENDER_EMPTY;
+                }
+                else if (sender.finishTime) {
+                    this.senderStatus = CNC.SENDER_DONE;
+                }
+                else {
+                    this.senderStatus = CNC.SENDER_LOADED;
+                }
+            }
+            let statusChanged = (this.senderStatus != oldStatus);
+            if (alwaysEmit || statusChanged) {
+                this.emit('sender', this.getSenderState());
+            }
+        }
+    }
+
+
+    getSenderStatus() {
+        return this.senderStatus;
+    }
+
+    getSenderState() {
+        return { status: this.senderStatus, ...this.sender };
+    }
+
+
+    getFeederState() {
+        return this.feeder;
+    }
+
 
     home() {
         if (this.state === CNC.CTRL_STATE_IDLE) {
@@ -194,7 +266,7 @@ class CNC extends EventEmitter {
     }
 
     reset() {
-        this.emit('state', 'Resetting');
+        this.emit('state', CNC.CTRL_STATE_RESET);
         this.sendCommand('reset');
     }
 
@@ -212,18 +284,139 @@ class CNC extends EventEmitter {
     }
 
 
-    // Moves the CNC machine to the specified work position.
-    // If the z position is specified, it will be set after
-    // the move completes...
-    goto(wpos) {
-       cnc.sendGCode(`G0 X${wpos.x} Y${wpos.y}`);
+    // When one or more commands are send directly to the CNC machine (e.g. via sendGcode(), goto(), etc),
+    // they are queued by the "feeder", which forwards them to grbl via the serial port
+
+    // Starts the feed sending again following a hold()
+    feederStart() {
+        this.sendCommand('feeder:start');
+    }
+
+    // Stops the feeder by removing any unsent commands from the queue. To pause the feeder,
+    // call hold()
+    feederStop() {
+        this.sendCommand('feeder:stop');
+    }
+
+    // Forces a reset of the feeder by immediately executing a hold, then clearing the feeder queue.
+    feederReset() {
+       this.hold();
+       this.feederStop();
+       this.feederStart();
+    }
+
+
+    // Large hunks of gcode (for example, the contents of a complete file) are held by the
+    // "sender". The sender sends gcode to the grbl controller via the serial port. If
+    // it is active (i.e. workflow state is "running"), it blocks anything queued in the
+    // feeder.
+    senderLoad(gcodeName, strGcodeContents) {
+        this.sendCommand('gcode:load', gcodeName, strGcodeContents);
+    }
+
+    senderUnload() {
+        this.sendCommand('gcode:unload');
+    }
+
+
+    senderStop() {
+        this.sendCommand('gcode:stop');
+    }
+
+
+    senderStart() {
+        this.sendCommand('gcode:start');
+    }
+
+    senderPause() {
+        this.sendCommand('gcode:pause');
+    }
+
+
+    senderResume() {
+        this.sendCommand('gcode:resume');
+    }
+
+
+    zeroWorkXY(wcsNum = 1) {
+        this.setWorkCoord({x: 0, y: 0}, wcsNum);
+    }
+    
+    
+    /**
+     * Sets the current position of the specified work coordinate
+     * system to the specified position
+     * @param {object} pos An object with one or more of x, y, z properties
+     * @param {number} wcsNum Work coordinate system number 1 thru 6. Using
+     *   zero (machine coordinates) is not supported by GRBL and thus is
+     *   invalid
+     */
+    setWorkCoord(pos, wcsNum = 1) {
+        let gcode = `G10 L20 P${wcsNum} `;
+
+        if (pos.hasOwnProperty('x')) {
+            gcode += `X${pos.x} `;
+        }
+
+        if (pos.hasOwnProperty('y')) {
+           gcode += `Y${pos.y} `;
+        }
+
+       if (pos.hasOwnProperty('z')) {
+           gcode += `Z${pos.z}`;
+       }
+
+       this.sendGCode(gcode);
+    }
+
+
+    /** 
+     * Moves the CNC machine to the specified position
+     * of the specified work coordinate system number.
+     * If the z position is specified alone, no x,y
+     * movement will occur. If the z position is specified
+     * along with an (x,y) coordinate, it will be positioned
+     * AFTER the x,y movement completes.
+     * @param {object} wpos An object with properties x, y, z.
+     * @param {number} wcsNum The work coordinate system to use for positioning.
+     *   Valid numbers are 0 thru 6.  Zero is used for "machine coordinates"
+     */
+    goto(wpos, wcsNum = 1) {
+
+       let wcsSelect = `G${53 + wcsNum}`;
+       let sendXY = false;
+       let xyCode = `${wcsSelect} G0 `;
+
+       if (wpos.hasOwnProperty('x')) {
+           xyCode += `X${wpos.x} `
+           sendXY = true;
+       }
+
+       if (wpos.hasOwnProperty('y')) {
+           xyCode += `Y${wpos.y}`;
+           sendXY = true;
+       }
+
+       if (sendXY) {
+          this.sendGCode(xyCode);
+       }
 
        if (wpos.hasOwnProperty('z')) {
-            cnc.sendGCode(`G0 Z${wpos.z}`);
+            this.sendGCode(`${wcsSelect} G0 Z${wpos.z}`);
        }
     }
 
-    
+
+    /** 
+     * Moves the CNC machine to the specified machine position.
+     * If the z position is specified, it will be set after
+     * the move completes...
+     */
+     gotoM(mpos) {
+         this.goto(mpos, 0)
+     }
+     
+
     get mpos() {
         if (this.ctrlState) {
             return this.ctrlState.status.mpos;
@@ -298,6 +491,22 @@ class CNC extends EventEmitter {
         }
     }
 
+
+    once(eventName, listener) {
+
+        // Directly handle events generated by this class...
+        if (RESERVED_EVENTS.includes(eventName)) {
+            return super.once(eventName, listener);
+        }
+
+        if (this.socket) {
+           // Everything else is assumed low level and handled directly by the socket...
+           return this.socket.once(eventName, listener);
+        }
+        else {
+            throw new Error('Subscribing directly to CNCjs events must occur after connect() has been called.');
+        }
+    }
 
 
     removeListener(eventName, listener) {
@@ -436,12 +645,6 @@ class CNC extends EventEmitter {
 }
 
 
-// Possible Workflow States:
-CNC.WORKFLOW_MODE_IDLE = 'idle';
-CNC.WORKFLOW_MODE_PAUSED = 'paused';
-CNC.WORKFLOW_MODE_RUNNING = 'running';
-
-
 // Possible Grbl states when active:
 CNC.CTRL_STATE_IDLE = 'Idle';
 CNC.CTRL_STATE_RUN = 'Run';
@@ -452,5 +655,14 @@ CNC.CTRL_STATE_SLEEP = 'Sleep';
 CNC.CTRL_STATE_ALARM = 'Alarm';
 CNC.CTRL_STATE_CHECK = 'Check';
 CNC.CTRL_STATE_JOG = 'Jog';
+CNC.CTRL_STATE_RESET = 'Resetting';
+
+
+// Possible values for the sender:
+CNC.SENDER_EMPTY = 'empty';
+CNC.SENDER_LOADED = 'loaded';
+CNC.SENDER_RUNNING = 'running';
+CNC.SENDER_PAUSED = 'paused';
+CNC.SENDER_DONE = 'done';
 
 module.exports = CNC;

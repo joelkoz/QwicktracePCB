@@ -1,0 +1,112 @@
+<div id="wizardPage" class="page">
+    <style type="text/css"> 
+
+        #wizardPage .page-body {
+        }
+
+
+        #wizardPage .display-area {
+            text-align: center;
+            margin: 10px;
+            font-size: x-large;
+        }
+
+        #wizardPage .button-area {
+            color: red;
+            display: flex;
+        }
+
+        #wizardPage .page-body .button-area {
+            color: blue;
+        }
+
+        #wizardPage .page-body .display-area {
+        }
+
+        #wizardPage .button-area button {
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 20px;
+            height: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        #wizardPage .subtitle-area {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        #wizardPage .instructions-area {
+            margin: 10px;
+        }
+
+
+        #wizardPage .button-area .btn {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="title-area">
+           <button type="button" class="btn w1 wizardBack">&#8592;</button>
+           Wizard Title
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="subtitle-area">
+            wizard subtitle
+        </div>        
+        <div class="instructions-area">
+            Wizard instructions go here
+        </div>        
+        <div class="button-area">
+        </div>
+    </div>
+
+    <script>
+
+        function setWizardText(msgSelector, text) {
+            if (text) {
+                $(msgSelector).text(text);
+            }
+            else {
+                $(msgSelector).text('');
+            }
+        }
+
+        function wizardPageActivate(wizardData) {
+
+            let buttonDefs = wizardData.buttonDefs;
+            if (!buttonDefs) {
+                buttonDefs =  [ ];                
+            }
+
+            setWizardText('#wizardPage .title-area', wizardData.title)
+            setWizardText('#wizardPage .subtitle-area', wizardData.subtitle)
+            setWizardText('#wizardPage .instructions-area', wizardData.instructions)
+
+            let btnSelector = "#wizardPage .button-area";
+            $(btnSelector).empty();
+            buttonDefs.forEach(btnDef => {
+                let btnClass = 'btn';
+                if (wizardData.btnClass) {
+                    btnClass += (' ' + wizardData.btnClass);
+                }
+                uiAddButton(btnSelector, btnDef.label, () => { ui.onWizardButton(btnDef); }, btnClass);
+            });
+
+            if (wizardData.onActivate) {
+                wizardData.onActivate(wizardData);
+            }
+        };
+
+
+        uiPageActivate['wizardPage'] = function() {
+            let wizardData = ui.getWizardData(ui.wizardStepId);
+            wizardPageActivate(wizardData);
+        }   
+
+    </script>
+</div>

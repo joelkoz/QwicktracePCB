@@ -54,10 +54,6 @@
         uiPageActivate['sidePage'] = function() {
             console.log('Activate side page');
 
-            // Cancel any active processes in case we have backed out
-            // of some process "in proegress"...
-            ui.cancelProcesses();
-
             ui.clearState('side');
             $('.projectName').html(ui.projectName);
 

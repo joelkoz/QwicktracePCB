@@ -48,8 +48,11 @@
      },
 
      "pcbFrame": {
-        "margin": 2
+        "margin": 2,
+        "width": 9,
+        "height": 11
      }
+
   },
 
    "pigpio": {

@@ -42,4 +42,9 @@ ipcRenderer.on('render-cnc-state', (event, state) => {
 });
 
 
+ipcRenderer.on('render-zprobe-state', (event, state) => {
+   window.cncZProbe = state;
+});
+
+
 ipcRenderer.invoke('render-ready');

@@ -23,7 +23,12 @@
              ui.popupMessage({
                  message: "This is a test message",
                  buttonDefs: [
-                    { "label": 'Continue', "callbackEvt": "main-event-test", "callbackData": { "data": "test data" } }, 
+                    { "label": 'Continue', "invoke": { evtName: "main-event-test", 
+                                                       data: { callbackName: "ui-popup-message", 
+                                                               callbackData: { message: "Test message" } 
+                                                             } 
+                                                  } 
+                    }, 
                     { "label": 'Cancel', "pageId": "startPage"}
                  ]
              });

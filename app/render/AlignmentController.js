@@ -16,7 +16,7 @@ class AlignmentController {
         let thiz = this;
         ipcRenderer.on(`${this.actionPrefix}-svg-loaded`, (event, renderObj) => {
             thiz.gerberCanvas.reset();
-            thiz.gerberCanvas.setSVG(renderObj);
+            thiz.gerberCanvas.setSVG(renderObj, thiz.profile);
             ui.showPage(`${thiz.actionPrefix}AlignPage`, false);
 
             // Request the holes also...
@@ -24,7 +24,7 @@ class AlignmentController {
         });
 
         ipcRenderer.on(`${this.actionPrefix}-holes-loaded`, (event, drillObj) => {
-            thiz.gerberCanvas.setHoles(drillObj);
+            thiz.gerberCanvas.setHoles(drillObj, thiz.profile);
             if (thiz.profile.state.initStock) {
                 thiz.gerberCanvas.initAlignment(this.fnAlignmentComplete);
             }

@@ -37,20 +37,17 @@ class LaserPointer {
     }
 
     // Assuming the laser is on and currently pointing
-    // at the target, this returns where the spindle is
-    // currently posistioned.
+    // at laserPos, this returns where the spindle is
+    // actually positioned.
     toSpindlePos(laserPos) {
-        return { x: laserPos.x + LaserPointer.offsetX, y: laserPos.y + LaserPointer.offsetY }
+        return { x: laserPos.x - LaserPointer.offsetX, y: laserPos.y - LaserPointer.offsetY }
     }
 
     // Assuming the laser is on and the spindle is
     // located at spindlePos, this returns where the
-    // laser is currently posistioned. Another way
-    // to use this method: given the desired position
-    // spindlePos, this returns the position
-    // necessary to point the laser at the target.
+    // laser is currently posistioned.
     toLaserPos(spindlePos) {
-        return { x: laserPos.x - LaserPointer.offsetX, y: laserPos.y - LaserPointer.offsetY }
+        return { x: spindlePos.x + LaserPointer.offsetX, y: spindlePos.y + LaserPointer.offsetY }
     }
 
 }

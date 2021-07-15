@@ -4,9 +4,19 @@ const EventEmitter = require('events')
 
 class ZProbe extends EventEmitter {
 
-    constructor() {
+    constructor(config) {
         super();
-        
+
+        if (config?.cnc?.locations?.zpad) {
+            ZProbe.padX = config.cnc.locations.zpad.x;
+            ZProbe.padY = config.cnc.locations.zpad.y;
+        } 
+
+        if (config?.cnc?.zheight?.zpad) {
+            ZProbe.startZ = config.cnc.zheight.zpad.startZ;
+            ZProbe.padZ = config.cnc.zheight.zpad.lastZ;
+        }
+
         this.pigpio = new GPIO();
 
         ZProbe.msZPROBE_SAMPLE_INTERVAL

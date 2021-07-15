@@ -4,6 +4,7 @@ const fse = require('fs-extra');
 const whatsThatGerber = require('whats-that-gerber')
 const gerbValid = require('whats-that-gerber').validate;
 const path = require('path');
+const fsprReadFile = require('fs').promises.readFile;
 
 
 const dropDir = "./pcb-files/";
@@ -147,6 +148,37 @@ class ProjectLoader  extends MainSubProcess {
         catch (err) {
             console.error(err);
         }
+    }
+
+
+
+    static async getWorkFileContents(profile) {
+
+        await ProjectLoader.prepareForWork(profile);
+
+        let state = profile.state;
+
+        let gbrSource = workDir + state.side + (state.action != 'drill' ? ".gbr" : ".drl");
+        let gbrTarget;
+        if (state.deskew) {
+            gbrTarget = gbrSource + "-deskew";
+
+            // Convert deskew's radians to degrees...
+            let degRotation = state.deskew.rotation * 180 / Math.PI;
+            // Convert deskew's counterclockwise rotation to +/- expected by GerberUtils...
+            let gRotation = (degRotation <= 180) ? -degRotation : 360 - degRotation;
+            let tx = state.deskew.offset.x;
+            let ty = state.deskew.offset.y;
+            await GerberUtils.transGbr(gbrSource, gbrTarget, gRotation, tx, ty, false);
+        }
+        else {
+            gbrTarget = gbrSource;
+        }
+
+        // Read in the contents of the file...
+        let contents = await fsprReadFile(gbrTarget);
+
+        return { name: `${state.projectId}-${state.side}`, contents };
     }
 
 

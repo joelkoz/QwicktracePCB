@@ -78,7 +78,7 @@ class GerberCanvas {
            this.startBlink();
            let thiz = this;
            let sample = this.deskewData[this.deskewIndex].sample
-           ipcRenderer.invoke('cnc-get-align', { callbackName: this.holeAlignmentCallback, sampleCoord: sample } );
+           ipcRenderer.invoke('cnc-get-align', { callbackName: this.holeAlignmentCallback, sampleCoord: sample, profile: this.profile } );
         }
         else {
             $(instructionsSelector).text(`Done`);
@@ -374,13 +374,15 @@ class GerberCanvas {
         this.svgURL = null;
         this.holeList = undefined;
         this.viewBox = undefined;
+        this.profile = undefined;
     }
    
 
 
-    setSVG(renderObj) {
+    setSVG(renderObj, profile) {
      
         this.reset();
+        this.profile = profile;
         this.svgURL = URL.createObjectURL(new Blob([renderObj.svg], { type: 'image/svg+xml' }));
         this.viewBox = renderObj.viewBox;
 
@@ -401,8 +403,9 @@ class GerberCanvas {
     }          
 
 
-    setHoles(drillObj) {
+    setHoles(drillObj, profile) {
 
+        this.profile = profile;
         if (!this.viewBox) {
             // The GerberFile has not been loaded yet. 
             // this.viewBox is necessary for drawingPreCalc()
