@@ -43,6 +43,11 @@ class Joystick {
        return Joystick.instance;
     }
  
+    static init() {
+       if (!Joystick.instance) {
+          new Joystick();
+       }
+    }
  
     start() {
        let thiz = this;
@@ -61,6 +66,8 @@ class Joystick {
          
          Joystick.ready = true;
  
+       }).catch((err) => {
+          console.log(`ERROR initializing Joystick: ${JSON.stringify(err)}`);
        });
     }
  
@@ -68,8 +75,8 @@ class Joystick {
     stop() {
       clearIntervalAsync(this.sampIntervalId);
     }
- 
- 
+
+    
     static xVal() {
       if (Joystick.ready) {
          let thiz = Joystick.instance;
@@ -172,5 +179,4 @@ class Joystick {
  
 Joystick.btnPressThreshold = 500;
 
-let singleton = new Joystick();
 module.exports = Joystick;

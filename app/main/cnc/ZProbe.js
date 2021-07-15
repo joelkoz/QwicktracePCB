@@ -7,14 +7,16 @@ class ZProbe extends EventEmitter {
     constructor(config) {
         super();
 
-        if (config?.cnc?.locations?.zpad) {
-            ZProbe.padX = config.cnc.locations.zpad.x;
-            ZProbe.padY = config.cnc.locations.zpad.y;
-        } 
-
-        if (config?.cnc?.zheight?.zpad) {
-            ZProbe.startZ = config.cnc.zheight.zpad.startZ;
-            ZProbe.padZ = config.cnc.zheight.zpad.lastZ;
+        if (config.cnc) {
+            if (config.cnc.locations && config.cnc.locations.zpad) {
+                ZProbe.padX = config.cnc.locations.zpad.x;
+                ZProbe.padY = config.cnc.locations.zpad.y;
+            } 
+    
+            if (config.cnc.zheight && config.cnc.zheight.zpad) {
+                ZProbe.startZ = config.cnc.zheight.zpad.startZ;
+                ZProbe.padZ = config.cnc.zheight.zpad.lastZ;
+            }
         }
 
         this.pigpio = new GPIO();

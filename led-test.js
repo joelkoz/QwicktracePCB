@@ -1,7 +1,9 @@
 const pigpioClient = require('pigpio-client');
-const pigpio = pigpioClient.pigpio({host: '127.0.0.1'});
+const pigpio = pigpioClient.pigpio({host: '127.0.0.1', port: '8888'});
+// const pigpio = pigpioClient.pigpio({host: '192.168.0.160', port: '8888'});
 
 const ready = new Promise((resolve, reject) => {
+  console.log('Attempting to connect to pigpio...');
   pigpio.once('connected', resolve);
   pigpio.once('error', reject);
 });
@@ -24,26 +26,22 @@ ready.then(async (info) => {
   await led.write(0);  // turn off
   await wait(2000);
  
-  // use waves to blink the LED rapidly (toggle every 100ms)
-//  await led.waveClear();
-//  await led.waveAddPulse([[1, 0, 100000], [0, 1, 100000]]);
-//  const blinkWave = await led.waveCreate();
-//  led.waveChainTx([{loop: true}, {waves: [blinkWave]}, {repeat: true}]);
- 
-var duty = 255;
-while (duty > 0) {
-   console.log(`LED ${duty}`);
-   await led.analogWrite(duty);
-   duty -= 5;
-   await wait(500);
-}
 
-  // wait for 10 sec, stop the waves
-  //await wait(5000);
-  //await led.waveTxStop();
+  var duty = 255;
+  while (duty > 0) {
+    console.log(`LED duty level ${duty}`);
+    await led.analogWrite(duty);
+    duty -= 5;
+    await wait(500);
+  }
 
   await led.write(0);
 
+  console.log('done');
   process.exit();
   
-}).catch(console.error);
+}).catch(() => (err) => {
+  console.log(`Error: ${err}`)
+});
+
+console.log('execution complete');

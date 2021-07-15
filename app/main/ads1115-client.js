@@ -46,6 +46,7 @@ module.exports = (handle, addr = 0x48, delay = 10, shift = 0) => {
                   return resolve();
               }
               else {
+                  console.log(`i2cWrite failed (result code ${result})`);
                   return reject(result);
               }
            });
@@ -59,7 +60,8 @@ module.exports = (handle, addr = 0x48, delay = 10, shift = 0) => {
                return resolve({ buffer: data });
            }
            else {
-               return reject(error);
+            console.log(`i2cRead failed (error code ${error})`);
+            return reject(error);
            }
         });
     });
@@ -98,13 +100,18 @@ module.exports = (handle, addr = 0x48, delay = 10, shift = 0) => {
     writeHiThreshold: (threshold) => writeReg16(addr, 0b11, threshold << shift),
 
     measure: async (mux) => {
-      mux = MUX[mux]
-      if (typeof mux === 'undefined') throw new Error('Invalid mux')
+      try {
+        mux = MUX[mux]
+        if (typeof mux === 'undefined') throw new Error('Invalid mux')
 
-      const config = 0x0183 // No comparator | 1600 samples per second | single-shot mode
-      await writeConfig(config | gain | mux | START_CONVERSION)
-      await sleep(delay)
-      return readResults()
+        const config = 0x0183 // No comparator | 1600 samples per second | single-shot mode
+        await writeConfig(config | gain | mux | START_CONVERSION)
+        await sleep(delay)
+        return readResults()
+      }
+      catch (err) {
+         console.log('Error taking ADS1115 measurement', err)
+      }
     }
   }
 }
@@ -129,5 +136,8 @@ module.exports.open = (busNum, addr = 0x48) => {
     })
     .then((handle) => {
         return module.exports(handle, addr);
+    })
+    .catch(err => {
+      console.log('Error initializing ADS1115', err);
     });
 }

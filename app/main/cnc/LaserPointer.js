@@ -5,10 +5,12 @@ class LaserPointer {
     constructor(config) {
         this.pigpio = new GPIO();
 
-        if (config?.cnc?.pointer?.offset) {
-            LaserPointer.offsetX = config.cnc.pointer.offset.x;
-            LaserPointer.offsetY = config.cnc.pointer.offset.y;
-        } 
+        if (config.cnc) {
+            if (config.cnc.pointer && config.cnc.pointer.offset) {
+                LaserPointer.offsetX = config.cnc.pointer.offset.x;
+                LaserPointer.offsetY = config.cnc.pointer.offset.y;
+            } 
+        }
 
         this.pigpio.whenReady(() => {
             this.pin = this.pigpio.gpio(26);

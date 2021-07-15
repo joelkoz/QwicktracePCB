@@ -1,12 +1,21 @@
 const Kefir = require('kefir');
 const readline = require('readline');
+const CNC = require('./app/main/cnc/CNC');
 const Joystick = require('./app/main/Joystick');
-const ZProbe = require('./app/main/ZProbe');
-const CNC = require('./app/main/CNC');
-const LaserPointer = require('./app/main/LaserPointer');
+const ZProbe = require('./app/main/cnc/ZProbe');
+const LaserPointer = require('./app/main/cnc/LaserPointer');
+const GPIO = require('./app/main/GPIO');
 
+const mockConfig = { cnc: {},    
+                     pigpio: {
+                        "host": "192.168.0.160",
+                        "port": 8888
+                   } };
 
-var pointer = new LaserPointer();
+GPIO.config = mockConfig.pigpio;
+new GPIO();
+
+var pointer = new LaserPointer(mockConfig);
 
 
 function shallowEqual(object1, object2) {
@@ -140,6 +149,8 @@ function hasChanged() {
 }
 
 
+Joystick.init();
+
 let msStickCheck = 100;
 let stick = Kefir.fromPoll(msStickCheck, Joystick.stickVal).filter(hasChanged());
 let stickBtn = Kefir.fromPoll(msStickCheck, Joystick.btnVal).filter(hasChanged());
@@ -147,7 +158,8 @@ let stickBtn = Kefir.fromPoll(msStickCheck, Joystick.btnVal).filter(hasChanged()
 let jogZ = false;
 
 stick.onValue(stick => {
-    cnc.jog(-stick.x, stick.y, jogZ);
+    // cnc.jog(-stick.x, stick.y, jogZ);
+    console.log(`Joystick: ${JSON.stringify(stick)}`)
 });
 
 
@@ -176,9 +188,9 @@ cnc.on('msg', (msg) => {
 });
 
 
-let statestickY = Kefir.fromEvents(cnc, 'state').filter(hasChanged());
-statestickY.onValue(state => {
-  console.log("state: " + state);
+let cncState = Kefir.fromEvents(cnc, 'state').filter(hasChanged());
+cncState.onValue(state => {
+  console.log("cnc state: " + state);
 });
 
 cnc.on('data', (data) => {
@@ -190,7 +202,7 @@ cnc.on('pos', (pos) => {
 });
 
 
-let zprobe = new ZProbe();
+let zprobe = new ZProbe(mockConfig);
 zprobe.on(ZProbe.EVT_PRESSED, (pressed) => {
     console.log('z probe: ' + (pressed ? "ON" : "OFF"));
 });

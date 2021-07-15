@@ -184,6 +184,7 @@ class CNCController  extends MainSubProcess {
         this.cnc = new CNC();
         this.pointer = new LaserPointer(config);
         this.zprobe = new ZProbe(config);
+        Joystick.init();
 
         const thiz = this;
 
