@@ -70,7 +70,7 @@ function uiInitList(listId, valueList, fnSort, nextPageId, fnFilter) {
 
 
 function uiAddButton(divSelector, label, onClick, classDef = "btn w3") {
-    let newBtn = $(`<button type="button" class=${classDef}>${label}</button>`);
+    let newBtn = $(`<button type="button" class="${classDef}">${label}</button>`);
     newBtn.on('click', onClick);
     $(divSelector).append(newBtn);
 }

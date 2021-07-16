@@ -91,10 +91,10 @@
             $(btnSelector).empty();
             buttonDefs.forEach(btnDef => {
                 let btnClass = 'btn';
-                if (wizardData.btnClass) {
-                    btnClass += (' ' + wizardData.btnClass);
+                if (btnDef.btnClass) {
+                    btnClass += (' ' + btnDef.btnClass);
                 }
-                uiAddButton(btnSelector, btnDef.label, () => { ui.onWizardButton(btnDef); }, btnDef.btnClass);
+                uiAddButton(btnSelector, btnDef.label, () => { ui.onWizardButton(btnDef); }, btnClass);
             });
 
             if (wizardData.onActivate) {

@@ -51,6 +51,18 @@
     </div>
 
     <script>
+
+        function updateActionsVisible() {
+            if (cncAvailable) {
+                $('#actionPage .btnActionMill').css('display', 'block');
+                $('#actionPage .btnActionDrill').css('display', 'block');                
+            }
+            else {
+                $('#actionPage .btnActionMill').css('display', 'none');
+                $('#actionPage .btnActionDrill').css('display', 'none'); 
+            }
+        }
+
         uiPageActivate['actionPage'] = function() {
             console.log('Activate action page');
 
@@ -66,26 +78,31 @@
             if (ui.isOptionExpose()) {
                 optionCount++;
                 lastAction = 'expose';
-                uiAddButton(divSelector, 'Expose', () => { ui.setAction('expose', nextPageId); });
+                uiAddButton(divSelector, 'Expose', () => { ui.setAction('expose', nextPageId); }, 'btn w3 btnActionExpose');
             }
 
             if (ui.isOptionMill()) {
                 optionCount++;
                 lastAction = 'mill';
-                uiAddButton(divSelector, 'Mill', () => { ui.setAction('mill', nextPageId); });
+                uiAddButton(divSelector, 'Mill', () => { ui.setAction('mill', nextPageId); }, 'btn w3 btnActionMill');
             }
 
             if (ui.isOptionDrill()) {
                 optionCount++;
                 lastAction = 'drill';
-                uiAddButton(divSelector, 'Drill', () => { ui.setAction('drill', nextPageId); });
+                uiAddButton(divSelector, 'Drill', () => { ui.setAction('drill', nextPageId); }, 'btn w3 btnActionDrill');
             }
 
             if (optionCount === 1) {
                 setTimeout(() => { ui.setAction(lastAction, nextPageId, false); }, 10);
             }
+            else {
+                updateActionsVisible();
+            }
 
         };
+
+        setInterval(updateActionsVisible, 1500);
 
     </script>
 </div>

@@ -51,20 +51,10 @@ class MillController extends AlignmentController {
 
         let wizard = {
             "title": "Mill PCB",
+            "cancelLandingPage": "actionPage",
         
             "steps": [
-        
-                { id: "home",
-                  subtitle: "Home",
-                  instructions: "Homing mill. Standby...",
-                  buttonDefs: [
-                    { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
-                  ],
-                  onActivate: (wiz) => {
-                     ui.publish('cnc-home', { callbackName: 'ui-wizard-next' });
-                  }
-                },
-        
+
                 { id: "loadMill",
                   subtitle: "Load Mill",
                   instructions: "Load mill with PCB stock and bit used for milling.  Press Continue when done",
@@ -93,16 +83,18 @@ class MillController extends AlignmentController {
                      { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
                   onActivate: (wiz) => {
-                    wiz.timerId = setInterval(() => {
+                    function updateBtnContinue() {
                         if (window.cncZProbe) {
-                            // We can not continue if ZProbe is currently "pressed"
-                            $('#wizardPage .zProbeContinue').hide();
+                           // We can not continue if ZProbe is currently "pressed"
+                           $('#wizardPage .zProbeContinue').css("display", "none");
                         }
                         else {
                             // Enable continue button
-                            $('#wizardPage .zProbeContinue').show();
+                            $('#wizardPage .zProbeContinue').css("display", "block");
                         }
-                    }, 1000);
+                    }
+                    wiz.timerId = setInterval(updateBtnContinue, 1000);
+                    updateBtnContinue();
                   },
                   onDeactivate: (wiz) => {
                     clearInterval(wiz.timerId);
@@ -156,16 +148,20 @@ class MillController extends AlignmentController {
                     { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
                   onActivate: (wiz) => {
-                    wiz.timerId = setInterval(() => {
-                        if (window.cncZProbe) {
-                            // We can not continue if ZProbe is currently "pressed"
-                            $('#wizardPage .removeProbeContinue').show();
-                        }
-                        else {
-                            // Enable continue button
-                            $('#wizardPage .removeProbeContinue').hide();
-                        }
-                    }, 1000);
+
+                    function updateBtnContinue() {
+                      if (window.cncZProbe) {
+                          // We can not continue if ZProbe is currently "pressed"
+                          $('#wizardPage .removeProbeContinue').show();
+                       }
+                       else {
+                          // Enable continue button
+                          $('#wizardPage .removeProbeContinue').hide();
+                       }
+                    }
+
+                    wiz.timerId = setInterval(updateBtnContinue, 1000);
+                    updateBtnContinue();
                   },
                   onDeactivate: (wiz) => {
                     clearInterval(wiz.timerId);
