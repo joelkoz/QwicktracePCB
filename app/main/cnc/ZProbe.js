@@ -38,8 +38,15 @@ class ZProbe extends EventEmitter {
             })
 
             this.pin.notify((val) => {
+                if (thiz.debounceDelay) {
+                    clearInterval(thiz.debounceDelay);
+                }
                 thiz.probeVal = val;
-                thiz.emit(ZProbe.EVT_PRESSED, thiz.value);
+                thiz.debounceDelay = setTimeout(() => {
+                    thiz.debounceDelay = null;
+                    thiz.emit(ZProbe.EVT_PRESSED, thiz.value) 
+                }, 750);
+
             });
 
         });
