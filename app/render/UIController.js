@@ -304,8 +304,8 @@ class UIController {
                 this.setWizardState(this.wizard.steps[wNdx].id);
             }
             else {
-                // If we are out of steps, then just cancel the wizard
-                this.cancelWizard();
+                // If we are out of steps, then just auto finish the wizard
+                this.finishWizard();
             }
         }
         else {
@@ -331,6 +331,18 @@ class UIController {
            this.clearPageStack();
            ipcRenderer.invoke('cnc-cancel');
            this.showPage(cancelPage, false);
+        }
+    }
+
+
+    finishWizard() {
+        if (this.wizard) {
+            let wiz = this.wizard;
+           this.closeCurrentWizard();
+           let finishPage = wiz.finishLandingPage ? wiz.finishLandingPage : wiz.cancelLandingPage;
+           delete this.wizard;
+           this.clearPageStack();
+           this.showPage(finishPage, false);
         }
     }
 

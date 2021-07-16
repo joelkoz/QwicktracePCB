@@ -5,6 +5,7 @@ import { ExposeController } from './ExposeController.js'
 import { UIController } from './UIController.js'
 import { DrillController } from './DrillController.js';
 import { MillController } from './MillController.js';
+import { SettingsController } from './SettingsController.js';
 
 document.addEventListener('keydown', (event) => {
 
@@ -32,6 +33,8 @@ ipcRenderer.on('render-start', (event, config) => {
    window.uiExpose = new ExposeController(config);
    window.uiDrill = new DrillController(config);
    window.uiMill = new MillController(config);
+   window.uiSettings = new SettingsController(config);
+
    ipcRenderer.invoke('render-start-done');
 });
 

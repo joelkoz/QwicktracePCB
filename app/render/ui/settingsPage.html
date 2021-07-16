@@ -47,12 +47,9 @@
              console.log('Activate settingsPage');
              ui.clearPageStack();
 
-             const options = [
-                { "name": "Jog Spindle", "value": "jogPage" },
-                { "name": "Setting 2", "value": "setting2Page" }
-             ];
+             const options = uiSettings.getSettingsList();
 
-             uiInitList('settingId', options, null, (nextPageId) => { ui.showPage(nextPageId, false); } );
+             uiInitList('settingId', options, null, (wizardId) => { uiSettings.startWizard(wizardId); } );
         };
     </script>
 </div>
