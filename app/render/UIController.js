@@ -130,8 +130,9 @@ class UIController {
 
 
         ipcRenderer.on('ui-popup-message', (event, data) => {
-            thiz.popupMessage(data);
+            thiz.popupMessage({ message: data });
         });
+
 
         ipcRenderer.on('ui-wizard-next', (event, data) => {
             thiz.wizardNext();
@@ -502,7 +503,19 @@ class UIController {
 
         // Build the complete profile used by all processing of this action...
         let profile = Object.assign({}, defaults, { material }, { stock }, { state });
-        profile.state.alignStock = alignStock;
+        if (profile.state.stockIsBlank) {
+            profile.state.alignStock = false;
+        }
+        else {
+           profile.state.alignStock = alignStock;
+        }
+
+        // Normalize so the width of the stock is always the long side...
+        let longSide = Math.max(profile.stock.width, profile.stock.height);
+        let shortSide = Math.min(profile.stock.width, profile.stock.height);
+        profile.stock.width = longSide;
+        profile.stock.height = shortSide;
+
 
         // Remove superfluous values that came from from defaults...
         delete profile.id;

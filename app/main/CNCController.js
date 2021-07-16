@@ -250,7 +250,7 @@ class CNCController  extends MainSubProcess {
                     thiz.homeInProgress = false;
                     thiz.mposHome = thiz.cnc.mpos;
                     thiz.cnc.setWorkCoord({ x: 0, y: 0, z: 0 }, wcsMACHINE_WORK);
-                    console.log('Home completed');
+                    console.log(`Home completed at machine pos ${JSON.stringify(thiz.mposHome)}`);
                     MainMQ.emit('cnc-homed');
                 }
 
@@ -346,69 +346,23 @@ class CNCController  extends MainSubProcess {
         console.log('Initializing CNC');
         this.cnc.sendGCode('G21');
         this.cnc.unlock();
-        this.cnc.home();
         this.cancelProcesses();
+
+        // Send the render process the initial values of things...
+        this.ipcSend('render-zprobe-state', this.zprobe.value);
+
+        untilEvent(this.cnc, 'state').then(() => {
+            this.cnc.home();
+        })
     }
 
      setProfile(profile) {
-        this.state = {};
-
-        this.state.profile = profile;
-
-        // Extract bounding box info...
-        let bb = drillObj.boundingBox;
-        let min = bb.min;
-        let max = bb.max;
-        this.state.bbWidth = max.x - min.x;
-        this.state.bbHeight = max.y - min.y;
-        let boardHeight = this.state.bbHeight;
-
-
-        // Translation necessary to shift PCB origin to be (0,0)
-        // (i.e. don't allow negative coordinates)
-        let normalizeX = 0 - min.x;
-        let normalizeY = 0 - min.y;
-        let normalizeOrigin = translate(normalizeX, normalizeY);
-
-        // Calculate the transfomation matrix to convert PCB
-        // coordinates into CNC mill positions. Start with 
-        // upper right hand coordinates of the frame...
-        let frameUpperRight = this.config.cnc.locations.ur;
-
-        // The PCB's copper is actually UNDER the frame by
-        // a small amount. Adjust the frameUpperRight to match
-        // the true location of the copper board's corner...
-        let boardUR_x =  frameUpperRight.x + this.config.cnc.pcbFrame.margin;
-        let boardUR_y =  frameUpperRight.y - this.config.cnc.pcbFrame.margin;
-
-        // Compute a transformation to relocate the origin of 
-        // the mill to the frame's UR...
-        let originRelocate = translate(boardUR_x, boardUR_y);
-
-
-        // Combine those above with a transform to move to the left
-        // by the height of the board, then rotate the board 
-        // clockwise 90 degrees (270 degrees counterclockwise)
-        // So that the upper left hand corner of the board is
-        // at the frameUpperRight. After rotation, the PCB's Y+ 
-        // will correspond to the cnc's X+, and the PCB's X+ 
-        // will be along the cnc's Y-
-        this.state.mtxPCBtoCNC = transform(
-            normalizeOrigin,
-            originRelocate,
-            translate(-boardHeight, 0),
-            rotate(270 * Math.PI / 180)
-        );
-
-        // Also compute a matrix that can convert in the opposite
-        // direction (i.e. from cnc coordinates to PCB coordinates)
-        this.state.mtxCNCtoPCB = inverse(this.state.mtxPCBtoCNC);
+        this.profile = profile;
+        console.log(`setting current profile: ${JSON.stringify(profile, undefined, 3)}`);
     }
 
-
-
     setDeskew(deskew) {
-        this.state.deskew = deskew;
+        this.profile.state.deskew = deskew;
     }
 
     killFeeder() {
@@ -507,6 +461,7 @@ class CNCController  extends MainSubProcess {
         console.log(`Starting findWorkOrigin().  Callback event is ${callbackName}`)
         this.boardOriginM = undefined;
         this.setProfile(profile);
+
         this.findOriginMode = true;
         this.jogMode = true;
         this.pointer.laser = true;
@@ -519,11 +474,11 @@ class CNCController  extends MainSubProcess {
         let mpos = { x: 0, y: 0};
         // Move to upper right of frame
         let frameMargin = cncConfig.pcbFrame.margin;
-        mpos.x += cncConfig.locations.ur.x + frameMargin; 
-        mpos.y += cncConfig.locations.ur.y + frameMargin;
+        mpos.x += cncConfig.locations.ur.x - frameMargin; 
+        mpos.y += cncConfig.locations.ur.y - frameMargin;
         // Now, estimate the lower left position...
-        mpos.x -= profile.state.stock.width;
-        mpos.y -= profile.state.stock.height;
+        mpos.x -= profile.stock.width;
+        mpos.y -= profile.stock.height;
 
         let laserCoord = mpos;
         let spindleCoord  = this.pointer.toSpindlePos(laserCoord);
@@ -536,7 +491,7 @@ class CNCController  extends MainSubProcess {
         this.jogMode = false;
         this.pointer.laser = false;
         let spindleCoord = this.cnc.wpos;
-        let laserCoord = this.pointer.tolaserPos(spindleCoord);
+        let laserCoord = this.pointer.toLaserPos(spindleCoord);
         this.cnc.goto(laserCoord, wcsMACHINE_WORK);
         this.cnc.zeroWorkXY(wcsPCB_WORK);
 
@@ -573,6 +528,7 @@ class CNCController  extends MainSubProcess {
 
                 if (probeVal.ok) {
                     zheight.zpad.lastZ = probeVal.z;
+                    console.log(`Zprobe of pad found at ${probeVal.z}`)
                     resolve(probeVal);
                 }
                 else {
@@ -630,6 +586,7 @@ class CNCController  extends MainSubProcess {
         
                         if (probeVal.ok) {
                             zheight.pcb.lastZ = probeVal.z;
+                            console.log(`Zprobe of pcb found at ${probeVal.z}`)
                             resolve(probeVal);
                         }
                         else {
@@ -651,14 +608,13 @@ class CNCController  extends MainSubProcess {
     }
 
 
-
     autolevelPCB(profile) {
 
         this.cnc.goto({x: 0, y: 0}, wcsPCB_WORK);
         let probeFeedRate = 50;
         let margin = 5;
-        let stockWidth = this.state.profile.stock.width;
-        let stockHeight = this.state.profile.stock.height;
+        let stockWidth = this.profile.stock.width;
+        let stockHeight = this.profile.stock.height;
         let probeHeight = 1;
         let gridSize = 7.5;
         let gcode = `(#autolevel D${gridSize} H${probeHeight} F${probeFeedRate} M${margin} P1 X${stockWidth} Y${stockHeight})`;
@@ -704,13 +660,11 @@ class CNCController  extends MainSubProcess {
 
 
     toCNC(pcbCoord) {
-        // return applyToPoint(this.state.mtxPCBtoCNC, pcbCoord);
         return Object.assign({}, pcbCoord);
     }
 
 
     toPCB(cncCoord) {
-        // return applyToPoint(this.state.mtxCNCtoPCB, cncCoord);
         return Object.assign({}, cncCoord);
     }
 
