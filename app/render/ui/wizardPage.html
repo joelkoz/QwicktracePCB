@@ -94,7 +94,7 @@
                 if (wizardData.btnClass) {
                     btnClass += (' ' + wizardData.btnClass);
                 }
-                uiAddButton(btnSelector, btnDef.label, () => { ui.onWizardButton(btnDef); }, btnClass);
+                uiAddButton(btnSelector, btnDef.label, () => { ui.onWizardButton(btnDef); }, btnDef.btnClass);
             });
 
             if (wizardData.onActivate) {

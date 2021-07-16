@@ -56,8 +56,8 @@ class UIController {
             projObj.value = projObj.projectId;
             thiz.projectList[projObj.projectId] = projObj;
 
-            if (thiz.state?.page === 'startPage') {
-                // The file page is the current page.
+            if (thiz.state?.page === 'projectPage') {
+                // The project page is the current page.
                 // It needs a refresh (but delay this refresh)
                 // in case more data is coming...
                 if (thiz.projectUpdate !== null) {
@@ -67,7 +67,7 @@ class UIController {
 
                 thiz.projectUpdate = setTimeout(() => {
                     console.log('Project list refresh');
-                    thiz.showPage('startPage');
+                    thiz.showPage('projectPage');
                     thiz.projectUpdate = null;
                 }, 500);
             }
@@ -304,7 +304,8 @@ class UIController {
                 this.setWizardState(this.wizard.steps[wNdx].id);
             }
             else {
-                console.log('wizardNext() called at end of wizard list.');
+                // If we are out of steps, then just cancel the wizard
+                this.cancelWizard();
             }
         }
         else {
@@ -323,9 +324,14 @@ class UIController {
     }
 
     cancelWizard() {
-        this.closeCurrentWizard();
-        delete this.wizard;
-        this.showPage('actionPage', false);
+        if (this.wizard) {
+           this.closeCurrentWizard();
+           let cancelPage = this.wizard.cancelLandingPage;
+           delete this.wizard;
+           this.clearPageStack();
+           ipcRenderer.invoke('cnc-cancel');
+           this.showPage(cancelPage, false);
+        }
     }
 
 
