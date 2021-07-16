@@ -159,7 +159,6 @@ let jogZ = false;
 
 stick.onValue(stick => {
     cnc.jog(stick.x, stick.y, jogZ);
-    console.log(`Joystick: ${JSON.stringify(stick)}`)
 });
 
 

@@ -9,7 +9,6 @@
     "fast-xml-parser": "^3.18.0",
     "fs-extra": "^10.0.0",
     "gerber-to-svg": "^4.2.5",
-    "i2c-bus": "^5.2.2",
     "jquery": "^3.6.0",
     "jsonwebtoken": "^8.5.1",
     "kefir": "^3.8.8",

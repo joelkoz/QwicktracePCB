@@ -1,7 +1,7 @@
 // Modified ADS1115 code to use pgpio-client for i2c operations.
 // Original source available on npmjs.com as "ads1115"
 // Original source Copyright (c) 2019 William Kapke
-// Code modifications here by Joel Kozikowski
+// Code modifications to use pigpio-client by Joel Kozikowski
 
 const hex = (v) => v.toString(16).padStart(2, '0')
 const bin = (v) => v.toString(2).padStart(16, '0')
@@ -35,36 +35,16 @@ const debug = (...args) => {
     // console.log(...args);
 }
 
-
 module.exports = (handle, addr = 0x48, delay = 10, shift = 0) => {
   let gain = gains['2/3']
 
   function i2cWrite(n, buff) {
-      return new Promise((resolve, reject) => {
-           pigpio.i2cWriteDevice(handle, buff.toString('utf8'), (result) => {
-              if (result === 0) {
-                  return resolve();
-              }
-              else {
-                  console.log(`i2cWrite failed (result code ${result})`);
-                  return reject(result);
-              }
-           });
-      });
-  }
+      return pigpio.i2cWriteDevice(handle, buff)
+  };
 
-  function i2cRead(count, buff) {
-    return new Promise((resolve, reject) => {
-        pigpio.i2cReadDevice(handle, count, (error, rcount, data) => {
-           if (error === 0) {
-               return resolve({ buffer: data });
-           }
-           else {
-            console.log(`i2cRead failed (error code ${error})`);
-            return reject(error);
-           }
-        });
-    });
+  async function i2cRead(count, buff) {
+    let [dcount, ...data] = await pigpio.i2cReadDevice(handle, count);
+    return data
   }
 
 
@@ -76,7 +56,7 @@ module.exports = (handle, addr = 0x48, delay = 10, shift = 0) => {
 
   const readReg16 = async (register) => {
     await i2cWrite(1, Buffer.alloc(1, register))
-    const buff = (await i2cRead(2, Buffer.allocUnsafe(2))).buffer
+    const buff = (await i2cRead(2, Buffer.allocUnsafe(2)))
     debug('read from register 0x%h [%h]', register, buff)
     return (buff[0] << 8) | buff[1]
   }
