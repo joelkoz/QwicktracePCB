@@ -255,9 +255,7 @@ class CNC extends EventEmitter {
 
 
     home() {
-        if (this.state === CNC.CTRL_STATE_IDLE) {
-           this.emit('state', CNC.CTRL_STATE_HOME);
-        }
+        this.emit('state', CNC.CTRL_STATE_HOME);
         this.sendCommand('homing');
     }
 
