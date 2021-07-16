@@ -619,10 +619,10 @@ class CNC extends EventEmitter {
                 }
                 
                 let jogLetter;
+                stickY = -stickY;
                 if (jogZ) {
                     // Jog the Z axis instead...
                     stickX = 0;
-                    stickY = -stickY;
                     jogLetter = 'Z';
                 }
                 else {
