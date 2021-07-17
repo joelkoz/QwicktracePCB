@@ -187,6 +187,11 @@ class CNC extends EventEmitter {
                     this.emit('state', CNC.CTRL_STATE_ALARM);
                     this.emit('alarm', data.substring(6));
                 }
+                else if (data.startsWith('error:')) {
+                     let msg = data.substring(6, data.length);
+                     console.log(`CNC reported an error: ${msg}`);
+                     this.emit('error', new Error(msg));
+                }
 
                 if (data === RESET_MSG && this.autoReset) {
                     console.log('Auto-reset after alarm condition...')
@@ -204,6 +209,8 @@ class CNC extends EventEmitter {
                     let results = { x: parseFloat(values[0]), y: parseFloat(values[1]), z: parseFloat(zVals[0]), ok: zVals[1] === '1' }
                     this.emit('probe', results);
                 }
+
+
             }
 
         });
