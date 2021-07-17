@@ -31,8 +31,18 @@ class ProjectLoader  extends MainSubProcess {
       this.refreshFileList();
 
        // And every 5 seconds after this...
-       let thiz = this;
+      let thiz = this;
       setInterval(() => { thiz.refreshFileList(); }, 5000);
+
+      ipcMain.handle('projectloader-prepare', (event, data) => {
+         let { profile, callbackName } = data;
+         console.log('Preparing project work directory...')
+         ProjectLoader.prepareForWork(profile)
+            .then(results => {
+                console.log('Project work directory prep completed.')
+                thiz.ipcSend(callbackName, profile)
+            });
+      });      
     }
 
 

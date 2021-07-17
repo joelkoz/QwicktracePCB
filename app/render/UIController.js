@@ -102,6 +102,10 @@ class UIController {
         });
 
 
+        ipcRenderer.on('ui-dispatch-process', (event, profile) => {
+            thiz.dispatchProcess(profile);
+        });
+
         ipcRenderer.on('ui-process-done', (event) => {
             try {
                 console.log(`event ui-process-done`);
@@ -521,10 +525,13 @@ class UIController {
         delete profile.id;
         delete profile.value;
    
-        let fnDispatch = window.uiDispatch[state.action];
-        fnDispatch(profile);
+        ipcRenderer.invoke('projectloader-prepare', { callbackName: "ui-dispatch-process", profile });
     }
 
+    dispatchProcess(profile) {
+        let fnDispatch = window.uiDispatch[this.state.action];
+        fnDispatch(profile);
+    }
 
     cancelProcesses() {
 
