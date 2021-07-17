@@ -94,20 +94,26 @@ class CNCController  extends MainSubProcess {
         
         
         this.stickBtn.onValue(pressed => {
-            if (pressed) {
-              if (thiz.alignmentMode) {
-                 thiz.finishAlignment();
-              }
-              else if (thiz.findOriginMode) {
-                  thiz.finishFindWorkOrigin();
-              }
-              else if (thiz.jogMode) {
-                 thiz.jogZ = !thiz.jogZ;
-              }
-              else {
-                thiz.ipcSend('ui-joystick-press');
-              }
+            if (thiz.stickBtnDebounceDelay) {
+                clearInterval(thiz.stickBtnDebounceDelay)
             }
+            thiz.stickBtnDebounceDelay = setTimeout(() => {
+                thiz.stickBtnDebounceDelay = null;
+                if (pressed) {
+                    if (thiz.alignmentMode) {
+                        thiz.finishAlignment();
+                    }
+                    else if (thiz.findOriginMode) {
+                        thiz.finishFindWorkOrigin();
+                    }
+                    else if (thiz.jogMode) {
+                        thiz.jogZ = !thiz.jogZ;
+                    }
+                    else {
+                        thiz.ipcSend('ui-joystick-press');
+                    }
+                }
+            }, 100);
         });
 
         this.cncConnected = false;
@@ -169,6 +175,9 @@ class CNCController  extends MainSubProcess {
             thiz.ipcSend('ui-popup-message', `ALARM: ${msg}`);
         });
 
+        this.cnc.on('error', (msg) => {
+            thiz.ipcSend('ui-popup-message', `ERROR: ${msg}`);
+        });
 
         //
         // Define commands to the cnc from the render process...
@@ -248,6 +257,10 @@ class CNCController  extends MainSubProcess {
         this.ipcSend('render-zprobe-state', this.zprobe.value);
 
         untilEvent(this.cnc, 'state').then(() => {
+            console.log('Resetting sender...');
+            this.cnc.senderStop();
+            console.log('Resetting feeder...');
+            this.cnc.feederReset();
             console.log('Doing home for initCNC()');
             this.cnc.home();
             console.log('Completed initCNC()')
@@ -273,10 +286,14 @@ class CNCController  extends MainSubProcess {
     async waitForState(stateVal) {
 
         let waiting = true;
+        let waitStart = Date.now();
         while (waiting) {
             let state = await untilEvent(this.cnc, 'state');
             if (state === stateVal) {
                 waiting = false;
+            }
+            if (Date.now() - waitStart > 30000) {
+                throw new Error(`Timeout while waiting for state to equal ${stateVal}`)
             }
         }
     }
@@ -536,6 +553,7 @@ class CNCController  extends MainSubProcess {
 
     autolevelPCB(profile) {
 
+        this.cnc.selectWCS(wcsPCB_WORK);
         this.cnc.goto({x: 0, y: 0}, wcsPCB_WORK);
         let probeFeedRate = 50;
         let margin = 5;
