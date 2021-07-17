@@ -228,6 +228,12 @@ class CNCController  extends MainSubProcess {
             thiz.jogMode = true;
         });
 
+
+        ipcMain.handle('cnc-reset', (event, paramObj) => {
+            this.resetCNC(paramObj.callbackName);
+        });
+
+
         this.cnc.connect();
     }
 
@@ -242,11 +248,40 @@ class CNCController  extends MainSubProcess {
         this.ipcSend('render-zprobe-state', this.zprobe.value);
 
         untilEvent(this.cnc, 'state').then(() => {
+            console.log('Doing home for initCNC()');
             this.cnc.home();
+            console.log('Completed initCNC()')
         })
     }
 
-     setProfile(profile) {
+
+    async resetCNC(callbackName) {
+        console.log('CNC reset: UI requested reset...');
+
+        this.cancelProcesses();
+        this.cnc.reset();
+
+        console.log('CNC reset: waiting for home state...');
+        await this.waitForState(CNC.CTRL_STATE_HOME)
+        console.log('CNC reset: waiting for idle state...');
+        await this.waitForState(CNC.CTRL_STATE_IDLE)
+        console.log('CNC reset: request completed.');
+        this.ipcSend(callbackName)
+    }
+
+
+    async waitForState(stateVal) {
+
+        let waiting = true;
+        while (waiting) {
+            let state = await untilEvent(this.cnc, 'state');
+            if (state === stateVal) {
+                waiting = false;
+            }
+        }
+    }
+
+    setProfile(profile) {
         this.profile = profile;
         console.log(`setting current profile: ${JSON.stringify(profile, undefined, 3)}`);
     }

@@ -49,7 +49,26 @@ class SettingsController {
                             }                            
                     ]
                  }
-               }
+               },
+
+               { id: "millReset",
+                 wizard: {
+                    title: "Reset mill",
+                    cancelLandingPage: "settingsPage",
+                    steps: [
+                            { id: "reset",
+                                subtitle: "Reset mill",
+                                instructions: "Resetting mill. Standby...",
+                                buttonDefs: [
+                                { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                                ],
+                                onActivate: (wiz) => {
+                                    ui.publish('cnc-reset', { callbackName: 'ui-wizard-next' });
+                                }
+                            }                              
+                    ]
+                 }
+               }               
 
         ];
     }

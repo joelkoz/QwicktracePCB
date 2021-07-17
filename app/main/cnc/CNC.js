@@ -268,6 +268,9 @@ class CNC extends EventEmitter {
     reset() {
         this.emit('state', CNC.CTRL_STATE_RESET);
         this.sendCommand('reset');
+        this.socket.once('feeder:status', () => {
+            this.emit('state', CNC.CTRL_STATE_IDLE);
+        });
     }
 
     report() {
