@@ -1,7 +1,7 @@
 {
    "super" : {
-       "width": 1920,
-       "height": 1400,
+       "width": 1520,
+       "height": 1000,
        "fullScreen": false,
        "debug": true
    },
@@ -27,8 +27,45 @@
       "height": 320
    },
 
+
+   "cnc": {
+      "locations": {
+         "ur": { "x": -3.7, "y": -7.7 },
+         "zpad": { "x": -15.7, "y": -3.7 },
+         "maxLL": { "x": -100, "y": -85 },
+         "load": { "x": 0, "y": -15 }
+      },
+
+      "zheight": {
+         "safe": -10,
+         "zpad": { "startZ": -15, "lastZ": -18.853 },
+         "pcb": { "lastZ": -31.115 }
+      },
+
+      "pointer": {
+         "offset": { "x": 20.3, "y": 7.3 }
+      },
+
+      "pcbFrame": {
+         "margin": 2,
+         "width": 9,
+         "height": 11
+      }
+
+   },
+
+   "joystick": {
+      "invertY": true,
+      "invertX": false,
+      "calibration": {
+                       "xCal":{"min":174,"max":26514,"mid":13442,"deadLo":50,"deadHi":50},
+                       "yCal":{"min":176,"max":26515,"mid":13098,"deadLo":50,"deadHi":50},
+                       "btnPressThreshold": 500
+                     }
+   },
+
    "pigpio": {
-      "host": "pcb.local",
+      "host": "192.168.0.160",
       "port": 8888
    }
 }

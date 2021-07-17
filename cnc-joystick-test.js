@@ -6,7 +6,16 @@ const ZProbe = require('./app/main/cnc/ZProbe');
 const LaserPointer = require('./app/main/cnc/LaserPointer');
 const GPIO = require('./app/main/GPIO');
 
-const mockConfig = { cnc: {},    
+const mockConfig = { cnc: {},
+                    joystick: {
+                      invertY: true,
+                      invertX: false,
+                      calibration: {
+                                      xCal:{min:174,max:26514,mid:13442,deadLo:50,deadHi:50},
+                                      yCal:{min:176,max:26515,mid:13098,deadLo:50,deadHi:50},
+                                      btnPressThreshold: 500
+                                    }
+                    },
                      pigpio: {
                         "host": "192.168.0.160",
                         "port": 8888
@@ -149,7 +158,7 @@ function hasChanged() {
 }
 
 
-Joystick.init();
+Joystick.init(mockConfig);
 
 let msStickCheck = 100;
 let stick = Kefir.fromPoll(msStickCheck, Joystick.stickVal).filter(hasChanged());

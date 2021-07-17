@@ -72,7 +72,7 @@ class CNCController  extends MainSubProcess {
         this.cnc = new CNC();
         this.pointer = new LaserPointer(config);
         this.zprobe = new ZProbe(config);
-        Joystick.init();
+        Joystick.init(config);
 
         const thiz = this;
 
@@ -138,7 +138,9 @@ class CNCController  extends MainSubProcess {
                     thiz.homeInProgress = false;
                     thiz.mposHome = thiz.cnc.mpos;
                     thiz.cnc.setWorkCoord({ x: 0, y: 0, z: 0 }, wcsMACHINE_WORK);
-                    console.log(`Home completed at machine pos ${JSON.stringify(thiz.mposHome)}`);
+                    thiz.cnc.once('pos', data => {
+                        console.log('Home completed: ', data);
+                    });
                     MainMQ.emit('cnc-homed');
                 }
 
@@ -370,6 +372,7 @@ class CNCController  extends MainSubProcess {
 
         let laserCoord = mpos;
         let spindleCoord  = this.pointer.toSpindlePos(laserCoord);
+        console.log(`Goto estimated work start(${JSON.stringify(spindleCoord )})...`);
         this.cnc.goto(spindleCoord, wcsMACHINE_WORK);
     }
 

@@ -55,9 +55,19 @@
 
   },
 
-   "pigpio": {
+  "joystick": {
+   "invertY": true,
+   "invertX": false,
+   "calibration": {
+                    "xCal":{"min":174,"max":26514,"mid":13442,"deadLo":50,"deadHi":50},
+                    "yCal":{"min":176,"max":26515,"mid":13098,"deadLo":50,"deadHi":50},
+                    "btnPressThreshold": 500
+                  }
+},
+
+  "pigpio": {
       "host": "127.0.0.1",
       "port": 8888
-   }
+  }
 }
 

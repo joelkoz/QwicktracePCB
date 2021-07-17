@@ -6,7 +6,7 @@ const { clearIntervalAsync } = require('set-interval-async')
 
 class Joystick {
 
-    constructor() {
+    constructor(config) {
  
        if (!Joystick.instance) {
          Joystick.instance = this;
@@ -17,35 +17,42 @@ class Joystick {
  
          Joystick.msJOYSTICK_SAMPLE_INTERVAL = 100;
  
-         Joystick.i2cJoystick = [1, 0x48, 'i2c-bus']
+         Joystick.i2cJoystick = [ 1, 0x48 ]
       
-         Joystick.CAL_FILE = "joystick.json";
-      
-         Joystick.xCal = {
-            min: 99999,
-            max: -1,
-            mid: -99,
-            deadLo: 50,
-            deadHi: 50
-         };
-          
-         Joystick.yCal = {
-            min: 99999,
-            max: -1,
-            mid: -99,
-            deadLo: 50,
-            deadHi: 50
-         };
-      
+         if (config.joystick) {
+            Joystick.xCal = config.joystick.calibration.xCal;
+            Joystick.yCal = config.joystick.calibration.yCal;
+            Joystick.btnPressThreshold = config.joystick.calibration.btnPressThreshold;
+            Joystick.invertY = config.joystick.invertY;
+            Joystick.invertX = config.joystick.invertX;
+         }
+         else {
+            Joystick.xCal = {
+               min: 99999,
+               max: -1,
+               mid: -99,
+               deadLo: 50,
+               deadHi: 50
+            };
+            
+            Joystick.yCal = {
+               min: 99999,
+               max: -1,
+               mid: -99,
+               deadLo: 50,
+               deadHi: 50
+            };
+            Joystick.btnPressThreshold = 500;
+         }
          this.start();
-       }
- 
+      }
+
        return Joystick.instance;
     }
  
-    static init() {
+    static init(config) {
        if (!Joystick.instance) {
-          new Joystick();
+          new Joystick(config);
        }
     }
  
@@ -54,8 +61,6 @@ class Joystick {
        ADS1115.open(...Joystick.i2cJoystick).then((ads1115) => {
  
          ads1115.gain = 1
-       
-         Joystick.readJoystickCalibration();
        
          this.sampIntervalId = setIntervalAsync(async () => {
             thiz.sampX = await ads1115.measure('0+GND');
@@ -80,7 +85,8 @@ class Joystick {
     static xVal() {
       if (Joystick.ready) {
          let thiz = Joystick.instance;
-         return thiz.stickVal(Joystick.xCal, thiz.sampX);
+         let val = thiz.stickVal(Joystick.xCal, thiz.sampX);
+         return (Joystick.invertX ? -val : val);         
       }
       else {
         return 0;
@@ -91,7 +97,8 @@ class Joystick {
     static yVal() {
       if (Joystick.ready) {
          let thiz = Joystick.instance;
-         return thiz.stickVal(Joystick.yCal, thiz.sampY);
+         let val = thiz.stickVal(Joystick.yCal, thiz.sampY);
+         return (Joystick.invertY ? -val : val);
       }
       else {
         return 0;
@@ -157,26 +164,7 @@ class Joystick {
         return (val / range);
      
     }
-     
-     
-    static readJoystickCalibration() {
-         if (fs.existsSync(Joystick.CAL_FILE)) {
-           let json = fs.readFileSync(Joystick.CAL_FILE);
-           let joystick = JSON.parse(json);
-           Joystick.xCal = joystick.xCal;
-           Joystick.yCal = joystick.yCal;
-         }
-    }
- 
-    
-    static writeJoystickCalibration() {
-       let joystick = { xCal: Joystick.xCal, yCal: Joystick.yCal };
-       let json = JSON.stringify(joystick);
-       fs.writeFileSync(Joystick.CAL_FILE, json + '\n');
-    }
  
  }
  
-Joystick.btnPressThreshold = 500;
-
 module.exports = Joystick;

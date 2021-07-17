@@ -189,9 +189,11 @@ class CNC extends EventEmitter {
                 }
 
                 if (data === RESET_MSG && this.autoReset) {
+                    console.log('Auto-reset after alarm condition...')
                     this.reset();
                 }
                 else if (data.startsWith('[MSG:')) {
+                    console.log('Message from CNC: ', data);
                     this.emit('msg', data.substring(5, data.length - 1))
                 }
                 else if (data.startsWith('[PRB:')) {
@@ -404,6 +406,14 @@ class CNC extends EventEmitter {
        }
     }
 
+    /**
+     * Select the current work coordinate system
+     * @param {number} wcsNum A number 1 thru 6
+     */
+    selectWCS(wcsNum = 0) {
+        let wcsSelect = `G${53 + wcsNum}`;
+        this.sendGCode(wcsSelect);
+    }
 
     /** 
      * Moves the CNC machine to the specified machine position.
@@ -617,7 +627,6 @@ class CNC extends EventEmitter {
                 }
                 
                 let jogLetter;
-                stickY = -stickY;
                 if (jogZ) {
                     // Jog the Z axis instead...
                     stickX = 0;
