@@ -52,7 +52,7 @@ function hasChanged() {
 // Lazy require() CNC module so it will not run if no CNC is present...
 let CNC = null;
 
-const wcsMACHINE_WORK = 6;
+const wcsMACHINE_WORK = 0;
 const wcsPCB_WORK = 1;
 
 class CNCController  extends MainSubProcess {
@@ -143,7 +143,7 @@ class CNCController  extends MainSubProcess {
                     // Zero out the work coordinates...
                     thiz.homeInProgress = false;
                     thiz.mposHome = thiz.cnc.mpos;
-                    thiz.cnc.setWorkCoord({ x: 0, y: 0, z: 0 }, wcsMACHINE_WORK);
+                    thiz.cnc.setWorkCoord({ x: 0, y: 0, z: 0 }, wcsPCB_WORK);
                     thiz.cnc.once('pos', data => {
                         console.log('Home completed: ', data);
                     });
@@ -433,7 +433,7 @@ class CNCController  extends MainSubProcess {
         this.findOriginMode = false;
         this.jogMode = false;
         this.pointer.laser = false;
-        let spindleCoord = this.cnc.wpos;
+        let spindleCoord = this.cnc.mpos;
         let laserCoord = this.pointer.toLaserPos(spindleCoord);
         this.cnc.goto(laserCoord, wcsMACHINE_WORK);
         this.cnc.zeroWorkXY(wcsPCB_WORK);
@@ -454,7 +454,8 @@ class CNCController  extends MainSubProcess {
             let zpad = thiz.config.cnc.locations.zpad;
 
             thiz.gotoSafeZ();
-            thiz.cnc.goto({ x: zpad.x, y: zpad.y, z: zheight.zpad.startZ }, wcsMACHINE_WORK);
+            let zpos = zheight.zpad.lastZ ? zheight.zpad.lastZ + 2.5 : zheight.zpad.startZ;
+            thiz.cnc.goto({ x: zpad.x, y: zpad.y, z: zpos }, wcsMACHINE_WORK);
             thiz.cnc.sendGCode(['G91', 'G38.2 Z-14 F20', 'G90']);
 
             thiz.cnc.once('probe', (probeVal) => {
@@ -504,7 +505,7 @@ class CNCController  extends MainSubProcess {
 
                     // The Z probe should be lowered 4mm (the retract height from Z), and then
                     // approx 4mm above where we think the PCB surface is...
-                    let moveZ = 0 - 4 - thiz.config.cnc.pcbFrame.height + 4;
+                    let moveZ = 0 - 4 - thiz.config.cnc.pcbFrame.height + 2;
 
                     thiz.cnc.sendGCode(['G91', `G0 Y${moveY}`, `G0 Z${moveZ}`, 'G90']);
 
@@ -522,7 +523,7 @@ class CNCController  extends MainSubProcess {
 
                         // Set the primary work coordinate Z height to the probe
                         // value...
-                        thiz.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
+                        thiz.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} X0 Y0 Z0`);
 
                         // Retract 4mm from the PCB
                         thiz.cnc.sendGCode(['G91', 'G0 Z4', 'G90']);
@@ -547,7 +548,7 @@ class CNCController  extends MainSubProcess {
 
     loadStock() {
         let load = this.config.cnc.locations.load;
-        this.cnc.goto({x: load.x, y: load.y, z: 0}, wcsMACHINE_WORK);
+        this.cnc.goto({x: load.x, y: load.y, z: -1 }, wcsMACHINE_WORK);
     }
 
 
