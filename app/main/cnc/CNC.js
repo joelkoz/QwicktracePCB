@@ -39,7 +39,7 @@ function getAccessToken() {
     }
 }
 
-  
+
 //const host = '127.0.0.1';
 const host = '192.168.0.160';
 const port = 8000;
@@ -437,7 +437,8 @@ class CNC extends EventEmitter {
 
     get mpos() {
         if (this.ctrlState) {
-            return this.ctrlState.status.mpos;
+            let pos = this.ctrlState.status.mpos;
+            return { x: parseFloat(pos.x), y: parseFloat(pos.y), z: parseFloat(pos.z) };
         }
         else {
             return { x: 0, y: 0, z: 0 };
@@ -446,7 +447,8 @@ class CNC extends EventEmitter {
 
     get wpos() {
         if (this.ctrlState) {
-            return this.ctrlState.status.wpos;
+            let pos = this.ctrlState.status.wpos;
+            return { x: parseFloat(pos.x), y: parseFloat(pos.y), z: parseFloat(pos.z) };
         }
         else {
             return { x: 0, y: 0, z: 0 };
@@ -456,7 +458,7 @@ class CNC extends EventEmitter {
 
     get rpm() {
         if (this.ctrlState) {
-            return this.ctrlState.status.spindle;
+            return parseFloat(this.ctrlState.status.spindle);
         }
         else {
             return 0;
