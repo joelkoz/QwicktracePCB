@@ -365,15 +365,15 @@ class CNC extends EventEmitter {
         let gcode = `G10 L20 P${wcsNum} `;
 
         if (pos.hasOwnProperty('x')) {
-            gcode += `X${pos.x} `;
+            gcode += `X${pos.x.toFixed(3)} `;
         }
 
         if (pos.hasOwnProperty('y')) {
-           gcode += `Y${pos.y} `;
+           gcode += `Y${pos.y.toFixed(3)} `;
         }
 
        if (pos.hasOwnProperty('z')) {
-           gcode += `Z${pos.z}`;
+           gcode += `Z${pos.z.toFixed(3)}`;
        }
 
        this.sendGCode(gcode);
@@ -398,12 +398,12 @@ class CNC extends EventEmitter {
        let xyCode = `${wcsSelect} G0 `;
 
        if (wpos.hasOwnProperty('x')) {
-           xyCode += `X${wpos.x} `
+           xyCode += `X${wpos.x.toFixed(3)} `
            sendXY = true;
        }
 
        if (wpos.hasOwnProperty('y')) {
-           xyCode += `Y${wpos.y}`;
+           xyCode += `Y${wpos.y.toFixed(3)}`;
            sendXY = true;
        }
 
@@ -412,7 +412,7 @@ class CNC extends EventEmitter {
        }
 
        if (wpos.hasOwnProperty('z')) {
-            this.sendGCode(`${wcsSelect} G0 Z${wpos.z}`);
+            this.sendGCode(`${wcsSelect} G0 Z${wpos.z.toFixed(3)}`);
        }
     }
 
@@ -606,6 +606,7 @@ class CNC extends EventEmitter {
 
 
     jogStop() {
+        this.feederReset();
         this.sendCommand('jogCancel');
       
          // Use "feedhold" if "jogCancel" patch is not installed on CNCjs...
