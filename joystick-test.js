@@ -1,10 +1,30 @@
-const ADS1115 = require('ads1115')
+const ADS1115 = require('./app/main/ads1115-client')
 const readline = require('readline');
 const fs = require('fs');
+const GPIO = require('./app/main/GPIO');
 
-const connection = [1, 0x48, 'i2c-bus']
+const connection = [1, 0x48, ]
 
 const CAL_FILE = "joystick.json";
+
+
+const mockConfig = { cnc: {},
+                    joystick: {
+                      invertY: true,
+                      invertX: false,
+                      calibration: {
+                                      xCal:{min:174,max:26514,mid:13442,deadLo:50,deadHi:50},
+                                      yCal:{min:176,max:26515,mid:13098,deadLo:50,deadHi:50},
+                                      btnPressThreshold: 500
+                                    }
+                    },
+                     pigpio: {
+                        "host": "127.0.0.1",
+                        "port": 8888
+                   } };
+
+GPIO.config = mockConfig.pigpio;
+new GPIO();
 
 function cls() {
    process.stdout.write('\033[2J');
