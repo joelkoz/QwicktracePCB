@@ -162,7 +162,7 @@ class ProjectLoader  extends MainSubProcess {
 
 
 
-    static async getWorkFileContents(profile) {
+    static async getWorkAsGcode(profile) {
 
         await ProjectLoader.prepareForWork(profile);
 
@@ -185,10 +185,19 @@ class ProjectLoader  extends MainSubProcess {
             gbrTarget = gbrSource;
         }
 
-        // Read in the contents of the file...
-        let contents = await fsprReadFile(gbrTarget);
+        let gcTarget = workDir + state.side + "-" + state.action + ".nc"
 
-        return { name: `${state.projectId}-${state.side}`, contents };
+        if (state.action === 'mill') {
+           await GerberUtils.gbrToMill(gbrTarget, gcTarget);
+        }
+        else {
+            await GerberUtils.drlToDrill(gbrTarget, gcTarget);
+        }
+
+        // Read in the contents of the gcode file...
+        let contents = await fsprReadFile(gcTarget);
+
+        return { name: `${state.projectId}-${state.side}`, contents: contents.toString() };
     }
 
 

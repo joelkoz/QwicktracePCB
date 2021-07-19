@@ -150,7 +150,7 @@ class CNCController  extends MainSubProcess {
                     // Zero out the work coordinates...
                     thiz.homeInProgress = false;
                     thiz.mposHome = thiz.cnc.mpos;
-                    thiz.cnc.setWorkCoord({ x: 0, y: 0, z: 0 }, wcsPCB_WORK);
+                    thiz.cnc.setWorkCoord({ x: 0, y: 0 }, wcsPCB_WORK);
                     thiz.cnc.once('pos', data => {
                         console.log('Home completed: ', data);
                     });
@@ -171,8 +171,8 @@ class CNCController  extends MainSubProcess {
         });
 
         this.cnc.on('sent', (data) => {
+            
             if (thiz.autolevelInProgress) {
-
                 if (data.startsWith('(AL: start probe:')) {
                     // `(AL: start probe: ${this.planedPointCount} points)`
                     let endNdx = data.indexOf(' points')
@@ -192,6 +192,21 @@ class CNCController  extends MainSubProcess {
                     console.log('Autolevel completed');
                     this.gotoSafeZ();
                     MainMQ.emit('cnc-autolevel-complete');
+                }
+            }
+            else if (thiz.autolevelReapplyInProgress) {
+                if (data.startsWith('(AL: finished')) {
+                    thiz.autolevelReapplyInProgress = false;
+                    console.log('Autolevel apply completed');
+                    MainMQ.emit('cnc-autolevel-apply-complete');
+                }
+                else if (data.startsWith('(AL: error occurred')) {
+                    thiz.autolevelReapplyInProgress = false;
+                    console.log('Autolevel apply ended in error')
+                    // (AL: error occurred ${x})
+                    let endNdx = data.indexOf(')')
+                    let msg = data.slice(20, endNdx);
+                    thiz.ipcSend('ui-popup-message', `Autolevel failed: ${msg}`);
                 }
             }
         });
@@ -595,20 +610,30 @@ class CNCController  extends MainSubProcess {
         };
 
         try {
-            let workFile = await ProjectLoader.getWorkFileContents(profile);
+            console.log(`Starting PCB mill of ${profile.state.projectId}`)
+       
+            this.cnc.senderUnload();
+
+            await untilTrue(1000, () => { return thiz.cnc.getSenderStatus() === CNC.SENDER_EMPTY}, fnRejectIfCanceled);
+
+            let workFile = await ProjectLoader.getWorkAsGcode(profile);
 
             this.cnc.senderLoad(workFile.name, workFile.contents);
 
-            await untilTrue(1000, () => { thiz.cnc.getSenderStatus() === CNC.SENDER_LOADED}, fnRejectIfCanceled);
+            await untilTrue(1000, () => { return thiz.cnc.getSenderStatus() === CNC.SENDER_LOADED}, fnRejectIfCanceled);
 
+            this.autolevelReapplyInProgress = true;
             this.cnc.sendGCode('(#autolevel_reapply)');
 
-            await untilTrue(1000, () => { !thiz.cnc.getFeederState().pending }, fnRejectIfCanceled);
+            await untilEvent(MainMQ.getInstance(), 'cnc-autolevel-apply-complete', 30000)
 
             this.cnc.senderStart();
 
-            await untilTrue(1000, () => { thiz.cnc.getSenderStatus() === CNC.SENDER_DONE}, fnRejectIfCanceled);
+            await this.cnc.untilState(CNC.CTRL_STATE_RUN);
 
+            await untilTrue(1000, () => { return thiz.cnc.getSenderStatus() === CNC.SENDER_DONE}, fnRejectIfCanceled);
+
+            console.log(`Completed PCB mill of ${profile.state.projectId}`)
             this.ipcSend(callbackName, thiz.cnc.getSenderState().elapsedTime);            
 
         }
