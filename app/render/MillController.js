@@ -137,14 +137,15 @@ class MillController extends AlignmentController {
                   subtitle: "Autolevel",
                   instructions: "Ready to start autolevel",
                   buttonDefs: [
-                     { label: "Start", fnAction: () => { ui.wizardNext() } },                     
+                     { label: "Start", fnAction: () => { ui.wizardNext() } },
+                     { label: "Skip", fnAction: () => { ui.gotoWizardPage('removeProbe') } },                  
                      { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ]
                 },
         
                 { id: "autolevel",
                   subtitle: "Autolevel",
-                  instructions: "Gathering surface data for auto leveling. Standby...",
+                  instructions: "Gathering surface data for auto leveling...",
                   buttonDefs: [
                     { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
@@ -155,8 +156,8 @@ class MillController extends AlignmentController {
         
         
                 { id: "removeProbe",
-                  subtitle: "Autolevel",
-                  instructions: "Autolevel complete. Remove probe from bit and return to its original mount.",
+                  subtitle: "Ready to mill",
+                  instructions: "Remove probe from bit and return to its original mount.",
                   buttonDefs: [
                     { label: "Continue", next: true, btnClass: 'removeProbeContinue' },
                     { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
@@ -220,12 +221,19 @@ class MillController extends AlignmentController {
         window.uiController.wizardNext();
     }
 
+    updateUiProbeStatus() {
+       window.setWizardStatusText(`Probing ${this.probeNum} of ${this.probeCount}`)
+    }
+
     setAutolevelProbeCount(probeCount) {
-      console.log('Autolevel probe count', probeCount);
+      this.probeCount = probeCount;
+      this.probeNum = 1;
+      this.updateUiProbeStatus()
     }
 
     setAutolevelProbeNum(probeNum) {
-      console.log('Autolevel probe point ', probeNum);
+      this.probeNum = probeNum
+      this.updateUiProbeStatus();
     }
 
     cancelProcesses() {

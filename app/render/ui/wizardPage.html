@@ -41,6 +41,10 @@
             margin: 10px;
         }
 
+        #wizardPage .status-area {
+            margin: 10px;
+            text-align: center;
+        }
 
         #wizardPage .button-area .btn {
             padding-left: 10px;
@@ -60,7 +64,9 @@
         </div>        
         <div class="instructions-area">
             Wizard instructions go here
-        </div>        
+        </div>    
+        <div class="status-area">
+        </div>  
         <div class="button-area">
         </div>
     </div>
@@ -76,6 +82,11 @@
             }
         }
 
+        function setWizardStatusText(text) {
+            setWizardText('#wizardPage .status-area', text)
+        }
+
+
         function wizardPageActivate(wizardData) {
 
             let buttonDefs = wizardData.buttonDefs;
@@ -86,7 +97,8 @@
             setWizardText('#wizardPage .title-area', wizardData.title)
             setWizardText('#wizardPage .subtitle-area', wizardData.subtitle)
             setWizardText('#wizardPage .instructions-area', wizardData.instructions)
-
+            setWizardStatusText('');
+            
             let btnSelector = "#wizardPage .button-area";
             $(btnSelector).empty();
             buttonDefs.forEach(btnDef => {
