@@ -253,12 +253,12 @@ class UIController {
 
     startWizard(wizard) {
         this.wizard = wizard;
-        this.setWizardState(wizard.steps[0].id);
+        this.gotoWizardPage(wizard.steps[0].id);
     }
 
 
-    setWizardState(wizardStepId) {
-        this.closeCurrentWizard();
+    gotoWizardPage(wizardStepId) {
+        this.endCurrentWizardPage();
         this.wizardStepId = wizardStepId;
         let thiz = this;
         setTimeout(() => { thiz.showPage('wizardPage', false)}, 10);
@@ -286,7 +286,7 @@ class UIController {
     }
 
 
-    closeCurrentWizard() {
+    endCurrentWizardPage() {
         if (this.wizard && this.wizardStepId) {
             let wiz = this.getWizardData(this.wizardStepId);
             if (wiz.onDeactivate) {
@@ -306,7 +306,7 @@ class UIController {
         if (wNdx >= 0) {
             wNdx++;
             if (wNdx < this.wizard.steps.length) {
-                this.setWizardState(this.wizard.steps[wNdx].id);
+                this.gotoWizardPage(this.wizard.steps[wNdx].id);
             }
             else {
                 // If we are out of steps, then just auto finish the wizard
@@ -330,7 +330,7 @@ class UIController {
 
     cancelWizard() {
         if (this.wizard) {
-           this.closeCurrentWizard();
+           this.endCurrentWizardPage();
            let cancelPage = this.wizard.cancelLandingPage;
            delete this.wizard;
            this.clearPageStack();
@@ -343,7 +343,7 @@ class UIController {
     finishWizard() {
         if (this.wizard) {
             let wiz = this.wizard;
-           this.closeCurrentWizard();
+           this.endCurrentWizardPage();
            let finishPage = wiz.finishLandingPage ? wiz.finishLandingPage : wiz.cancelLandingPage;
            delete this.wizard;
            this.clearPageStack();
