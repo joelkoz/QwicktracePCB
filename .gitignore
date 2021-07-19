@@ -120,3 +120,4 @@ pi-hat/kicad/**/*-cache.lib
 config.json
 temp/*
 
+*.svg
