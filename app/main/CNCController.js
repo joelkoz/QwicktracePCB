@@ -85,7 +85,9 @@ class CNCController  extends MainSubProcess {
 
         this.stick.onValue(stick => {
             if (thiz.jogMode) {
-               thiz.cnc.jog(stick.x, stick.y, thiz.jogZ);
+               if (this.state != CNC.CTRL_STATE_JOG) {
+                  thiz.cnc.jog(stick.x, stick.y, thiz.jogZ);
+               }
             }
             else {
                 thiz.ipcSend('ui-joystick', stick);
@@ -128,6 +130,11 @@ class CNCController  extends MainSubProcess {
         });
 
         this.cnc.on('state', (state) => {
+            
+            if (this.lastState != state) {
+                console.log('CNC state is ', state);
+                this.lastState = state;
+            }
 
             if (state === CNC.CTRL_STATE_HOME) {
                 if (!thiz.homeInProgress) {
@@ -149,13 +156,6 @@ class CNCController  extends MainSubProcess {
                     });
                     MainMQ.emit('cnc-homed');
                 }
-
-
-                if (thiz.autolevelInProgress) {
-                    thiz.autolevelInProgress = false;
-                    console.log('Autolevel completed');
-                    MainMQ.emit('cnc-autolevel-complete');
-                }
             }
 
             if (state === CNC.CTRL_STATE_RESET) {
@@ -170,6 +170,30 @@ class CNCController  extends MainSubProcess {
             thiz.ipcSend('render-zprobe-state', state);
         });
 
+        this.cnc.on('sent', (data) => {
+            if (thiz.autolevelInProgress) {
+
+                if (data.startsWith('(AL: start probe:')) {
+                    // `(AL: start probe: ${this.planedPointCount} points)`
+                    let endNdx = data.indexOf(' points')
+                    let probeCount = parseInt(data.slice(18, endNdx));
+                    console.log(`Autolevel starting on ${probeCount} points`);
+                    thiz.ipcSend('mill-autolevel-probe-count', probeCount);
+                }
+                else if (data.startsWith('(AL: probing point')) {
+                    // (AL: probing point ${this.planedPointCount + 1})
+                    let endNdx = data.indexOf(')')
+                    let probeNum = parseInt(data.slice(19, endNdx));
+                    console.log(`Autolevel probing point`);
+                    thiz.ipcSend('mill-autolevel-probe-num', probeNum);
+                }
+                else if (data === '(AL: done)') {
+                    thiz.autolevelInProgress = false;
+                    console.log('Autolevel completed');
+                    MainMQ.emit('cnc-autolevel-complete');
+                }
+            }
+        });
 
         this.cnc.on('alarm', (msg) => {
             thiz.ipcSend('ui-popup-message', `ALARM: ${msg}`);
@@ -253,16 +277,13 @@ class CNCController  extends MainSubProcess {
         this.cnc.unlock();
         this.cancelProcesses();
 
-        // Send the render process the initial values of things...
-        this.ipcSend('render-zprobe-state', this.zprobe.value);
-
-        untilEvent(this.cnc, 'state').then(() => {
-            console.log('Resetting sender...');
+        untilEvent(this.cnc, 'state').then(async () => {
             this.cnc.senderStop();
-            console.log('Resetting feeder...');
-            this.cnc.feederReset();
-            console.log('Doing home for initCNC()');
+            await this.cnc.untilSent();
+            this.cnc.feederStop();
+            await this.cnc.untilSent();
             this.cnc.home();
+            await this.cnc.untilSent();
             console.log('Completed initCNC()')
         })
     }
@@ -275,28 +296,13 @@ class CNCController  extends MainSubProcess {
         this.cnc.reset();
 
         console.log('CNC reset: waiting for home state...');
-        await this.waitForState(CNC.CTRL_STATE_HOME)
+        await this.cnc.untilState(CNC.CTRL_STATE_HOME)
         console.log('CNC reset: waiting for idle state...');
-        await this.waitForState(CNC.CTRL_STATE_IDLE)
+        await this.cnc.untilState(CNC.CTRL_STATE_IDLE)
         console.log('CNC reset: request completed.');
         this.ipcSend(callbackName)
     }
 
-
-    async waitForState(stateVal) {
-
-        let waiting = true;
-        let waitStart = Date.now();
-        while (waiting) {
-            let state = await untilEvent(this.cnc, 'state');
-            if (state === stateVal) {
-                waiting = false;
-            }
-            if (Date.now() - waitStart > 30000) {
-                throw new Error(`Timeout while waiting for state to equal ${stateVal}`)
-            }
-        }
-    }
 
     setProfile(profile) {
         this.profile = profile;
@@ -307,19 +313,22 @@ class CNCController  extends MainSubProcess {
         this.profile.state.deskew = deskew;
     }
 
-    killFeeder() {
+
+    async killFeeder() {
         console.log("Killing feeder queue...");
-        this.cnc.feederReset();
+        await this.cnc.feederReset();
+        await this.gotoSafeZ();
     }
 
 
-    gotoSafeZ() {
+    async gotoSafeZ() {
         console.log("Move to safe Z height...");
         this.cnc.goto({z: this.config.cnc.zheight.safe }, wcsMACHINE_WORK);
+        await this.cnc.untilSent();
     }
 
 
-    cancelProcesses() {
+    async cancelProcesses() {
 
         if (this.alignmentMode) {
            console.log("Canceling active CNC alignment.");
@@ -335,24 +344,23 @@ class CNCController  extends MainSubProcess {
         if (this.findZPadInProgress) {
             console.log("Canceling active zpad zprobe")
             this.findZPadInProgress = false;
-            this.killFeeder();
-            this.gotoSafeZ();
+            await this.killFeeder();
         }
  
 
         if (this.findPCBSurfaceInProgress) {
             console.log("Canceling active pcb zprobe")
             this.findPCBSurfaceInProgress = false;
-            this.killFeeder();
-            this.gotoSafeZ();
+            await this.killFeeder();
         }
 
          
         if (this.autolevelInProgress) {
             console.log("Canceling autolevel")
             this.autolevelInProgress = false;
-            this.killFeeder();
-            this.gotoSafeZ();
+            await this.killFeeder();
+            this.cnc.sendGCode('(#autolevel_cancel)');
+            await this.cnc.untilSent();
         }
 
 
@@ -360,7 +368,8 @@ class CNCController  extends MainSubProcess {
              console.log("Canceling PCB milling");
              this.millPCBInProgress = false;
              this.cnc.senderStop();
-             this.gotoSafeZ();
+             await this.cnc.untilState(CNC.CTRL_STATE_IDLE);
+             await this.gotoSafeZ();
         }
 
 
@@ -439,10 +448,19 @@ class CNCController  extends MainSubProcess {
         this.cnc.zeroWorkXY(wcsPCB_WORK);
 
         this.boardOriginM = laserCoord;
+        let origin = this.boardOriginM;
+        let ur = this.config.cnc.locations.ur;
+        let margin = this.config.cnc.pcbFrame.margin;
+        let actualWidth = -(origin.x - ur.x) + margin;
+        let actualHeight = -(origin.y - ur.y) + margin;
+        this.profile.stock.actual = { width: actualWidth, height: actualHeight }; 
+
+        this.cnc.goto({x: 0, y: 0}, wcsPCB_WORK);
 
         let callbackName = this.findOriginCallbackName;
-        console.log(`Finished findWorkOrigin().  Calling ${callbackName} with ${JSON.stringify(laserCoord)}`)        
-        this.ipcSend(callbackName, laserCoord);
+        let returnData = this.profile.stock.actual;
+        console.log(`Finished findWorkOrigin().  Calling ${callbackName} with ${JSON.stringify(returnData)}`)        
+        this.ipcSend(callbackName, returnData);
     }
 
 
@@ -522,11 +540,8 @@ class CNCController  extends MainSubProcess {
                         thiz.findPCBSurfaceInProgress = false;
 
                         // Set the primary work coordinate Z height to the probe
-                        // value...
-                        thiz.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} X0 Y0 Z0`);
-
-                        // Retract 4mm from the PCB
-                        thiz.cnc.sendGCode(['G91', 'G0 Z4', 'G90']);
+                        // value, then retract 4mm
+                        thiz.cnc.sendGCode([`G10 L20 P${wcsPCB_WORK} X0 Y0 Z0`, 'G91', 'G0 Z4', 'G90']);
         
                         if (probeVal.ok) {
                             zheight.pcb.lastZ = probeVal.z;

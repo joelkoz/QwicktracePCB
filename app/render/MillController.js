@@ -30,8 +30,8 @@ class MillController extends AlignmentController {
 
         // Define 'callback dispatch' code that receives messages
         // from the main process
-        ipcRenderer.on('mill-origin-set', (event, mpos) => {
-            thiz.setMillOrigin(mpos);
+        ipcRenderer.on('mill-origin-set', (event, actualStock) => {
+            thiz.setMillOrigin(actualStock);
         });
 
 
@@ -39,6 +39,13 @@ class MillController extends AlignmentController {
             thiz.setZProbeResult(mpos);
         });        
 
+        ipcRenderer.on('mill-autolevel-probe-count', (event, probeCount) => {
+           thiz.setAutolevelProbeCount(probeCount);
+        });      
+
+        ipcRenderer.on('mill-autolevel-probe-num', (event, probeNum) => {
+          thiz.setAutolevelProbeNum(probeNum);
+       });           
     }
 
 
@@ -126,7 +133,14 @@ class MillController extends AlignmentController {
                   }
                 },
         
-
+                { id: "autolevel-start",
+                  subtitle: "Autolevel",
+                  instructions: "Ready to start autolevel",
+                  buttonDefs: [
+                     { label: "Start", fnAction: () => { ui.wizardNext() } },                     
+                     { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
+                  ]
+                },
         
                 { id: "autolevel",
                   subtitle: "Autolevel",
@@ -194,9 +208,9 @@ class MillController extends AlignmentController {
         window.uiController.startWizard(wizard);
     }
 
-    setMillOrigin(mpos) {
-        this.mposWorkOrigin = mpos;
-        this.activeProfile.mill.workOriginM = mpos;
+    setMillOrigin(actualStock) {
+        this.activeProfile.stock.actual = actualStock;
+        console.log('Mill origin set. Actual stock: ', actualStock);
         window.uiController.wizardNext();
     }
 
@@ -206,6 +220,13 @@ class MillController extends AlignmentController {
         window.uiController.wizardNext();
     }
 
+    setAutolevelProbeCount(probeCount) {
+      console.log('Autolevel probe count', probeCount);
+    }
+
+    setAutolevelProbeNum(probeNum) {
+      console.log('Autolevel probe point ', probeNum);
+    }
 
     cancelProcesses() {
         ipcRenderer.invoke('cnc-cancel', this.activeProfile);

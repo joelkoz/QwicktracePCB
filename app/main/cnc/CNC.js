@@ -4,6 +4,7 @@ const EventEmitter = require('events')
 
 const io = require('socket.io-client')
 const jwt = require('jsonwebtoken')
+const { untilTrue, untilEvent } = require('promise-utils')
 
 
 // Controller initialization...
@@ -53,27 +54,32 @@ const RESERVED_EVENTS = [ 'error', 'ready', 'closed', 'state', 'sent', 'data', '
 const RESET_MSG = '[MSG:Reset to continue]';
 
 /**
- * A Class for controlling a Grbl based CNC controlled by CNCjs running on the local machine. As
- * an EventEmitter, external listeners can subscribe (and unsubscribe) to events. These are the
- * events emitted directly by this class:
+ * A Class for controlling a Grbl based CNC controlled by CNCjs running on the local machine. To
+ * simplify operations, this class emits simplified events that represent the most common Grbl and 
+ * CNCjs events.
+ *
+ * These are the events emitted directly by this class:
  * <ol>
- *   <li>ready - The class is connected to the controller and ready for further processing</li>
+ *   <li>ready - The class is connected to CNCjs and ready for further processing</li>
  *   <li>error - An error has occurred</li>
  *   <li>closed - The connection to the controller has been closed</li>
- *   <li>state - Reports the current state of the controller</li>
- *   <li>sent - Reports data sent to the controller (i.e. written to the serial port)</li>
- *   <li>data - Reports raw data received from the controller (i.e. the serial port feed)</li>
+ *   <li>state - Reports the current state of the CNCjs controller</li>
+ *   <li>sent - Reports data sent to Grbl (i.e. written to the serial port)</li>
+ *   <li>data - Reports raw data received from Grbl (i.e. read from serial port)</li>
  *   <li>pos - Reports an object with the mpos, wpos, and spindle speed at the current moment</li>
- *   <li>sender - Reports the current state of the sender</li>
- *   <li>feeder - Reports the current state of the feeder</li>
- *   <li>alarm - Reports any alarm received from the controller</li>
- *   <li>msg - Reports any messages received from the controller</li>
- *   <li>probe - Reports any zprobe result messages received from the controller</li>
+ *   <li>sender - Reports the current state of the CNCjs sender</li>
+ *   <li>feeder - Reports the current state of the CNCjs feeder</li>
+ *   <li>alarm - Reports any alarm received from Grbl</li>
+ *   <li>msg - Reports any messages received from Grbl</li>
+ *   <li>probe - Reports any zprobe result messages received from Grbl</li>
  * </ol>
  * 
  * In addition to the above primary events, any event defined by CNCjs for its socket communications API
  * can be used. The only catch is that direct subscription to CNCjs socket events must not occur until after
  * the "ready" event has been reported as that is when the socket is ready.
+ * @see on()
+ * @see once()
+ * @see removeListener()
  */
 class CNC extends EventEmitter {
 
@@ -309,10 +315,18 @@ class CNC extends EventEmitter {
     }
 
     // Forces a reset of the feeder by immediately executing a hold, then clearing the feeder queue.
-    feederReset() {
-       this.hold();
-       this.feederStop();
-       this.feederStart();
+    async feederReset() {
+        try {
+          this.hold();
+          await this.untilState(CNC.CTRL_STATE_HOLD);
+          this.feederStop();
+          await this.untilSent();
+          this.feederStart();
+          await this.untilState((state) => { return state != CNC.CTRL_STATE_HOLD });
+        }
+        catch (err) {
+            console.log('Error during feederReset.', err);
+        }
     }
 
 
@@ -507,7 +521,7 @@ class CNC extends EventEmitter {
            return this.socket.on(eventName, listener);
         }
         else {
-            throw new Error('Subscribing directly to CNCjs events must occur after connect() has been called.');
+            throw new Error('Subscribing directly to CNCjs events must occur only after "ready" event');
         }
     }
 
@@ -574,10 +588,36 @@ class CNC extends EventEmitter {
     }
 
 
+    /**
+     * Sends the specified CNCjs command over the socket connection and to
+     * the CNCjs server.
+     * @param {*} cmd The command to execute. For options, see CNCjs source code file src/server/controllers/Grbl/GrblController.js 
+     * @param  {...any} args 
+     */
     sendCommand(cmd, ...args) {
         this.socket.emit('command', serialPort, cmd, ...args)
     }
 
+
+    /**
+     * Immediately writes the specified data string directly to Grbl via the specified serial port,
+     * bypassing the CNCjs feeder and sender systems. If the CNCjs feeder or sender has data queued
+     * up, this will jump the queue.
+     * @param {*} data The data to write
+     * @param {*} context An optional context used for inline variable substitution (e.g. macros)
+     */
+    rawWrite(data, context = {}) {
+        this.socket.emit('write', serialPort, data, context)
+    }
+
+    /**
+     * Similar to rawWrite(), except a line feed is added at the end of the data.
+     * @param {*} data The data to write
+     * @param {*} context An optional context used for inline variable substitution (e.g. macros)
+     */
+    rawWriteLn(data, context = {}) {
+        this.socket.emit('writeln', serialPort, data, context)
+    }
 
     get state() {
         if (this.ctrlState) {
@@ -605,9 +645,10 @@ class CNC extends EventEmitter {
     }
 
 
-    jogStop() {
-        this.feederReset();
+    async jogStop() {
+        // await this.feederReset();
         this.sendCommand('jogCancel');
+        await this.untilSent();
       
          // Use "feedhold" if "jogCancel" patch is not installed on CNCjs...
 //        this.sendCommand('feedhold');
@@ -662,6 +703,60 @@ class CNC extends EventEmitter {
             }
         }
     }
+
+
+    /**
+     * Waits until any commands issue to be sent to CNCjs via the socket interface has
+     * actually been sent to the server.
+     */
+    async untilSent() {
+        try {
+           await untilEvent(this.socket.io.engine, 'drain');
+        }
+        catch (err) {
+            console.log('Error waiting for socket drain event.');
+        }
+    }
+
+    async untilCncEvent(eventName, fnExpectedValue, msTimeout = 20000) {
+
+        if (typeof fnExpectedValue === 'string') {
+            let matchStr = fnExpectedValue;
+            fnExpectedValue = (val) => { return (val === matchStr) }
+        }
+
+        try {
+            let waiting = true;
+            let waitStart = Date.now();
+            while (waiting) {
+                let value = await untilEvent(this, eventName);
+                if (fnExpectedValue(value)) {
+                    waiting = false;
+                }
+                if (Date.now() - waitStart > msTimeout) {
+                    throw new Error(`Timeout while waiting for event ${eventName}`)
+                }
+            }
+        }
+        catch (err) {
+            console.log(`Error waiting for state ${stateVal}`, err)
+        }       
+    }
+
+    async untilState(fnExpectedState, msTimeout = 20000) {
+        await this.untilCncEvent('state', fnExpectedState, msTimeout);
+    }
+
+
+    async untilData(fnExpectedData, msTimeout = 5000) {
+        await this.untilCncEvent('data', fnExpectedData, msTimeout);
+    }
+
+
+    async untilOk(msTimeout = 5000) {
+           await this.untilData('ok', msTimeout);
+    }
+
 }
 
 

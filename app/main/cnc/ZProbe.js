@@ -35,6 +35,7 @@ class ZProbe extends EventEmitter {
             this.pin.read().then((val) => {
                 thiz.probeVal = val;
                 console.log(`Initial zprobe value: ${val}`);
+                thiz.emit(ZProbe.EVT_PRESSED, thiz.value)
             })
 
             this.pin.notify((val) => {
