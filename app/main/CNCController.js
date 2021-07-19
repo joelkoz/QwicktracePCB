@@ -184,12 +184,13 @@ class CNCController  extends MainSubProcess {
                     // (AL: probing point ${this.planedPointCount + 1})
                     let endNdx = data.indexOf(')')
                     let probeNum = parseInt(data.slice(19, endNdx));
-                    console.log(`Autolevel probing point`);
+                    console.log(`Autolevel probing point`, probeNum);
                     thiz.ipcSend('mill-autolevel-probe-num', probeNum);
                 }
-                else if (data === '(AL: done)') {
+                else if (data.startsWith('(AL: done')) {
                     thiz.autolevelInProgress = false;
                     console.log('Autolevel completed');
+                    this.gotoSafeZ();
                     MainMQ.emit('cnc-autolevel-complete');
                 }
             }
