@@ -110,4 +110,9 @@
 }
 
 
-module.exports = { untilTrue, untilEvent }
+async function untilDelay(msDelay = 1000) {
+  await new Promise(resolve => setTimeout(resolve, msDelay));
+}
+
+
+module.exports = { untilTrue, untilEvent, untilDelay }
