@@ -249,11 +249,11 @@ class CNCController  extends MainSubProcess {
             }
         });
 
-        ipcMain.handle('cnc-probe-z', (event, data) => {
-            let callbackName = data.callbackName;
-            let profile = data.profile;
-            MainMQ.once('pcb-surface-found', () => { thiz.ipcSend(callbackName, thiz.cnc.mpos)})
-            thiz.findPCBSurface();
+        ipcMain.handle('cnc-probe-z', async (event, data) => {
+            let pcbZHeight = await thiz.findPCBSurface();
+            if (pcbZHeight) {
+                thiz.ipcSend(data.callbackName, pcbZHeight)
+            }
         });
 
         ipcMain.handle('cnc-load-pcb', () => {
@@ -480,100 +480,118 @@ class CNCController  extends MainSubProcess {
     }
 
 
-    findZPadSurface() {
-        let thiz = this;
+
+    async findZPadSurface() {
+
         this.findZPadInProgress = true;
-        return new Promise((resolve, reject) => {
-            let zheight = thiz.config.cnc.zheight;
-            let zpad = thiz.config.cnc.locations.zpad;
 
-            thiz.gotoSafeZ();
-            let zpos = zheight.zpad.lastZ ? zheight.zpad.lastZ + 2.5 : zheight.zpad.startZ;
-            thiz.cnc.goto({ x: zpad.x, y: zpad.y, z: zpos }, wcsMACHINE_WORK);
-            thiz.cnc.sendGCode(['G91', 'G38.2 Z-14 F20', 'G90']);
+        let zheight = this.config.cnc.zheight;
+        let zpad = this.config.cnc.locations.zpad;
 
-            thiz.cnc.once('probe', (probeVal) => {
+        await this.gotoSafeZ();
 
-                if (!thiz.findZPadInProgress) {
-                    thiz.gotoSafeZ();
-                    return;
-                }
+        let zpos = zheight.zpad.lastZ ? zheight.zpad.lastZ + 2 : zheight.zpad.startZ;
 
-                thiz.findZPadInProgress = false;
+        this.cnc.goto({ x: zpad.x, y: zpad.y, z: zpos }, wcsMACHINE_WORK);
+        await this.cnc.untilOk();
 
-                // Retract 4mm from the touch plate
-                thiz.cnc.sendGCode(['G91', 'G0 Z4', 'G90']);
+        // Start to probe...      
+        this.cnc.sendGCode(['(Start zPad probe)', 'G91', 'G38.2 Z-14 F20', 'G90']);
+        // await this.cnc.untilOk();
+        let probeVal = await untilEvent(this.cnc, 'probe');
 
-                if (probeVal.ok) {
-                    zheight.zpad.lastZ = probeVal.z;
-                    console.log(`Zprobe of pad found at ${probeVal.z}`)
-                    resolve(probeVal);
-                }
-                else {
-                    thiz.ipcSend('ui-popup-message', `ERROR: Z probe failed`);
-                    reject(probeVal);
-                }
-            });
-        });
+        await this.cnc.feedGCode('(End zPad probe)')
+
+        if (!this.findZPadInProgress) {
+            this.gotoSafeZ();
+            return null;
+        }
+
+        this.findZPadInProgress = false;
+
+        if (probeVal.ok) {
+            // Set the primary work coordinate Z height to the probe value
+            this.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
+            await this.cnc.untilOk();
+
+            // Then retract 4mm
+            this.cnc.goto({z: 4}, wcsPCB_WORK);
+            await this.cnc.untilOk();
+
+            zheight.zpad.lastZ = probeVal.z;
+            console.log(`Zprobe of pad found at ${probeVal.z}`)
+            return probeVal.z;
+        }
+        else {
+            this.ipcSend('ui-popup-message', `ERROR: Z probe failed`);
+            return null;
+        }
+
     }
 
 
-    findPCBSurface() {
-        let thiz = this;
-        this.findPCBSurfaceInProgress = true;
-        this.findZPadSurface()
-            .then(probeVal => {
+    async findPCBSurface() {
 
-                if (!thiz.findPCBSurfaceInProgress) {
-                    thiz.cnc.goto({z: thiz.config.cnc.zheight.safe }, wcsMACHINE_WORK);
-                    return;
-                }
+        // First, adjust for possible tool change by probing the ZPad surface...
+        let zpadZ = await this.findZPadSurface();
 
-                return new Promise((resolve, reject) => {
-                    let zheight = thiz.config.cnc.zheight;
-                    let zpad = thiz.config.cnc.locations.zpad;
-                    let zPadVal = probeVal;
-                   
-                    // Now move the probe away from the pad to over the PCB by 5mm...
-                    let moveY = 0 - thiz.config.cnc.pcbFrame.width - 5;
+        if (zpadZ) {
+            this.findPCBSurfaceInProgress = true;
 
-                    // The Z probe should be lowered 4mm (the retract height from Z), and then
-                    // approx 4mm above where we think the PCB surface is...
-                    let moveZ = 0 - 4 - thiz.config.cnc.pcbFrame.height + 2;
+            let zheight = this.config.cnc.zheight;
+            let pcbFrame = this.config.cnc.pcbFrame;
 
-                    thiz.cnc.sendGCode(['G91', `G0 Y${moveY}`, `G0 Z${moveZ}`, 'G90']);
+            // Next move the probe away from the pad to over the PCB by 5mm...
+            let moveY = 0 - pcbFrame.width - 5;
 
-                    // Now start another Z probe...
-                    thiz.cnc.sendGCode(['G91', 'G38.2 Z-10 F20', 'G90']);
-        
-                    thiz.cnc.once('probe', (probeVal) => {
-        
-                        if (!thiz.findPCBSurfaceInProgress) {
-                            thiz.gotoSafeZ();
-                            return;
-                        }
+            await this.cnc.feedGCode(['G91', `G0 Y${moveY}`, 'G90']);
+            // await this.cnc.untilOk();
 
-                        thiz.findPCBSurfaceInProgress = false;
+            // Move to 2 mm above the PCB surface...
+            let estZ;
+            if (pcbFrame.probedHeight) {
+                estZ = zpadZ + pcbFrame.probedHeight + 2
+            }
+            else {
+                estZ = zpadZ + pcbFrame.height + 3;
+            }
+            this.cnc.goto({z: estZ}, wcsPCB_WORK);
+            await this.cnc.untilOk();
 
-                        // Set the primary work coordinate Z height to the probe
-                        // value, then retract 4mm
-                        thiz.cnc.sendGCode([`G10 L20 P${wcsPCB_WORK} X0 Y0 Z0`, 'G91', 'G0 Z4', 'G90']);
-        
-                        if (probeVal.ok) {
-                            zheight.pcb.lastZ = probeVal.z;
-                            console.log(`Zprobe of pcb found at ${probeVal.z}`)
-                            resolve(probeVal);
-                        }
-                        else {
-                            thiz.ipcSend('ui-popup-message', `ERROR: Z probe failed`);
-                            reject(probeVal);
-                        }
-                    });
-                });
-            })
-            .then(probeVal => {
-                MainMQ.emit('pcb-surface-found', this.cnc.mpos);
-            });
+            // Now start another Z probe...
+            this.cnc.sendGCode(['(Start pcb probe)', 'G91', 'G38.2 Z-10 F20', 'G90']);
+            let probeVal = await untilEvent(this.cnc, 'probe');
+            await this.cnc.feedGCode('(End pcb probe)');
+
+            if (!this.findPCBSurfaceInProgress) {
+                this.gotoSafeZ();
+                return null;
+            }
+
+            this.findPCBSurfaceInProgress = false;
+
+            if (probeVal.ok) {
+                let pcbSurfaceM = this.cnc.mpos;
+
+                // Set the primary work coordinate Z height to the probe value
+                await this.cnc.feedGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
+
+                await this.cnc.feedGCode('G54');   
+
+                this.cnc.goto({z: 4}, wcsPCB_WORK);
+                await this.cnc.untilOk();
+
+                let probedFrameHeight = zpadZ - probeVal.z;
+                pcbFrame.probedHeight = probedFrameHeight;
+                zheight.pcb = { lastZ: probeVal.z }
+                console.log(`Zprobe of pcb found at ${probeVal.z}`)
+                return probeVal.z;
+            }
+            else {
+                this.ipcSend('ui-popup-message', `ERROR: Z probe failed`);
+                return null;
+            }
+        }
     }
 
 

@@ -582,6 +582,17 @@ class CNC extends EventEmitter {
         }
     }
 
+    async feedGCode(gcodeList, msTimeout = 5000) {
+        if (!Array.isArray(gcodeList)) {
+            gcodeList = [gcodeList];
+        }
+
+        for (let i = 0; i < gcodeList.length; i++) {
+            let gcode = gcodeList[i];
+            this.sendGCode(gcode);
+            await this.untilOk(msTimeout);
+        }
+    }  
 
     stopGcode () {
         this.sendCommand('gcode:stop', { force: true });
@@ -739,7 +750,7 @@ class CNC extends EventEmitter {
             }
         }
         catch (err) {
-            console.log(`Error waiting for state ${stateVal}`, err)
+            console.log(`Error waiting for event ${eventName}`, err)
         }       
     }
 
@@ -754,7 +765,7 @@ class CNC extends EventEmitter {
 
 
     async untilOk(msTimeout = 5000) {
-           await this.untilData('ok', msTimeout);
+        await this.untilData('ok', msTimeout);
     }
 
 }
