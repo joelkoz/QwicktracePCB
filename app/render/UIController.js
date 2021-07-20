@@ -134,7 +134,11 @@ class UIController {
 
 
         ipcRenderer.on('ui-popup-message', (event, data) => {
-            thiz.popupMessage({ message: data });
+            console.log('Popup msg: ', data)
+            let isError = (data.startsWith('ERROR'));
+            if (!isError || !window.appConfig.ui.ignoreErrors) {
+               thiz.popupMessage({ message: data });
+            }
         });
 
 
