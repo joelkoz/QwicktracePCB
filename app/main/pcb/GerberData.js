@@ -3,6 +3,7 @@ const fs = require('fs')
 const gerberParser = require('gerber-parser')
 const whatsThatGerber = require('whats-that-gerber')
 
+const BoundingBox = require('./BoundingBox.js');
 
 // Example of what parsing gerber drill file looks like:
 // {"type":"tool","line":8,"code":"1","tool":{"shape":"circle","params":[0.4],"hole":[]}}
@@ -19,11 +20,24 @@ class GerberData extends EventEmitter {
     constructor(fileNames) {
         super();
         this.tools = new Map();
-        this.boundingBox = { min: { x: 99999, y: 999999}, max: { x:-999999, y:-999999 }}
+        this.boundingBoxes = {
+            master: new BoundingBox(),
+            drill: new BoundingBox(),
+            corners: new BoundingBox(),
+            copper: {
+                top: new BoundingBox(),
+                bottom: new BoundingBox()
+            }
+        }
+        this.boundingBox = this.boundingBoxes.master;
         this.fileList = [];
         if (fileNames) {
             this.loadFiles(fileNames);
         }
+    }
+
+    get size() {
+        return this.boundingBox.size();
     }
 
     mirror() {
@@ -57,6 +71,7 @@ class GerberData extends EventEmitter {
         this.holes = [];
         this.currentTool = null;
         const toolPrefix = "drl-";
+        this.bbLocal = this.boundingBoxes.drill;
 
         let thiz = this;
         fs.createReadStream(fileName)
@@ -96,8 +111,6 @@ class GerberData extends EventEmitter {
                     thiz.nextFile();
                     break;
 
-                default:
-                    console.log(`Unrecognized data type ${JSON.stringify(data)}`)
             }
 
            })
@@ -115,6 +128,7 @@ class GerberData extends EventEmitter {
         this.corners = [];
         this.currentTool = null;
         const toolPrefix = "edg-";
+        this.bbLocal = this.boundingBoxes.corners;
 
         let thiz = this;
         fs.createReadStream(fileName)
@@ -153,15 +167,12 @@ class GerberData extends EventEmitter {
                 case "done":
                     thiz.nextFile();
                     break;
-
-                default:
-                    // console.log(`Unrecognized data type ${JSON.stringify(data)}`)
-                    console.log(JSON.stringify(data))
             }
 
         })
 
     }
+
 
     loadTraces(fileName, side) {
 
@@ -172,51 +183,30 @@ class GerberData extends EventEmitter {
           console.warn('warning at line ' + w.line + ': ' + w.message)
         })
 
-        this.traces = [];
-        this.currentTool = null;
-        const toolPrefix = "trc-";
-
         let thiz = this;
+        this.bbLocal = this.boundingBoxes.copper[side];
         fs.createReadStream(fileName)
            .pipe(parser)
            .on('data', function(data) {
 
             let dType = data.type;
-
             switch (dType) {
-                // case "tool":
-                //    let toolCode = toolPrefix + data.code;
-                //    let toolDef = data.tool;
-                //    toolDef.code = toolCode;
-                //    thiz.tools.set(toolCode, toolDef); 
-                //    break;
+                case "set":
+                   if (data.prop === 'units') {
+                       thiz.units = data.value;
+                   }
 
-                // case "set":
-                //    if (data.prop === 'tool') {
-                //         let toolCode = toolPrefix + data.value;
-                //         thiz.currentTool = thiz.tools.get(toolCode);
-                //    }
-                //    else if (data.prop === 'units') {
-                //        thiz.units = data.value;
-                //    }
-
-                //    break;
-
-                // case "op":
-                //    if (data.op === 'move') {
-                //        let coord = data.coord;
-                //        thiz.corners.push({ tool: thiz.currentTool, coord });
-                //        thiz.checkCoord(coord)
-                //    }
-                //    break;
+                   break;
+                case "op":
+                   if (data.coord) {
+                       let coord = data.coord;
+                       thiz.checkCoord(coord)
+                   }
+                   break;
 
                 case "done":
                     thiz.nextFile();
                     break;
-
-                default:
-                    // console.log(`Unrecognized data type ${JSON.stringify(data)}`)
-                    console.log(JSON.stringify(data))
             }
 
         })
@@ -236,8 +226,7 @@ class GerberData extends EventEmitter {
                   this.loadEdgeCuts(fileName);
                   break;
               case 'copper':
-                  // this.loadTraces(fileName, gType.side);
-                  setTimeout(() => { this.nextFile()}, 1)
+                  this.loadTraces(fileName, gType.side);
                   break;
           }
        }
@@ -266,28 +255,17 @@ class GerberData extends EventEmitter {
         this.nextFile();
     }
 
-    checkCoord(coord) {
-        let x = coord.x;
-        let y = coord.y;
-        let bb = this.boundingBox;
-
-        if (x > bb.max.x) {
-            bb.max.x = x;
-        }
-
-        if (x < bb.min.x) {
-            bb.min.x = x;
-        }
-
-        if (y > bb.max.y) {
-            bb.max.y = y;
-        }
-
-        if (y < bb.min.y) {
-            bb.min.y = y;
-        }
+    async loadFilesAsync(fileNames) {
+        await new Promise((resolve, reject) => {
+            this.once('ready', resolve);
+            this.loadFiles(fileNames);
+        });
     }
 
+    checkCoord(coord) {
+        this.boundingBox.checkCoord(coord);
+        this.bbLocal.checkCoord(coord);
+    }
 }
 
 module.exports = GerberData;
