@@ -56,6 +56,29 @@ class PCBProject {
     }
 
 
+    async getGerberData() {
+        if (!this._gerberData) {
+            this._gerberData = new GerberData();
+            let projectFiles = this.getProjectFileList();
+            await this._gerberData.loadFilesAsync(projectFiles); 
+        }
+        return this._gerberData;
+    }
+
+
+    getProjectFileList() {
+       if (!this._projectFiles) {
+            let projectFiles = [];
+            let thiz = this;
+            this.fileList.forEach(fileName => {
+                projectFiles.push(thiz.dirName + "/" + fileName)
+            })
+            this._projectFiles = projectFiles;
+       }
+       return this._projectFiles;
+    }
+
+
     // Method is guaranteed to succeed in that if the
     // size is not specified, the Gerber files are 
     // parsed so the size can be deduced.
@@ -64,24 +87,13 @@ class PCBProject {
 
         if (!size) {
             console.log(`No size data for project ${this.projectId} - parsing gerber files.`);
-            let projectFiles = [];
-            let thiz = this;
-            this.fileList.forEach(fileName => {
-                projectFiles.push(thiz.dirName + "/" + fileName)
-            })
-            let gerberData = new GerberData(projectFiles);
+            let projectFiles = this.getProjectFileList();
 
-            await new Promise((resolve, reject) => {
-                gerberData.once('ready', resolve);
-            });
+            let gerberData = await this.getGerberData();
 
-            let bb = gerberData.boundingBox;
-            let width = bb.max.x - Math.min(0, bb.min.x);
-            let height = bb.max.y - Math.min(0, bb.min.y);
+            size = gerberData.size;
 
-            this.gbrjob.GeneralSpecs.Size = { X: width, Y: height };
-
-            size = { x: width, y: height }
+            this.gbrjob.GeneralSpecs.Size = { X: size.x, Y: size.y };
 
         }
 
