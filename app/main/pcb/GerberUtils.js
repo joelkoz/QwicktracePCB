@@ -43,16 +43,16 @@ mirror = false;
     }
 
 
-    static async rotateGbr90(inputFileName, outputFileName, inputWidth, inputHeight, clockwise=true, mirror=false) {
+    static async rotateGbr90(inputFileName, outputFileName, inputWidth, inputHeight, margin = 0, clockwise=true, mirror=false) {
 
         let degRotate = clockwise ? -90 : 90;
         let tx = 0;
         let ty = 0;
         if (clockwise) {
-            ty = inputWidth;
+            ty = inputWidth + margin;
         }
         else {
-            tx = inputHeight;
+            tx = inputHeight + margin;
         }
         await this.transGbr(inputFileName, outputFileName, degRotate, tx, ty, mirror);
     }

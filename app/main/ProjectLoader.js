@@ -36,7 +36,7 @@ class ProjectLoader  extends MainSubProcess {
 
       ipcMain.handle('projectloader-prepare', (event, data) => {
          let { profile, callbackName } = data;
-         console.log('Preparing project work directory...')
+         console.log('Preparing project work directory using profile:', profile)
          ProjectLoader.prepareForWork(profile)
             .then(results => {
                 console.log('Project work directory prep completed.')
@@ -112,6 +112,7 @@ class ProjectLoader  extends MainSubProcess {
             let mirror = (side === 'bottom');
             let gbrTarget = workDir + side + ".gbr";
             let results = {};
+            let rotateMargin = 0;
 
             if (!fse.existsSync(gbrTarget)) {
                let fileName = project.getSideFile(side);
@@ -119,7 +120,7 @@ class ProjectLoader  extends MainSubProcess {
                     let gbrSource = project.dirName + "/" + fileName;
                     if (rotateBoard) {
                         // Copy and rotate the files
-                        await GerberUtils.rotateGbr90(gbrSource, gbrTarget, originalSize.x, originalSize.y, clockwise, mirror);
+                        await GerberUtils.rotateGbr90(gbrSource, gbrTarget, originalSize.x, originalSize.y, rotateMargin, clockwise, mirror);
                     }
                     else {
                         // Copy the files as is...
@@ -129,6 +130,7 @@ class ProjectLoader  extends MainSubProcess {
                 }
             }
             else {
+                console.log('ProjectLoader.prepareForWork() is using existing Gerber file ', gbrTarget)
                 results.gbr = gbrTarget;
             }
 
@@ -139,7 +141,7 @@ class ProjectLoader  extends MainSubProcess {
                     let drlSource = project.dirName + "/" + project.drillFile;
                     if (rotateBoard) {
                         // Copy and rotate the files
-                        await GerberUtils.rotateGbr90(drlSource, drlTarget, originalSize.x, originalSize.y, clockwise, mirror);
+                        await GerberUtils.rotateGbr90(drlSource, drlTarget, originalSize.x, originalSize.y, rotateMargin, clockwise, mirror);
                     }
                     else {
                         // Copy the files as is...
@@ -149,6 +151,7 @@ class ProjectLoader  extends MainSubProcess {
                 }
             }
             else {
+                console.log('ProjectLoader.prepareForWork() is using existing drill file ', drlTarget)
                 results.drl = drlTarget;
             }
 
