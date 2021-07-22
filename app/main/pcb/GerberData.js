@@ -29,7 +29,6 @@ class GerberData extends EventEmitter {
                 bottom: new BoundingBox()
             }
         }
-        this.boundingBox = this.boundingBoxes.master;
         this.fileList = [];
         if (fileNames) {
             this.loadFiles(fileNames);
@@ -37,7 +36,24 @@ class GerberData extends EventEmitter {
     }
 
     get size() {
-        return this.boundingBox.size();
+        let bb = this.boundingBoxes;
+
+        if (!bb.corners.valid()) {
+            // Edge cuts were not found.  Simulate
+            // a rectangle by assuming the margin from (0,0)
+            // to actual LL is the same from actual UR to missing max corner.
+            let marginX = bb.master.min.x;
+            let marginY = bb.master.min.y;
+            let urCornerX = bb.master.max.x + marginX;
+            let urCornerY = bb.master.max.x + marginY;
+            bb.corners.min.x = 0;
+            bb.corners.min.y = 0;
+            bb.corners.max.x = urCornerX;
+            bb.corners.max.y = urCornerY;
+            bb.master.checkCoord(bb.corners.min);
+            bb.master.checkCoord(bb.corners.max);
+        }
+        return bb.master.size();
     }
 
     mirror() {
@@ -65,7 +81,7 @@ class GerberData extends EventEmitter {
         let parser = gerberParser()
 
         parser.on('warning', function(w) {
-          console.warn('warning at line ' + w.line + ': ' + w.message)
+          // console.warn('warning at line ' + w.line + ': ' + w.message)
         })
 
         this.holes = [];
@@ -122,7 +138,7 @@ class GerberData extends EventEmitter {
         let parser = gerberParser()
 
         parser.on('warning', function(w) {
-          console.warn('warning at line ' + w.line + ': ' + w.message)
+          // console.warn('warning at line ' + w.line + ': ' + w.message)
         })
 
         this.corners = [];
@@ -180,7 +196,7 @@ class GerberData extends EventEmitter {
         let parser = gerberParser()
 
         parser.on('warning', function(w) {
-          console.warn('warning at line ' + w.line + ': ' + w.message)
+          // console.warn('warning at line ' + w.line + ': ' + w.message)
         })
 
         let thiz = this;
@@ -263,7 +279,7 @@ class GerberData extends EventEmitter {
     }
 
     checkCoord(coord) {
-        this.boundingBox.checkCoord(coord);
+        this.boundingBoxes.master.checkCoord(coord);
         this.bbLocal.checkCoord(coord);
     }
 }

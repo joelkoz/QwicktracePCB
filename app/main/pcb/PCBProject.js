@@ -87,7 +87,6 @@ class PCBProject {
 
         if (!size) {
             console.log(`No size data for project ${this.projectId} - parsing gerber files.`);
-            let projectFiles = this.getProjectFileList();
 
             let gerberData = await this.getGerberData();
 

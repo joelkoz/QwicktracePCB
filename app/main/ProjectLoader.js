@@ -112,7 +112,6 @@ class ProjectLoader  extends MainSubProcess {
             let mirror = (side === 'bottom');
             let gbrTarget = workDir + side + ".gbr";
             let results = {};
-            let rotateMargin = 0;
 
             if (!fse.existsSync(gbrTarget)) {
                let fileName = project.getSideFile(side);
@@ -120,7 +119,7 @@ class ProjectLoader  extends MainSubProcess {
                     let gbrSource = project.dirName + "/" + fileName;
                     if (rotateBoard) {
                         // Copy and rotate the files
-                        await GerberUtils.rotateGbr90(gbrSource, gbrTarget, originalSize.x, originalSize.y, rotateMargin, clockwise, mirror);
+                        await GerberUtils.rotateGbr90(gbrSource, gbrTarget, originalSize.x, originalSize.y, clockwise, mirror);
                     }
                     else {
                         // Copy the files as is...
@@ -141,7 +140,7 @@ class ProjectLoader  extends MainSubProcess {
                     let drlSource = project.dirName + "/" + project.drillFile;
                     if (rotateBoard) {
                         // Copy and rotate the files
-                        await GerberUtils.rotateGbr90(drlSource, drlTarget, originalSize.x, originalSize.y, rotateMargin, clockwise, mirror);
+                        await GerberUtils.rotateGbr90(drlSource, drlTarget, originalSize.x, originalSize.y, clockwise, mirror);
                     }
                     else {
                         // Copy the files as is...
