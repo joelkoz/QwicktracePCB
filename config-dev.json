@@ -1,5 +1,5 @@
 {
-   "super" : {
+   "window" : {
        "width": 1520,
        "height": 1000,
        "fullScreen": false,

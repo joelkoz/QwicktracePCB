@@ -1,14 +1,15 @@
 const GPIO = require('../GPIO.js');
+const Config = require('../Config.js');
 
 class LaserPointer {
 
-    constructor(config) {
+    constructor() {
         this.pigpio = new GPIO();
 
-        if (config.cnc) {
-            if (config.cnc.pointer && config.cnc.pointer.offset) {
-                LaserPointer.offsetX = config.cnc.pointer.offset.x;
-                LaserPointer.offsetY = config.cnc.pointer.offset.y;
+        if (Config.cnc) {
+            if (Config.cnc.pointer && Config.cnc.pointer.offset) {
+                LaserPointer.offsetX = Config.cnc.pointer.offset.x;
+                LaserPointer.offsetY = Config.cnc.pointer.offset.y;
             } 
         }
 

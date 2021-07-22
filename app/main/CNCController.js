@@ -4,6 +4,7 @@ const MainSubProcess = require('./MainSubProcess.js')
 const MainMQ = require('./MainMQ.js');
 const ProjectLoader = require('./ProjectLoader.js');
 const { untilTrue, untilEvent } = require('promise-utils');
+const Config = require('./Config.js');
 
 // An "equals" function that does a "shallow" comparison
 // of objects, ensuring all keys of one object exists in
@@ -57,11 +58,10 @@ const wcsPCB_WORK = 1;
 
 class CNCController  extends MainSubProcess {
 
-    constructor(win, config) {
+    constructor(win) {
         super(win);
 
         console.log('Initializing CNC mill...');
-        this.config = config;
 
         const Joystick = require('./Joystick');
         const ZProbe = require('./cnc/ZProbe');
@@ -70,9 +70,9 @@ class CNCController  extends MainSubProcess {
         const Kefir = require('kefir');
         
         this.cnc = new CNC();
-        this.pointer = new LaserPointer(config);
-        this.zprobe = new ZProbe(config);
-        Joystick.init(config);
+        this.pointer = new LaserPointer();
+        this.zprobe = new ZProbe();
+        Joystick.init();
 
         const thiz = this;
 
@@ -344,7 +344,7 @@ class CNCController  extends MainSubProcess {
 
     async gotoSafeZ() {
         console.log("Move to safe Z height...");
-        await this.cnc.untilGoto({z: this.config.cnc.zheight.safe }, wcsMACHINE_WORK);
+        await this.cnc.untilGoto({z: Config.cnc.zheight.safe }, wcsMACHINE_WORK);
     }
 
 
@@ -440,7 +440,7 @@ class CNCController  extends MainSubProcess {
 
         // Calculate the estimated position of the stock's lower
         // left corner, in machine coordinates;
-        let cncConfig = this.config.cnc;
+        let cncConfig = Config.cnc;
         // Start at home pos...
         let mpos = { x: 0, y: 0};
         // Move to upper right of frame
@@ -469,8 +469,8 @@ class CNCController  extends MainSubProcess {
 
         this.boardOriginM = laserCoord;
         let origin = this.boardOriginM;
-        let ur = this.config.cnc.locations.ur;
-        let margin = this.config.cnc.pcbFrame.margin;
+        let ur = Config.cnc.locations.ur;
+        let margin = Config.cnc.pcbFrame.margin;
         let actualWidth = -(origin.x - ur.x) + margin;
         let actualHeight = -(origin.y - ur.y) + margin;
         this.profile.stock.actual = { width: actualWidth, height: actualHeight }; 
@@ -489,8 +489,8 @@ class CNCController  extends MainSubProcess {
 
         this.findZPadInProgress = true;
 
-        let zheight = this.config.cnc.zheight;
-        let zpad = this.config.cnc.locations.zpad;
+        let zheight = Config.cnc.zheight;
+        let zpad = Config.cnc.locations.zpad;
 
         await this.gotoSafeZ();
 
@@ -528,6 +528,8 @@ class CNCController  extends MainSubProcess {
             }
 
             zheight.zpad.lastZ = probeVal.z;
+            Config.save();
+
             console.log(`Zprobe of pad found at ${probeVal.z}`)
             return probeVal.z;
         }
@@ -547,8 +549,8 @@ class CNCController  extends MainSubProcess {
         if (zpadZ) {
             this.findPCBSurfaceInProgress = true;
 
-            let zheight = this.config.cnc.zheight;
-            let pcbFrame = this.config.cnc.pcbFrame;
+            let zheight = Config.cnc.zheight;
+            let pcbFrame = Config.cnc.pcbFrame;
 
             await this.gotoSafeZ();
 
@@ -596,6 +598,8 @@ class CNCController  extends MainSubProcess {
                 let probedFrameHeight = zpadZ - probeVal.z;
                 pcbFrame.probedHeight = probedFrameHeight;
                 zheight.pcb = { lastZ: probeVal.z }
+                Config.save();
+                
                 console.log(`Zprobe of pcb found at ${probeVal.z}`)
                 return probeVal.z;
             }
@@ -611,7 +615,7 @@ class CNCController  extends MainSubProcess {
 
 
     loadStock() {
-        let load = this.config.cnc.locations.load;
+        let load = Config.cnc.locations.load;
         this.cnc.goto({x: load.x, y: load.y, z: -1 }, wcsMACHINE_WORK);
     }
 

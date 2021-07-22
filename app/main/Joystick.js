@@ -3,10 +3,11 @@ const ADS1115 = require('./ads1115-client.js')
 const fs = require('fs');
 const { setIntervalAsync } = require('set-interval-async/fixed')
 const { clearIntervalAsync } = require('set-interval-async')
+const Config = require('./Config.js');
 
 class Joystick {
 
-    constructor(config) {
+    constructor() {
  
        if (!Joystick.instance) {
          Joystick.instance = this;
@@ -19,12 +20,12 @@ class Joystick {
  
          Joystick.i2cJoystick = [ 1, 0x48 ]
       
-         if (config.joystick) {
-            Joystick.xCal = config.joystick.calibration.xCal;
-            Joystick.yCal = config.joystick.calibration.yCal;
-            Joystick.btnPressThreshold = config.joystick.calibration.btnPressThreshold;
-            Joystick.invertY = config.joystick.invertY;
-            Joystick.invertX = config.joystick.invertX;
+         if (Config.joystick) {
+            Joystick.xCal = Config.joystick.calibration.xCal;
+            Joystick.yCal = Config.joystick.calibration.yCal;
+            Joystick.btnPressThreshold = Config.joystick.calibration.btnPressThreshold;
+            Joystick.invertY = Config.joystick.invertY;
+            Joystick.invertX = Config.joystick.invertX;
          }
          else {
             Joystick.xCal = {
@@ -50,9 +51,9 @@ class Joystick {
        return Joystick.instance;
     }
  
-    static init(config) {
+    static init() {
        if (!Joystick.instance) {
-          new Joystick(config);
+          new Joystick();
        }
     }
  

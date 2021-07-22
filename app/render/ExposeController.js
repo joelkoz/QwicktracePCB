@@ -29,7 +29,7 @@ class ExposeController {
 
    constructor(config) {
         this.config = config.mask;
-        this.config.height = config.super.height;
+        this.config.height = config.window.height;
         this.paintCtx = { url: null};
 
         let canvas = document.getElementById('uv-mask');

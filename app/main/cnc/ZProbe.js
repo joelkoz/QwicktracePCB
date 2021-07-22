@@ -1,21 +1,21 @@
 const GPIO = require('../GPIO.js');
 const EventEmitter = require('events')
-
+const Config = require('../Config.js');
 
 class ZProbe extends EventEmitter {
 
-    constructor(config) {
+    constructor() {
         super();
 
-        if (config.cnc) {
-            if (config.cnc.locations && config.cnc.locations.zpad) {
-                ZProbe.padX = config.cnc.locations.zpad.x;
-                ZProbe.padY = config.cnc.locations.zpad.y;
+        if (Config.cnc) {
+            if (Config.cnc.locations && Config.cnc.locations.zpad) {
+                ZProbe.padX = Config.cnc.locations.zpad.x;
+                ZProbe.padY = Config.cnc.locations.zpad.y;
             } 
     
-            if (config.cnc.zheight && config.cnc.zheight.zpad) {
-                ZProbe.startZ = config.cnc.zheight.zpad.startZ;
-                ZProbe.padZ = config.cnc.zheight.zpad.lastZ;
+            if (Config.cnc.zheight && Config.cnc.zheight.zpad) {
+                ZProbe.startZ = Config.cnc.zheight.zpad.startZ;
+                ZProbe.padZ = Config.cnc.zheight.zpad.lastZ;
             }
         }
 
