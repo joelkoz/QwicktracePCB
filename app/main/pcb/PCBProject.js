@@ -27,6 +27,10 @@ class PCBProject {
         return undefined;
     }
 
+    /**
+     * Returns an array of all of the files that are involved in this
+     * particular PCBProject.
+     */
     get fileList() {
         if (!this._flist) {
             this._flist = [];

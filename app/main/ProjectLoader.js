@@ -15,8 +15,16 @@ const MainSubProcess = require('./MainSubProcess.js');
 const PCBProject = require('./pcb/PCBProject.js');
 const GerberUtils = require('./pcb/GerberUtils.js');
 
+// _projectCache is an object that maps a projectId to one or 
+// more PCBProject() objects.
 let _projectCache = {};
+
+// _filesToProject is an object that maps a gerber or drill
+// file name back to the PCBProject it is part of.
 let _filesToProject = {};
+
+// _currentProject holds the latest information concerning
+// the most recent project prepared by prepareForWork().
 let _currentProject = {};
 
 class ProjectLoader  extends MainSubProcess {
@@ -203,8 +211,8 @@ class ProjectLoader  extends MainSubProcess {
     }
 
 
-    checkProjectFile(fileName) {
-        let project = new PCBProject(fileName);
+    checkProjectFile(gbrJobFileName) {
+        let project = new PCBProject(gbrJobFileName);
         let projId = project.projectId;
         if (projId) {
             // See if we have this project in the cache already...
@@ -250,14 +258,14 @@ class ProjectLoader  extends MainSubProcess {
     }
 
 
-    checkGerberFile(fileName) {
-        let baseName = path.basename(fileName);
+    checkGerberFile(gbrFileName) {
+        let baseName = path.basename(gbrFileName);
         if (!this.filesToProject[baseName]) {
             // We do not yet have this file as
             // part of a project. Create a
             // psuedo project for it...
             let project = new PCBProject();
-            project.fromGerber(fileName);
+            project.fromGerber(gbrFileName);
             let projId = project.projectId;
             if (projId) {
                 // This is a legit gerber file as a
