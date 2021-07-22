@@ -250,9 +250,14 @@ class CNCController  extends MainSubProcess {
         });
 
         ipcMain.handle('cnc-probe-z', async (event, data) => {
-            let pcbZHeight = await thiz.findPCBSurface();
-            if (pcbZHeight) {
-                thiz.ipcSend(data.callbackName, pcbZHeight)
+            try {
+               let pcbZHeight = await thiz.findPCBSurface();
+               if (pcbZHeight) {
+                   thiz.ipcSend(data.callbackName, pcbZHeight)
+               }
+            }
+            catch (err) {
+                console.log('Error during cnc-probe-z: ', err);
             }
         });
 
@@ -339,8 +344,7 @@ class CNCController  extends MainSubProcess {
 
     async gotoSafeZ() {
         console.log("Move to safe Z height...");
-        this.cnc.goto({z: this.config.cnc.zheight.safe }, wcsMACHINE_WORK);
-        await this.cnc.untilSent();
+        await this.cnc.untilGoto({z: this.config.cnc.zheight.safe }, wcsMACHINE_WORK);
     }
 
 
@@ -492,15 +496,16 @@ class CNCController  extends MainSubProcess {
 
         let zpos = zheight.zpad.lastZ ? zheight.zpad.lastZ + 2 : zheight.zpad.startZ;
 
-        this.cnc.goto({ x: zpad.x, y: zpad.y, z: zpos }, wcsMACHINE_WORK);
-        await this.cnc.untilOk();
+        await this.cnc.untilGoto({ x: zpad.x, y: zpad.y, z: zpos }, wcsMACHINE_WORK);
 
         // Start to probe...      
-        this.cnc.sendGCode(['(Start zPad probe)', 'G91', 'G38.2 Z-14 F20', 'G90']);
-        // await this.cnc.untilOk();
+        await this.cnc.feedGCode(['(Start zPad probe)', 'G91']);
+
+
+        this.cnc.sendGCode('G38.2 Z-14 F20');
         let probeVal = await untilEvent(this.cnc, 'probe');
 
-        await this.cnc.feedGCode('(End zPad probe)')
+        await this.cnc.feedGCode(['G90', '(End zPad probe)'])
 
         if (!this.findZPadInProgress) {
             this.gotoSafeZ();
@@ -514,9 +519,13 @@ class CNCController  extends MainSubProcess {
             this.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
             await this.cnc.untilOk();
 
-            // Then retract 4mm
-            this.cnc.goto({z: 4}, wcsPCB_WORK);
-            await this.cnc.untilOk();
+            // Then retract 4 mm
+            await this.cnc.untilGoto({z: 4}, wcsPCB_WORK);
+
+            if (this.cnc.wpos.z != 4) {
+                console.log('Post zPad probe position unexpected. Trying again...');
+                await this.cnc.untilGoto({z: 4}, wcsPCB_WORK);
+            }
 
             zheight.zpad.lastZ = probeVal.z;
             console.log(`Zprobe of pad found at ${probeVal.z}`)
@@ -541,6 +550,8 @@ class CNCController  extends MainSubProcess {
             let zheight = this.config.cnc.zheight;
             let pcbFrame = this.config.cnc.pcbFrame;
 
+            await this.gotoSafeZ();
+
             // Next move the probe away from the pad to over the PCB by 5mm...
             let moveY = 0 - pcbFrame.width - 5;
 
@@ -555,13 +566,15 @@ class CNCController  extends MainSubProcess {
             else {
                 estZ = zpadZ + pcbFrame.height + 3;
             }
-            this.cnc.goto({z: estZ}, wcsPCB_WORK);
-            await this.cnc.untilOk();
+            await this.cnc.untilGoto({z: estZ}, wcsPCB_WORK);
+
 
             // Now start another Z probe...
-            this.cnc.sendGCode(['(Start pcb probe)', 'G91', 'G38.2 Z-10 F20', 'G90']);
+            await this.cnc.feedGCode(['(Start pcb probe)', 'G91']);            
+            this.cnc.sendGCode('G38.2 Z-10 F20');
             let probeVal = await untilEvent(this.cnc, 'probe');
-            await this.cnc.feedGCode('(End pcb probe)');
+
+            await this.cnc.feedGCode(['G90', '(End pcb probe)']);
 
             if (!this.findPCBSurfaceInProgress) {
                 this.gotoSafeZ();
@@ -578,8 +591,7 @@ class CNCController  extends MainSubProcess {
 
                 await this.cnc.feedGCode('G54');   
 
-                this.cnc.goto({z: 4}, wcsPCB_WORK);
-                await this.cnc.untilOk();
+                await this.cnc.untilGoto({z: 4}, wcsPCB_WORK);
 
                 let probedFrameHeight = zpadZ - probeVal.z;
                 pcbFrame.probedHeight = probedFrameHeight;
@@ -591,6 +603,9 @@ class CNCController  extends MainSubProcess {
                 this.ipcSend('ui-popup-message', `ERROR: Z probe failed`);
                 return null;
             }
+        }
+        else {
+            return null;
         }
     }
 

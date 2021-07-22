@@ -768,6 +768,12 @@ class CNC extends EventEmitter {
         await this.untilData('ok', msTimeout);
     }
 
+    async untilGoto(wpos, wcsNum = 1) {
+        this.goto(wpos, wcsNum);
+        await this.untilOk(10000);
+        await this.untilState(CNC.CTRL_STATE_IDLE);
+    }
+
 }
 
 
