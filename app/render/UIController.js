@@ -102,10 +102,10 @@ class UIController {
         });
 
 
-        ipcRenderer.on('ui-dispatch-process', (event, profile) => {
-            thiz.dispatchProcess(profile);
+        ipcRenderer.on('ui-final-prep', (event, profile) => {
+            thiz.finalPrep(profile);
         });
-
+ 
         ipcRenderer.on('ui-process-done', (event) => {
             try {
                 console.log(`event ui-process-done`);
@@ -493,17 +493,18 @@ class UIController {
 
 
     stockContinue() {
-        this.initProcessing(false);
+        this.setState('alignStock', false)
+        this.showPage('initProcessPage');
     }
 
 
     stockProcessed() {
-        this.initProcessing(true);
+        this.setState('alignStock', true)
+        this.showPage('initProcessPage');
     }
 
 
-    initProcessing(alignStock = true) {
-
+    initProcessing() {
         let state = this.state;
         let stock = this.profileList[state.stockId].stock;
         let material = this.profileList[stock.materialId].material;
@@ -513,9 +514,6 @@ class UIController {
         let profile = Object.assign({}, defaults, { material }, { stock }, { state });
         if (profile.state.stockIsBlank) {
             profile.state.alignStock = false;
-        }
-        else {
-           profile.state.alignStock = alignStock;
         }
 
         // Normalize so the width of the stock is always the long side...
@@ -529,16 +527,67 @@ class UIController {
         delete profile.id;
         delete profile.value;
    
-        ipcRenderer.invoke('projectloader-prepare', { callbackName: "ui-dispatch-process", profile });
+        this.currentProfile = profile;
+
+        ipcRenderer.invoke('projectloader-prepare', { callbackName: "ui-final-prep", profile });
     }
 
+
+
+    finalPrep(profile) {
+        this.currentProfile = profile;
+        if (!this.checkBoardSize(profile)) {
+            // Board will not fit on stock
+            let popup = {
+                message: `${profile.state.projectId} (${profile.state.size.x} mm x ${profile.state.size.y} mm) ` +
+                         `does not fit on stock ${profile.stock.width} mm x ${profile.stock.height} mm`,
+                buttonDefs: [
+                    {  label: 'Ok', pageId: 'stockPage', pushOld: false }
+                ]
+            }
+            this.popupMessage(popup)
+        }
+        else if (profile.state.stockIsBlank) {
+            this.showPage('centerPage', false)
+        }
+        else {
+           // Time to continue...
+           this.dispatchProcess(profile);
+        }
+    }
+
+
+    // Does the board fit on the stock?
+    checkBoardSize(profile) {
+        let boardWidth = profile.state.size.x;
+        let boardHeight = profile.state.size.y;
+        return (boardWidth <= profile.stock.width && boardHeight <= profile.stock.height);
+    }
+
+
+    onCenterButton(centerBoard) {
+        this.currentProfile.state.centerBoard = centerBoard;
+        this.dispatchProcess(this.currentProfile);
+    }
+
+
+    /**
+     * Dispatch program control to the next steps in the process. The uiDispatch[action]
+     * dispatch functiomn is defined for each action (expose, mill, drill) in the individual
+     * process controller classes (ExposeController, MillController, etc.)
+     * @param {*} profile The current process profile gathered thus far.
+     */
     dispatchProcess(profile) {
         let fnDispatch = window.uiDispatch[this.state.action];
         fnDispatch(profile);
     }
 
+    /**
+     * Cancel control currently managed by the individual process controllers. The uiCancelProcess[action]
+     * cancel functiomn is defined for each action (expose, mill, drill) in the individual
+     * process controller classes (ExposeController, MillController, etc.)
+     */    
     cancelProcesses() {
-
         let fnCancel = window.uiCancelProcess[this.state.action];
         if (fnCancel) {
             fnCancel();

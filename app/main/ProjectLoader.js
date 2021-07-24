@@ -23,9 +23,9 @@ let _projectCache = {};
 // file name back to the PCBProject it is part of.
 let _filesToProject = {};
 
-// _currentProject holds the latest information concerning
+// _currentProfile holds the latest information concerning
 // the most recent project prepared by prepareForWork().
-let _currentProject = {};
+let _currentProfile = {};
 
 class ProjectLoader  extends MainSubProcess {
 
@@ -48,7 +48,8 @@ class ProjectLoader  extends MainSubProcess {
          ProjectLoader.prepareForWork(profile)
             .then(results => {
                 console.log('Project work directory prep completed.')
-                thiz.ipcSend(callbackName, profile)
+                results.profile = profile;
+                thiz.ipcSend(callbackName, results)
             });
       });      
     }
@@ -102,24 +103,26 @@ class ProjectLoader  extends MainSubProcess {
             let rotateBoard = (originalSize.y > originalSize.x);
             const clockwise = true;
 
-            if (_currentProject.projectId != projectId) {
+            if (_currentProfile.projectId != projectId) {
                 // Start work on a new project...
                 await fse.emptyDir(workDir);
-
-                _currentProject = { projectId };
-                if (rotateBoard) {
-                    _currentProject.originalSize = { "x": originalSize.y, "y": originalSize.x };
-                }
-                else {
-                    _currentProject.originalSize = { "x": originalSize.x, "y": originalSize.y };
-                }
             }
 
+            _currentProfile = profile;
+            _currentProfile.state.originalSize = originalSize;
+            _currentProfile.state.rotateBoard = rotateBoard;
+            if (rotateBoard) {
+                _currentProfile.state.size = { "x": originalSize.y, "y": originalSize.x };
+            }
+            else {
+                _currentProfile.state.size = { "x": originalSize.x, "y": originalSize.y };
+            }
+            
             // Place a copy of gbr and drill files in the work directory.
             let side = state.side;
             let mirror = (side === 'bottom');
+            _currentProfile.state.mirror = mirror;
             let gbrTarget = workDir + side + ".gbr";
-            let results = {};
 
             if (!fse.existsSync(gbrTarget)) {
                let fileName = project.getSideFile(side);
@@ -133,12 +136,10 @@ class ProjectLoader  extends MainSubProcess {
                         // Copy the files as is...
                         await GerberUtils.transGbr(gbrSource, gbrTarget, 0, 0, 0, mirror);
                     }
-                    results.gbr = gbrTarget;
                 }
             }
             else {
                 console.log('ProjectLoader.prepareForWork() is using existing Gerber file ', gbrTarget)
-                results.gbr = gbrTarget;
             }
 
 
@@ -154,15 +155,13 @@ class ProjectLoader  extends MainSubProcess {
                         // Copy the files as is...
                         await GerberUtils.transGbr(drlSource, drlTarget, 0, 0, 0, mirror);
                     }
-                    results.drl = drlTarget;
                 }
             }
             else {
                 console.log('ProjectLoader.prepareForWork() is using existing drill file ', drlTarget)
-                results.drl = drlTarget;
             }
 
-            return results;
+            return  _currentProfile;
 
         }
         catch (err) {
@@ -177,6 +176,30 @@ class ProjectLoader  extends MainSubProcess {
         await ProjectLoader.prepareForWork(profile);
 
         let state = profile.state;
+
+        // Do we need to center this on new stock?
+        // If so, use the "deskew.offset" property
+        // to center it up.
+        if (state.stockIsBlank && state.centerBoard) {
+            console.log('Centering board on blank stock...')
+            let stock;
+            if (profile.stock.actual) {
+                stock = profile.stock.actual;
+            }
+            else {
+                stock = profile.stock;
+            }
+            let stockWidth = stock.width;
+            let stockHeight = stock.height;
+            let boardWidth = profile.state.size.x;
+            let boardHeight = profile.state.size.y;
+            let marginX = (stockWidth - boardWidth) / 2;
+            let marginY = (stockHeight - boardHeight) / 2;
+            if (marginX >= 0 && marginY >= 0) {
+               state.deskew = { rotation: 0, offset: { x: marginX, y: marginY }}
+            }
+        }
+
 
         let gbrSource = workDir + state.side + (state.action != 'drill' ? ".gbr" : ".drl");
         let gbrTarget;
@@ -250,9 +273,9 @@ class ProjectLoader  extends MainSubProcess {
             let uiObj = project.getUiObj();
             thiz.ipcSend('ui-project-update', uiObj);
 
-            if (project.projectId === _currentProject.projectId) {
+            if (project.projectId === _currentProfile.projectId) {
                 // Time to re-create the project work files...
-                _currentProject = {};
+                _currentProfile = {};
             }
         }
     }

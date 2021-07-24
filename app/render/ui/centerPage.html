@@ -1,0 +1,61 @@
+<div id="centerPage" class="page">
+    <style type="text/css"> 
+
+        #centerPage .page-body {
+            display: grid;
+            grid-template-areas:
+            'displayArea'
+            'buttonArea';
+            grid-template-rows: 1fr 1fr;
+        }
+
+        #centerPage .display-area {
+            grid-area: displayArea;
+        }
+        
+        #centerPage .projectName {
+            display: contents;
+        }
+
+        #centerPage .button-area {
+            grid-area: buttonArea;
+            display: flex;
+        }
+
+        #centerPage .button-area button {
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 20px;
+            height: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        #centerPage .button-area .btn {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           Center board on stock?
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="display-area">
+            Board <div class="projectName">project name</div> is smaller than the stock
+            being used. Center the board on the stock?
+        </div>
+        <div class="button-area">
+            <button type="button" class="btn w3" onClick="ui.onCenterButton(true)">Yes</button>
+            <button type="button" class="btn w3" onClick="ui.onCenterButton(false)">No</button>
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['centerPage'] = function() {
+            $('#centerPage .projectName').html(ui.projectName);
+        };
+
+    </script>
+</div>

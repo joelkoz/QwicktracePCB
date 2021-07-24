@@ -26,7 +26,8 @@ class GerberData extends EventEmitter {
             corners: new BoundingBox(),
             copper: {
                 top: new BoundingBox(),
-                bottom: new BoundingBox()
+                bottom: new BoundingBox(),
+                both: new BoundingBox()
             }
         }
         this.fileList = [];
@@ -36,24 +37,11 @@ class GerberData extends EventEmitter {
     }
 
     get size() {
-        let bb = this.boundingBoxes;
+        return this.boundingBoxes.master.size();
+    }
 
-        if (!bb.corners.valid()) {
-            // Edge cuts were not found.  Simulate
-            // a rectangle by assuming the margin from (0,0)
-            // to actual LL is the same from actual UR to missing max corner.
-            let marginX = bb.master.min.x;
-            let marginY = bb.master.min.y;
-            let urCornerX = bb.master.max.x + marginX;
-            let urCornerY = bb.master.max.x + marginY;
-            bb.corners.min.x = 0;
-            bb.corners.min.y = 0;
-            bb.corners.max.x = urCornerX;
-            bb.corners.max.y = urCornerY;
-            bb.master.checkCoord(bb.corners.min);
-            bb.master.checkCoord(bb.corners.max);
-        }
-        return bb.master.size();
+    get copperSize() {
+        return this.boundingBoxes.copper.both.size();
     }
 
     mirror() {
@@ -248,10 +236,45 @@ class GerberData extends EventEmitter {
        }
        else {
            console.log('Done loading Gerber data')
+
+            this.calcFinalSizes()
+
            this.emit('ready');
        }
     }
 
+
+    calcFinalSizes() {
+        let bb = this.boundingBoxes;
+
+        if (!bb.corners.valid()) {
+            // Edge cuts were not found.  Simulate
+            // a rectangle by assuming the margin from (0,0)
+            // to actual LL is the same from actual UR to missing max corner.
+            let marginX = bb.master.min.x;
+            let marginY = bb.master.min.y;
+            let urCornerX = bb.master.max.x + marginX;
+            let urCornerY = bb.master.max.x + marginY;
+            bb.corners.min.x = 0;
+            bb.corners.min.y = 0;
+            bb.corners.max.x = urCornerX;
+            bb.corners.max.y = urCornerY;
+            bb.master.checkCoord(bb.corners.min);
+            bb.master.checkCoord(bb.corners.max);
+        }
+
+        let copper = this.boundingBoxes.copper;
+
+        if (copper.bottom.valid()) {
+            copper.both.checkCoord(copper.bottom.min);
+            copper.both.checkCoord(copper.bottom.max);
+        }
+
+        if (copper.top.valid()) {
+            copper.both.checkCoord(copper.top.min);
+            copper.both.checkCoord(copper.top.max);
+        }
+    }
 
     addFile(fileName) {
         this.fileList.push(fileName);
