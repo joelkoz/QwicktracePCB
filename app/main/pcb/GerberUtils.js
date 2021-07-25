@@ -1,8 +1,6 @@
-const util = require('util');
 const exec = util.promisify(require("child_process").exec);
 const fs = require('fs');
 const readline = require('readline');
-
 const { rotate, scale, translate, compose, applyToPoint } = require('transformation-matrix');
 
 class GerberUtils {
