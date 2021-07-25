@@ -48,7 +48,6 @@ class ProjectLoader  extends MainSubProcess {
          ProjectLoader.prepareForWork(profile)
             .then(results => {
                 console.log('Project work directory prep completed.')
-                results.profile = profile;
                 thiz.ipcSend(callbackName, results)
             });
       });      
@@ -128,13 +127,20 @@ class ProjectLoader  extends MainSubProcess {
                let fileName = project.getSideFile(side);
                if (fileName) {
                     let gbrSource = project.dirName + "/" + fileName;
+
+                    if (mirror) {
+                        let mirrorTarget = workDir + side + '-mirror' + '.gbr';
+                        await GerberUtils.mirrorGbr(gbrSource, mirrorTarget, originalSize.x, originalSize.y, false, true);
+                        gbrSource = mirrorTarget;
+                    }
+
                     if (rotateBoard) {
                         // Copy and rotate the files
-                        await GerberUtils.rotateGbr90(gbrSource, gbrTarget, originalSize.x, originalSize.y, clockwise, mirror);
+                        await GerberUtils.rotateGbr90(gbrSource, gbrTarget, originalSize.x, originalSize.y, clockwise);
                     }
                     else {
                         // Copy the files as is...
-                        await GerberUtils.transGbr(gbrSource, gbrTarget, 0, 0, 0, mirror);
+                        await GerberUtils.transGbr(gbrSource, gbrTarget, 0, 0, 0);
                     }
                 }
             }
@@ -147,13 +153,20 @@ class ProjectLoader  extends MainSubProcess {
             if (!fse.existsSync(drlTarget)) {
                if (project.drillFile) {
                     let drlSource = project.dirName + "/" + project.drillFile;
+
+                    if (mirror) {
+                        let mirrorTarget = workDir + side + '-mirror' + '.drl';
+                        await GerberUtils.mirrorDrl(drlSource, mirrorTarget, originalSize.x, originalSize.y, false, true);
+                        drlSource = mirrorTarget;
+                    }                    
+
                     if (rotateBoard) {
                         // Copy and rotate the files
-                        await GerberUtils.rotateGbr90(drlSource, drlTarget, originalSize.x, originalSize.y, clockwise, mirror);
+                        await GerberUtils.rotateGbr90(drlSource, drlTarget, originalSize.x, originalSize.y, clockwise);
                     }
                     else {
                         // Copy the files as is...
-                        await GerberUtils.transGbr(drlSource, drlTarget, 0, 0, 0, mirror);
+                        await GerberUtils.transGbr(drlSource, drlTarget, 0, 0, 0);
                     }
                 }
             }
@@ -201,7 +214,7 @@ class ProjectLoader  extends MainSubProcess {
         }
 
 
-        let gbrSource = workDir + state.side + (state.action != 'drill' ? ".gbr" : ".drl");
+        let gbrSource = workDir + state.side + (state.action != 'drill' ? ".gbr" : ".drl");        
         let gbrTarget;
         if (state.deskew) {
             gbrTarget = gbrSource + "-deskew";
