@@ -2,7 +2,8 @@ const util = require('util');
 const exec = util.promisify(require("child_process").exec);
 const fs = require('fs');
 const readline = require('readline');
-const { transform } = require('transformation-matrix');
+
+const { rotate, scale, translate, compose, applyToPoint } = require('transformation-matrix');
 
 class GerberUtils {
 
@@ -56,21 +57,10 @@ class GerberUtils {
         await this.transGbr(inputFileName, outputFileName, degRotate, tx, ty);
     }
 
-
-    static async mirrorGbr(inputFileName, outputFileName, sizeX, sizeY, mirrorX, mirrorY) {
+    static async _transformGbr(inputFileName, outputFileName, matrixXY, matrixIJ, invertArc = false) {
 
         let fmt = {};
-        let invertArc = (mirrorX && !mirrorY) || (mirrorY && !mirrorX)
         
-        function transform(val, mirror, size) {
-            if (val != null && mirror) {
-                return -val + size;
-            }
-            else {
-                return val;
-            }
-        }
-
         function parseCoord(line, ndxStart, ndxEnd) {
             if (ndxStart >= 0) {
                 let str = line.substring(ndxStart+1, ndxEnd);
@@ -98,12 +88,18 @@ class GerberUtils {
             let ndxJ = line.indexOf('J');
             let ndxD = line.indexOf('D');
 
-            let x = transform(parseCoord(line, 0, ndxY), mirrorY, sizeX);
-            let y = transform(parseCoord(line, ndxY, (ndxI > 0) ? ndxI : ndxD), mirrorX, sizeY);
-            let i = transform(parseCoord(line, ndxI, ndxJ), mirrorY, 0);
-            let j = transform(parseCoord(line, ndxJ, ndxD), mirrorX, 0);
+            let x = parseCoord(line, 0, ndxY)
+            let y = parseCoord(line, ndxY, (ndxI > 0) ? ndxI : ndxD)
+            let point = applyToPoint(matrixXY, {x, y});
 
-            return fmtCoord('X', x) + fmtCoord('Y', y) + fmtCoord('I', i) + fmtCoord('J', j) + line.substring(ndxD);
+            let offset = {}
+            offset.i = parseCoord(line, ndxI, ndxJ);
+            offset.j = parseCoord(line, ndxJ, ndxD);
+            if (offset.i != null) {
+                offset = applyToPoint(matrixIJ, offset);
+            }
+
+            return fmtCoord('X', point.x) + fmtCoord('Y', point.y) + fmtCoord('I', offset.i) + fmtCoord('J', offset.j) + line.substring(ndxD);
         }
 
 
@@ -123,7 +119,6 @@ class GerberUtils {
                 if (line.startsWith('%FS')) {
                     // Format specs
                     let ndxX = line.indexOf('X');
-                    let ndxY = line.indexOf('Y');
                     fmt.leading = parseInt(line.substring(ndxX+1, ndxX+2));
                     fmt.decimals = parseInt(line.substring(ndxX+2, ndxX+3));                
                 }
@@ -143,29 +138,34 @@ class GerberUtils {
             out.end();
         }
         catch (err) {
-            console.log('Error during mirrorGbr: ', err)
+            console.log('Error during _transformGbr: ', err)
         }
     }
 
+    static async mirrorGbr(inputFileName, outputFileName, sizeX, sizeY, mirrorX, mirrorY) {
 
-    static async mirrorDrl(inputFileName, outputFileName, sizeX, sizeY, mirrorX, mirrorY) {
-
-        let fmt = {};
+        let invertArc = (mirrorX && !mirrorY) || (mirrorY && !mirrorX)
         
-        function transform(val, mirror, size) {
-            if (val != null && mirror) {
-                return -val + size;
-            }
-            else {
-                return val;
-            }
-        }
+        let matrixXY = compose(
+           scale(mirrorY ? -1 : 1, mirrorX ? -1 : 1),
+           translate(mirrorY ? -sizeX : 0, mirrorX ? -sizeY : 0)
+        );
 
+        let matrixIJ = compose(
+            scale(mirrorY ? -1 : 1, mirrorX ? -1 : 1)
+        );
+
+        await GerberUtils._transformGbr(inputFileName, outputFileName, matrixXY, matrixIJ, invertArc)
+    }
+
+
+    static async _transformDrl(inputFileName, outputFileName, matrixXY) {
+        
         function parseCoord(line, ndxStart, ndxEnd) {
             if (ndxStart >= 0) {
                 let str = line.substring(ndxStart+1, ndxEnd);
-                let n = parseFloat(str);             
-                return n;
+                let val = parseFloat(str);             
+                return val;
             }
             else {
                 return null;
@@ -184,10 +184,11 @@ class GerberUtils {
         function transformLine(line) {
             let ndxY = line.indexOf('Y');
 
-            let x = transform(parseCoord(line, 0, ndxY), mirrorY, sizeX);
-            let y = transform(parseCoord(line, ndxY, line.length), mirrorX, sizeY);
+            let x = parseCoord(line, 0, ndxY)
+            let y = parseCoord(line, ndxY, line.length)
+            let point = applyToPoint(matrixXY, {x, y});
 
-            return fmtCoord('X', x) + fmtCoord('Y', y);
+            return fmtCoord('X', point.x) + fmtCoord('Y', point.y);
         }
 
 
@@ -214,8 +215,20 @@ class GerberUtils {
             out.end();
         }
         catch (err) {
-            console.log('Error during mirrorDrl: ', err)
+            console.log('Error during _transformDrl: ', err)
         }
+    }
+
+
+    static async mirrorDrl(inputFileName, outputFileName, sizeX, sizeY, mirrorX, mirrorY) {
+       
+        let matrixXY = compose(
+           scale(mirrorY ? -1 : 1, mirrorX ? -1 : 1),
+           translate(mirrorY ? -sizeX : 0, mirrorX ? -sizeY : 0)
+        );
+
+        await GerberUtils._transformDrl(inputFileName, outputFileName, matrixXY)
+ 
     }
 
 }
