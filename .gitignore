@@ -121,3 +121,4 @@ config.json
 temp/*
 
 *.svg
+config.json-backup
