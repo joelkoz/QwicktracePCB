@@ -45,8 +45,8 @@ class GerberData extends EventEmitter {
     }
 
     mirror() {
-        let min = this.boundingBox.min;
-        let max = this.boundingBox.max;
+        let min = this.boundingBox.master.min;
+        let max = this.boundingBox.master.max;
         let shiftX = min.x + max.x;
         if (this.holes) {
            this._mirror(this.holes, shiftX);
