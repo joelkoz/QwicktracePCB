@@ -1,9 +1,8 @@
 const { ipcMain } = require('electron');
-const { rotate, translate, transform, applyToPoint } = require('transformation-matrix');
 const MainSubProcess = require('./MainSubProcess.js')
 const MainMQ = require('./MainMQ.js');
 const ProjectLoader = require('./ProjectLoader.js');
-const { untilTrue, untilEvent } = require('promise-utils');
+const { untilTrue, untilEvent, untilDelay } = require('promise-utils');
 const Config = require('./Config.js');
 
 // An "equals" function that does a "shallow" comparison
@@ -519,8 +518,12 @@ class CNCController  extends MainSubProcess {
             this.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
             await this.cnc.untilOk();
 
+            // This delay seems to be necessary to prevent 'Unsupported Command'
+            // errors from the Gbrl controller following the coordinate reset.
+            await untilDelay(1500);
+
             // Then retract 4 mm
-            await this.cnc.untilGoto({z: 4}, wcsPCB_WORK);
+            await this.cnc.feedGCode(['G91', 'G0 Z4', 'G90'])
 
             if (this.cnc.wpos.z != 4) {
                 console.log('Post zPad probe position unexpected. Trying again...');
@@ -558,17 +561,16 @@ class CNCController  extends MainSubProcess {
             let moveY = 0 - pcbFrame.width - 5;
 
             await this.cnc.feedGCode(['G91', `G0 Y${moveY}`, 'G90']);
-            // await this.cnc.untilOk();
 
             // Move to 2 mm above the PCB surface...
             let estZ;
             if (pcbFrame.probedHeight) {
-                estZ = zpadZ + pcbFrame.probedHeight + 2
+                estZ = zpadZ - pcbFrame.probedHeight + 2
             }
             else {
-                estZ = zpadZ + pcbFrame.height + 3;
+                estZ = zpadZ - pcbFrame.height + 3;
             }
-            await this.cnc.untilGoto({z: estZ}, wcsPCB_WORK);
+            await this.cnc.untilGoto({z: estZ}, wcsMACHINE_WORK);
 
 
             // Now start another Z probe...
@@ -591,9 +593,12 @@ class CNCController  extends MainSubProcess {
                 // Set the primary work coordinate Z height to the probe value
                 await this.cnc.feedGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
 
-                await this.cnc.feedGCode('G54');   
+                // This delay seems to be necessary to prevent 'Unsupported Command'
+                // errors from the Gbrl controller following the coordinate reset.
+                await untilDelay(1500);
 
-                await this.cnc.untilGoto({z: 4}, wcsPCB_WORK);
+                // Retract 4mm
+                await this.cnc.feedGCode(['G91', 'G0 Z4', 'G90'])
 
                 let probedFrameHeight = zpadZ - probeVal.z;
                 pcbFrame.probedHeight = probedFrameHeight;
