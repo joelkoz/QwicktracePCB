@@ -1,7 +1,7 @@
 const util = require('util');
 const exec = util.promisify(require("child_process").exec);
 
-class GerberUtils {
+class GcodeUtils {
 
     static async gbrToMill(inputFileName, outputFileName) {
 
@@ -20,4 +20,4 @@ class GerberUtils {
 }
 
 
-module.exports = GerberUtils;
+module.exports = GcodeUtils;

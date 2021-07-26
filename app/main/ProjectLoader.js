@@ -1,19 +1,15 @@
 const { ipcMain } = require('electron')
 
 const fse = require('fs-extra');
-const whatsThatGerber = require('whats-that-gerber')
-const gerbValid = require('whats-that-gerber').validate;
 const path = require('path');
 const fsprReadFile = require('fs').promises.readFile;
-
 
 const dropDir = "./pcb-files/";
 const workDir = "./temp/";
 
-
 const MainSubProcess = require('./MainSubProcess.js');
 const PCBProject = require('./pcb/PCBProject.js');
-const GerberUtils = require('./pcb/GerberUtils.js');
+const GcodeUtils = require('./cnc/GcodeUtils.js');
 const GerberTransforms = require('./pcb/GerberTransforms.js');
 
 // _projectCache is an object that maps a projectId to one or 
@@ -223,12 +219,12 @@ class ProjectLoader  extends MainSubProcess {
         if (state.action === 'mill') {
            gbrTarget += '.gbr';
            await gTrans.transformGbr(gbrSource, gbrTarget);
-           await GerberUtils.gbrToMill(gbrTarget, gcTarget);
+           await GcodeUtils.gbrToMill(gbrTarget, gcTarget);
         }
         else {
             gbrTarget += '.drl';
             await gTrans.transformDrl(gbrSource, gbrTarget);  
-            await GerberUtils.drlToDrill(gbrTarget, gcTarget); 
+            await GcodeUtils.drlToDrill(gbrTarget, gcTarget); 
         }
 
         // Read in the contents of the gcode file...
