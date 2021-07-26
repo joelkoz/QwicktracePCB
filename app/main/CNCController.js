@@ -493,7 +493,7 @@ class CNCController  extends MainSubProcess {
 
         await this.gotoSafeZ();
 
-        let zpos = zheight.zpad.lastZ ? zheight.zpad.lastZ + 2 : zheight.zpad.startZ;
+        let zpos = zheight.zpad.lastZ ? zheight.zpad.lastZ + 5 : zheight.zpad.startZ;
 
         await this.cnc.untilGoto({ x: zpad.x, y: zpad.y, z: zpos }, wcsMACHINE_WORK);
 
