@@ -14,6 +14,7 @@ const workDir = "./temp/";
 const MainSubProcess = require('./MainSubProcess.js');
 const PCBProject = require('./pcb/PCBProject.js');
 const GerberUtils = require('./pcb/GerberUtils.js');
+const GerberTransforms = require('./pcb/GerberTransforms.js');
 
 // _projectCache is an object that maps a projectId to one or 
 // more PCBProject() objects.
@@ -123,25 +124,27 @@ class ProjectLoader  extends MainSubProcess {
             _currentProfile.state.mirror = mirror;
             let gbrTarget = workDir + side + ".gbr";
 
+            // Create the transformations necessary to position the board
+            // for fabrication. Note that the order of these transformations
+            // are important, so don't change them. 
+            let gTrans = new GerberTransforms(project);
+            if (rotateBoard) {
+                await gTrans.rotate90();
+                if (mirror) {
+                   await gTrans.mirror(false, true);
+                }
+            }
+            else {
+                if (mirror) {
+                   await gTrans.mirror(true, false);
+                }
+            }
+
             if (!fse.existsSync(gbrTarget)) {
                let fileName = project.getSideFile(side);
                if (fileName) {
                     let gbrSource = project.dirName + "/" + fileName;
-
-                    if (mirror) {
-                        let mirrorTarget = workDir + side + '-mirror' + '.gbr';
-                        await GerberUtils.mirrorGbr(gbrSource, mirrorTarget, originalSize.x, originalSize.y, false, true);
-                        gbrSource = mirrorTarget;
-                    }
-
-                    if (rotateBoard) {
-                        // Copy and rotate the files
-                        await GerberUtils.rotateGbr90(gbrSource, gbrTarget, originalSize.x, originalSize.y, clockwise);
-                    }
-                    else {
-                        // Copy the files as is...
-                        await GerberUtils.transGbr(gbrSource, gbrTarget, 0, 0, 0);
-                    }
+                    await gTrans.transformGbr(gbrSource, gbrTarget);
                 }
             }
             else {
@@ -153,21 +156,7 @@ class ProjectLoader  extends MainSubProcess {
             if (!fse.existsSync(drlTarget)) {
                if (project.drillFile) {
                     let drlSource = project.dirName + "/" + project.drillFile;
-
-                    if (mirror) {
-                        let mirrorTarget = workDir + side + '-mirror' + '.drl';
-                        await GerberUtils.mirrorDrl(drlSource, mirrorTarget, originalSize.x, originalSize.y, false, true);
-                        drlSource = mirrorTarget;
-                    }                    
-
-                    if (rotateBoard) {
-                        // Copy and rotate the files
-                        await GerberUtils.rotateGbr90(drlSource, drlTarget, originalSize.x, originalSize.y, clockwise);
-                    }
-                    else {
-                        // Copy the files as is...
-                        await GerberUtils.transGbr(drlSource, drlTarget, 0, 0, 0);
-                    }
+                    await gTrans.transformDrl(drlSource, drlTarget);
                 }
             }
             else {
@@ -190,6 +179,25 @@ class ProjectLoader  extends MainSubProcess {
 
         let state = profile.state;
 
+        // Load up the work files into a new project object to
+        // capture all of the current transforms...
+        let workProject = new PCBProject();
+        let gbrSource = workDir + state.side;
+        let gType = { side: state.side };
+        if (state.action === 'mill') {
+            gbrSource += '.gbr'
+            gType.type = 'copper'
+        }
+        else {
+            gbrSource += '.drl'
+            gType.type = 'drill'
+        }
+        workProject.fromGerber(gbrSource, gType);
+
+
+        // Prepare for final transformations...
+        let gTrans = new GerberTransforms(workProject);
+
         // Do we need to center this on new stock?
         // If so, use the "deskew.offset" property
         // to center it up.
@@ -202,42 +210,25 @@ class ProjectLoader  extends MainSubProcess {
             else {
                 stock = profile.stock;
             }
-            let stockWidth = stock.width;
-            let stockHeight = stock.height;
-            let boardWidth = profile.state.size.x;
-            let boardHeight = profile.state.size.y;
-            let marginX = (stockWidth - boardWidth) / 2;
-            let marginY = (stockHeight - boardHeight) / 2;
-            if (marginX >= 0 && marginY >= 0) {
-               state.deskew = { rotation: 0, offset: { x: marginX, y: marginY }}
-            }
+            await gTrans.centerCopper(stock.width, stock.height);
         }
 
-
-        let gbrSource = workDir + state.side + (state.action != 'drill' ? ".gbr" : ".drl");        
-        let gbrTarget;
         if (state.deskew) {
-            gbrTarget = gbrSource + "-deskew";
-
-            // Convert deskew's radians to degrees...
-            let degRotation = state.deskew.rotation * 180 / Math.PI;
-            // Convert deskew's counterclockwise rotation to +/- expected by GerberUtils...
-            let gRotation = (degRotation <= 180) ? -degRotation : 360 - degRotation;
-            let tx = state.deskew.offset.x;
-            let ty = state.deskew.offset.y;
-            await GerberUtils.transGbr(gbrSource, gbrTarget, gRotation, tx, ty, false);
-        }
-        else {
-            gbrTarget = gbrSource;
+            gTrans.deskew(state.deskew);
         }
 
+        let gbrTarget = workDir + 'final-' + state.side;
         let gcTarget = workDir + state.side + "-" + state.action + ".nc"
 
         if (state.action === 'mill') {
+           gbrTarget += '.gbr';
+           await gTrans.transformGbr(gbrSource, gbrTarget);
            await GerberUtils.gbrToMill(gbrTarget, gcTarget);
         }
         else {
-            await GerberUtils.drlToDrill(gbrTarget, gcTarget);
+            gbrTarget += '.drl';
+            await gTrans.transformDrl(gbrSource, gbrTarget);  
+            await GerberUtils.drlToDrill(gbrTarget, gcTarget); 
         }
 
         // Read in the contents of the gcode file...

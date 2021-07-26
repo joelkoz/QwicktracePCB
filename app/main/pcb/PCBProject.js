@@ -210,16 +210,22 @@ class PCBProject {
      * whatever information can be gleaned from the specified gerber file.
      * @param {string} gerberFileName 
      */
-    fromGerber(gerberFileName) {
+    fromGerber(gerberFileName, gType) {
 
-        // TODO Is whatsThatGerber() the best approach to identifying
-        // the file type?  Actual Gerber files have a header such as
-        // %TF.FileFunction,Copper,L2,Bot*%
-        // Files named strangely can have a type incorrectly resolved as
-        // 'drawing'
-        let typeByFile = whatsThatGerber([gerberFileName]);
-        let gType = typeByFile[gerberFileName];
-        if (gerbValid(gType)) {
+        if (!gType) {
+            // TODO Is whatsThatGerber() the best approach to identifying
+            // the file type?  Actual Gerber files have a header such as
+            // %TF.FileFunction,Copper,L2,Bot*%
+            // Files named strangely can have a type incorrectly resolved as
+            // 'drawing'
+            let typeByFile = whatsThatGerber([gerberFileName]);
+            gType = typeByFile[gerberFileName];
+            if (!gerbValid(gType)) {
+                gType = null;
+            }
+        }
+
+        if (gType) {
 
             // We now have a valid gerber file...
             let baseName = path.basename(gerberFileName);

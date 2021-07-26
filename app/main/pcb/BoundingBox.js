@@ -1,8 +1,14 @@
+const { TouchBarOtherItemsProxy } = require("electron");
 
 class BoundingBox {
 
-    constructor() {
-        this.bb = { min: { x: 99999, y: 999999}, max: { x:-999999, y:-999999 }}
+    constructor(otherBB) {
+        if (otherBB) {
+           this.bb = { min: { x: otherBB.min.x, y: otherBB.min.y }, max: { x: otherBB.max.x, y: otherBB.max.y }}
+        }
+        else {
+           this.bb = { min: { x: 99999, y: 999999}, max: { x:-999999, y:-999999 }}
+        }
     }
 
     size() {
@@ -22,10 +28,18 @@ class BoundingBox {
         return this.bb.min;
     }
 
+    set min(newMin) {
+        this.bb.min = newMin;
+    }
+
     get max() {
         return this.bb.max;
     }
 
+    set max(newMax) {
+        this.bb.max = newMax;
+    }
+    
     checkCoord(coord) {
         let x = coord.x;
         let y = coord.y;
