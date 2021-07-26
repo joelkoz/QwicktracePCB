@@ -228,9 +228,19 @@ class ProjectLoader  extends MainSubProcess {
         }
 
         // Read in the contents of the gcode file...
-        let contents = await fsprReadFile(gcTarget);
+        let rawContents = await fsprReadFile(gcTarget);
+        let contents = rawContents.toString();
 
-        return { name: `${state.projectId}-${state.side}`, contents: contents.toString() };
+        // Strip out tool change commands, as we have already taken care of that stuff...
+        if (state.action === 'mill') {
+            let ndxRemoveStart = contents.indexOf('(Retract');
+            let ndxRemoveEnd = contents.indexOf('( retract )');
+            contents = contents.substring(0, ndxRemoveStart) + 
+                       '\nM3\n' +
+                       contents.substring(ndxRemoveEnd+11) 
+        }
+
+        return { name: `${state.projectId}-${state.side}`, contents };
     }
 
 
