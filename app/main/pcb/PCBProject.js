@@ -212,9 +212,15 @@ class PCBProject {
      */
     fromGerber(gerberFileName) {
 
+        // TODO Is whatsThatGerber() the best approach to identifying
+        // the file type?  Actual Gerber files have a header such as
+        // %TF.FileFunction,Copper,L2,Bot*%
+        // Files named strangely can have a type incorrectly resolved as
+        // 'drawing'
         let typeByFile = whatsThatGerber([gerberFileName]);
         let gType = typeByFile[gerberFileName];
         if (gerbValid(gType)) {
+
             // We now have a valid gerber file...
             let baseName = path.basename(gerberFileName);
 
@@ -258,6 +264,9 @@ class PCBProject {
             else if (gType.type === 'drill') {
                 this.drillFile = baseName;
             }
+            else {
+                console.log(`File ${gerberFileName} is an unhandled type (gtype is ${gType.type})`);
+            }
 
             if (fileFunc) {
                 this.gbrjob.FilesAttributes.push({ "Path": baseName, "FileFunction": fileFunc });
@@ -265,6 +274,9 @@ class PCBProject {
 
             this.dirName = path.dirname(gerberFileName);
 
+        }
+        else {
+            console.log(`WARNING: ${gerberFileName} is not a valid gerber file. Ignoring`)
         }
     }
 
