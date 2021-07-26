@@ -254,7 +254,7 @@ class GerberData extends EventEmitter {
             let marginX = bb.master.min.x;
             let marginY = bb.master.min.y;
             let urCornerX = bb.master.max.x + marginX;
-            let urCornerY = bb.master.max.x + marginY;
+            let urCornerY = bb.master.max.y + marginY;
             bb.corners.min.x = 0;
             bb.corners.min.y = 0;
             bb.corners.max.x = urCornerX;
