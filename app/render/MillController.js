@@ -57,10 +57,9 @@ class MillController extends AlignmentController {
         let ui = window.uiController;
 
         let wizard = {
-            "title": "Mill PCB",
-            "cancelLandingPage": "actionPage",
-        
-            "steps": [
+            title: "Mill PCB",
+            cancelLandingPage: "actionPage",
+            steps: [
 
                 { id: "loadMill",
                   subtitle: "Load Mill",
@@ -84,7 +83,7 @@ class MillController extends AlignmentController {
        
                 { id: "connectZProbe",
                   subtitle: "Z Probe",
-                  instructions: "Connect zprobe to milling bit then press Continue",
+                  instructions: "Load milling bit and connect zprobe to it. Press Continue when ready",
                   buttonDefs: [
                      { label: "Continue", next: true, btnClass: 'zProbeContinue' },
                      { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
@@ -108,6 +107,21 @@ class MillController extends AlignmentController {
                   }
                 },
         
+
+                { id: "posZProbe",
+                  subtitle: "Z Probe",
+                  instructions: "Use joystick to position spindle approx 2 to 3 mm over ZPad and press Continue",
+                  buttonDefs: [
+                     { label: "Continue", next: true },
+                     { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
+                  ],
+                  onActivate: (wiz) => {
+                     ui.publish('cnc-zpad-position')
+                  },
+                  onDeactivate: (wiz) => {
+                    thiz.clearJog()
+                  }                  
+                },                
         
                 { id: "zprobe",
                   subtitle: "Z Probe",
@@ -159,7 +173,7 @@ class MillController extends AlignmentController {
                   subtitle: "Ready to mill",
                   instructions: "Remove probe from bit and return to its original mount.",
                   buttonDefs: [
-                    { label: "Continue", next: true, btnClass: 'removeProbeContinue' },
+                    { label: "Start mill", next: true, btnClass: 'removeProbeContinue' },
                     { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
                   onActivate: (wiz) => {
@@ -182,15 +196,6 @@ class MillController extends AlignmentController {
                     clearInterval(wiz.timerId);
                   }
 
-                },
-        
-                { id: "millReady",
-                  subtitle: "Ready to mill",
-                  instructions: "Ready to mill. Press Start to begin",
-                  buttonDefs: [
-                    { label: "Start", next: true },
-                    { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
-                  ]
                 },
         
                 { id: "mill",
@@ -234,6 +239,10 @@ class MillController extends AlignmentController {
     setAutolevelProbeNum(probeNum) {
       this.probeNum = probeNum
       this.updateUiProbeStatus();
+    }
+
+    clearJog() {
+      ipcRenderer.invoke('cnc-cancel', this.activeProfile);
     }
 
     cancelProcesses() {

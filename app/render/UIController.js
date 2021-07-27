@@ -113,13 +113,13 @@ class UIController {
                 thiz.state.lastAction = this.state.action;
                 thiz.state.lastSide = this.state.side;
                 thiz.state.lastStockId = this.state.stockId;
+                thiz.clearPageStack();
+                thiz.finishWizard();
                 thiz.state.action = undefined;
                 thiz.state.side = undefined;
-                thiz.clearPageStack();
-                thiz.showPage('actionPage');
             }
             catch (err) {
-                console.log(`Error adding UI page ${pageContents}`);
+                console.log('Error ending process');
                 console.error(err);
              }            
         });
@@ -346,7 +346,7 @@ class UIController {
 
     finishWizard() {
         if (this.wizard) {
-            let wiz = this.wizard;
+           let wiz = this.wizard;
            this.endCurrentWizardPage();
            let finishPage = wiz.finishLandingPage ? wiz.finishLandingPage : wiz.cancelLandingPage;
            delete this.wizard;

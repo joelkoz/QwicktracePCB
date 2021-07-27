@@ -248,6 +248,14 @@ class CNCController  extends MainSubProcess {
             }
         });
 
+        ipcMain.handle('cnc-zpad-position', (event) => {
+            thiz.zPadPosition();
+        });
+
+        ipcMain.handle('cnc-zpad-position-set', (event) => {
+            thiz.zPadPositionSet();
+        });
+
         ipcMain.handle('cnc-probe-z', async (event, data) => {
             try {
                let pcbZHeight = await thiz.findPCBSurface();
@@ -279,6 +287,7 @@ class CNCController  extends MainSubProcess {
 
         ipcMain.handle('cnc-jog-mode', (event) => {
             thiz.jogMode = true;
+            thiz.jogZ = false;
         });
 
 
@@ -394,6 +403,7 @@ class CNCController  extends MainSubProcess {
 
         if (this.jogMode) {
             this.jogMode = false;
+            this.jogZ = false;
         }
 
         this.pointer.laser = false;
@@ -434,6 +444,7 @@ class CNCController  extends MainSubProcess {
 
         this.findOriginMode = true;
         this.jogMode = true;
+        this.jogZ = false;
         this.pointer.laser = true;
         this.findOriginCallbackName = callbackName;
 
@@ -483,10 +494,7 @@ class CNCController  extends MainSubProcess {
     }
 
 
-
-    async findZPadSurface() {
-
-        this.findZPadInProgress = true;
+    async zPadPosition() {
 
         let zheight = Config.cnc.zheight;
         let zpad = Config.cnc.locations.zpad;
@@ -497,9 +505,27 @@ class CNCController  extends MainSubProcess {
 
         await this.cnc.untilGoto({ x: zpad.x, y: zpad.y, z: zpos }, wcsMACHINE_WORK);
 
+        this.jogMode = true;
+        this.jogZ = true;
+    }
+
+
+    async zPadPositionSet() {
+        let zpad = Config.cnc.locations.zpad;
+        zpad.x = this.cnc.mpos.x;
+        zpad.y = this.cnc.mpos.y;
+        Config.save();
+    }
+
+
+    async findZPadSurface() {
+
+        this.findZPadInProgress = true;
+
+        let zheight = Config.cnc.zheight;
+
         // Start to probe...      
         await this.cnc.feedGCode(['(Start zPad probe)', 'G91']);
-
 
         this.cnc.sendGCode('G38.2 Z-14 F20');
         let probeVal = await untilEvent(this.cnc, 'probe');
@@ -530,6 +556,9 @@ class CNCController  extends MainSubProcess {
                 await this.cnc.untilGoto({z: 4}, wcsPCB_WORK);
             }
 
+            let zpad = Config.cnc.locations.zpad;
+            zpad.x = probeVal.x;
+            zpad.y = probeVal.y;
             zheight.zpad.lastZ = probeVal.z;
             Config.save();
 
