@@ -675,6 +675,8 @@ class CNCController  extends MainSubProcess {
 
             await untilTrue(1000, () => { return thiz.cnc.getSenderStatus() === CNC.SENDER_DONE}, fnRejectIfCanceled);
 
+            await this.gotoSafeZ();
+
             console.log(`Completed PCB mill of ${profile.state.projectId}`)
             this.ipcSend(callbackName, thiz.cnc.getSenderState().elapsedTime);            
 
