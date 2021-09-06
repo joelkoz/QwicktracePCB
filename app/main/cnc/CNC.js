@@ -41,12 +41,9 @@ function getAccessToken() {
 }
 
 
-//const host = '127.0.0.1';
-const host = '192.168.0.160';
-const port = 8000;
-const serialPort = '/dev/ttyUSB0';
-const baudRate = 115200;
-const controllerType = 'Grbl';
+// const HOST = '192.168.0.152';
+
+const GRBL = 'Grbl';
 
 const RESERVED_EVENTS = [ 'error', 'ready', 'closed', 'state', 'sent', 'data', 'pos', 'sender', 'feeder', 'alarm', 'msg', 'probe' ];
 
@@ -90,7 +87,7 @@ class CNC extends EventEmitter {
         this.autoReset = true;
     }
 
-    connect() {
+    connect(host = '127.0.0.1', hostPort = 8000, serialPort = '/dev/ttyUSB0', baudRate = 115200) {
         if (this.socket) {
             // Ignore if we are already connected.
             console.log('Aready connected to CNC. Ignoring connect() call.');
@@ -99,8 +96,9 @@ class CNC extends EventEmitter {
 
         console.log('Connecting to CNC...');
         this.ready = false;
+        this.serialPort = serialPort;
 
-        this.socket = io.connect('ws://' + host + ':' + port, {
+        this.socket = io.connect('ws://' + host + ':' + hostPort, {
             'query': 'token=' + this.token
         });
 
@@ -111,7 +109,7 @@ class CNC extends EventEmitter {
            console.log('Connected to CNCjs at ' + url);
            thiz.socket.emit('open', serialPort, {
               baudrate: Number(baudRate),
-              controllerType: controllerType
+              controllerType: GRBL
            });
         });
 
@@ -606,7 +604,7 @@ class CNC extends EventEmitter {
      * @param  {...any} args 
      */
     sendCommand(cmd, ...args) {
-        this.socket.emit('command', serialPort, cmd, ...args)
+        this.socket.emit('command', this.serialPort, cmd, ...args)
     }
 
 
@@ -618,7 +616,7 @@ class CNC extends EventEmitter {
      * @param {*} context An optional context used for inline variable substitution (e.g. macros)
      */
     rawWrite(data, context = {}) {
-        this.socket.emit('write', serialPort, data, context)
+        this.socket.emit('write', this.serialPort, data, context)
     }
 
     /**
@@ -627,7 +625,7 @@ class CNC extends EventEmitter {
      * @param {*} context An optional context used for inline variable substitution (e.g. macros)
      */
     rawWriteLn(data, context = {}) {
-        this.socket.emit('writeln', serialPort, data, context)
+        this.socket.emit('writeln', this.serialPort, data, context)
     }
 
     get state() {

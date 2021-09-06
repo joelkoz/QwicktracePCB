@@ -45,6 +45,11 @@ class Config {
         return this._config;
     }
 
+    get(key) {
+        return this.json[key];
+    }
+
+    
     load() {
         console.log('Loading configuraton file...');
         let jStr = fs.readFileSync(FILENAME, 'utf8');

@@ -295,8 +295,8 @@ class CNCController  extends MainSubProcess {
             this.resetCNC(paramObj.callbackName);
         });
 
-
-        this.cnc.connect();
+        const server = Config.cnc.server;
+        this.cnc.connect(server.host, server.port, server.serialPort, server.baudRate);
     }
 
 
