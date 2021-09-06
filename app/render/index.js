@@ -6,6 +6,7 @@ import { UIController } from './UIController.js'
 import { DrillController } from './DrillController.js';
 import { MillController } from './MillController.js';
 import { SettingsController } from './SettingsController.js';
+import { RenderMQ } from './RenderMQ.js';
 
 document.addEventListener('keydown', (event) => {
 
@@ -40,7 +41,7 @@ ipcRenderer.on('render-start', (event, config) => {
 
 
 window.cncAvailable = false;
-ipcRenderer.on('render-cnc-state', (event, state) => {
+RenderMQ.on('render.cnc.state', (state) => {
    window.cncAvailable = (state === 'Idle');
 });
 

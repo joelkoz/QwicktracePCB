@@ -162,7 +162,11 @@ class CNCController  extends MainSubProcess {
                 setTimeout(() => {thiz.initCNC() }, 10);
             }
 
-            thiz.ipcSend('render-cnc-state', state);
+            MainMQ.emit('render.cnc.state', state);
+        });
+
+        this.cnc.on('pos', (data) => {
+            MainMQ.emit('render.cnc.pos', data);
         });
 
         this.zprobe.on(ZProbe.EVT_PRESSED, (state) => {

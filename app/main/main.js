@@ -9,6 +9,7 @@ const UILoader = require('./UILoader.js');
 const UVController = require('./UVController.js');
 const CNCController = require('./CNCController.js');
 const Config = require('./Config.js');
+const MainMQ = require('./MainMQ.js');
 
 let win = null;
 let fileLoader = null;
@@ -60,6 +61,9 @@ function createWindow () {
     win.close();
     app.quit();
   })
+
+  MainMQ.setWindow(win);
+  
 }
 
 
