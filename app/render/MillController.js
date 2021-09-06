@@ -68,7 +68,7 @@ class MillController extends AlignmentController {
                      { label: "Continue", next: true },
                      { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
-                  onActivate: (wiz) => {
+                  onActivate: (wizStep) => {
                       if (thiz.activeProfile.state.stockIsBlank || 
                          !thiz.activeProfile.state.alignStock) {
                          ui.publish('cnc-load-pcb')
@@ -88,7 +88,7 @@ class MillController extends AlignmentController {
                      { label: "Continue", next: true, btnClass: 'zProbeContinue' },
                      { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
-                  onActivate: (wiz) => {
+                  onActivate: (wizStep) => {
                     function updateBtnContinue() {
                         if (window.cncZProbe) {
                            // We can not continue if ZProbe is currently "pressed"
@@ -99,11 +99,11 @@ class MillController extends AlignmentController {
                             $('#wizardPage .zProbeContinue').css("display", "block");
                         }
                     }
-                    wiz.timerId = setInterval(updateBtnContinue, 1000);
+                    wizStep.timerId = setInterval(updateBtnContinue, 1000);
                     updateBtnContinue();
                   },
-                  onDeactivate: (wiz) => {
-                    clearInterval(wiz.timerId);
+                  onDeactivate: (wizStep) => {
+                    clearInterval(wizStep.timerId);
                   }
                 },
         
@@ -115,10 +115,10 @@ class MillController extends AlignmentController {
                      { label: "Continue", next: true },
                      { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
-                  onActivate: (wiz) => {
+                  onActivate: (wizStep) => {
                      ui.publish('cnc-zpad-position')
                   },
-                  onDeactivate: (wiz) => {
+                  onDeactivate: (wizStep) => {
                     thiz.clearJog()
                   }                  
                 },                
@@ -129,7 +129,7 @@ class MillController extends AlignmentController {
                   buttonDefs: [
                     { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
-                  onActivate: (wiz) => {
+                  onActivate: (wizStep) => {
                     ui.publish('cnc-probe-z', { callbackName: 'mill-zprobe-set', profile })
                   }
                 },
@@ -142,7 +142,7 @@ class MillController extends AlignmentController {
                   buttonDefs: [
                      { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
-                  onActivate: (wiz) => {
+                  onActivate: (wizStep) => {
                       ui.publish('cnc-find-work-origin', { callbackName: 'mill-origin-set', profile } )
                   }
                 },
@@ -163,7 +163,7 @@ class MillController extends AlignmentController {
                   buttonDefs: [
                     { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
-                  onActivate: (wiz) => {
+                  onActivate: (wizStep) => {
                       ui.publish('cnc-autolevel', { callbackName: 'ui-wizard-next', profile })
                   }
                 },
@@ -176,7 +176,7 @@ class MillController extends AlignmentController {
                     { label: "Start mill", next: true, btnClass: 'removeProbeContinue' },
                     { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }                      
                   ],
-                  onActivate: (wiz) => {
+                  onActivate: (wizStep) => {
 
                     function updateBtnContinue() {
                       if (window.cncZProbe) {
@@ -189,11 +189,11 @@ class MillController extends AlignmentController {
                        }
                     }
 
-                    wiz.timerId = setInterval(updateBtnContinue, 1000);
+                    wizStep.timerId = setInterval(updateBtnContinue, 1000);
                     updateBtnContinue();
                   },
-                  onDeactivate: (wiz) => {
-                    clearInterval(wiz.timerId);
+                  onDeactivate: (wizStep) => {
+                    clearInterval(wizStep.timerId);
                   }
 
                 },
@@ -204,7 +204,7 @@ class MillController extends AlignmentController {
                   buttonDefs: [
                     { label: "Cancel", fnAction: () => { thiz.cancelProcesses() } }
                   ],
-                  onActivate: (wiz) => {
+                  onActivate: (wizStep) => {
                     ui.publish('cnc-mill-pcb', { callbackName: 'ui-process-done', profile })
                   }
                 }

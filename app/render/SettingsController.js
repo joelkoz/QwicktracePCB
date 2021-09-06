@@ -22,7 +22,7 @@ class SettingsController {
                                 buttonDefs: [
                                 { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                                 ],
-                                onActivate: (wiz) => {
+                                onActivate: (wizStep) => {
                                     ui.publish('cnc-home', { callbackName: 'ui-wizard-next' });
                                 }
                             }                       
@@ -43,7 +43,7 @@ class SettingsController {
                                 buttonDefs: [
                                    { label: "Done", fnAction: () => { thiz.finishWizard() } }                      
                                 ],
-                                onActivate: (wiz) => {
+                                onActivate: (wizStep) => {
                                     ui.publish('cnc-jog-mode');
                                 }
                             }                            
@@ -62,7 +62,7 @@ class SettingsController {
                                 buttonDefs: [
                                 { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                                 ],
-                                onActivate: (wiz) => {
+                                onActivate: (wizStep) => {
                                     ui.publish('cnc-reset', { callbackName: 'ui-wizard-next' });
                                 }
                             }                              

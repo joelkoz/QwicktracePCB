@@ -272,7 +272,7 @@ class UIController {
     }
 
 
-    getWizardData(wizardStepId) {
+    getWizardStep(wizardStepId) {
 
         if (!wizardStepId) {
             // If no parameter specified, use the current step Id...
@@ -295,7 +295,7 @@ class UIController {
 
     endCurrentWizardPage() {
         if (this.wizard && this.wizardStepId) {
-            let wiz = this.getWizardData(this.wizardStepId);
+            let wiz = this.getWizardStep(this.wizardStepId);
             if (wiz.onDeactivate) {
                 wiz.onDeactivate(wiz);
             }

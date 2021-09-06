@@ -87,16 +87,16 @@
         }
 
 
-        function wizardPageActivate(wizardData) {
+        function wizardPageActivate(wizardStep) {
 
-            let buttonDefs = wizardData.buttonDefs;
+            let buttonDefs = wizardStep.buttonDefs;
             if (!buttonDefs) {
                 buttonDefs =  [ ];                
             }
 
-            setWizardText('#wizardPage .title-area', wizardData.title)
-            setWizardText('#wizardPage .subtitle-area', wizardData.subtitle)
-            setWizardText('#wizardPage .instructions-area', wizardData.instructions)
+            setWizardText('#wizardPage .title-area', wizardStep.title)
+            setWizardText('#wizardPage .subtitle-area', wizardStep.subtitle)
+            setWizardText('#wizardPage .instructions-area', wizardStep.instructions)
             setWizardStatusText('');
             
             let btnSelector = "#wizardPage .button-area";
@@ -109,15 +109,15 @@
                 uiAddButton(btnSelector, btnDef.label, () => { ui.onWizardButton(btnDef); }, btnClass);
             });
 
-            if (wizardData.onActivate) {
-                wizardData.onActivate(wizardData);
+            if (wizardStep.onActivate) {
+                wizardStep.onActivate(wizardStep);
             }
         };
 
 
         uiPageActivate['wizardPage'] = function() {
-            let wizardData = ui.getWizardData(ui.wizardStepId);
-            wizardPageActivate(wizardData);
+            let wizardStep = ui.getWizardStep(ui.wizardStepId);
+            wizardPageActivate(wizardStep);
         }   
 
     </script>
