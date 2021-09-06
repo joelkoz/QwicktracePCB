@@ -214,10 +214,23 @@ class PCBProject {
 
         if (!gType) {
             // TODO Is whatsThatGerber() the best approach to identifying
-            // the file type?  Actual Gerber files have a header such as
+            // the file type?  Actual Gerber X2 files have a header such as
             // %TF.FileFunction,Copper,L2,Bot*%
-            // Files named strangely can have a type incorrectly resolved as
-            // 'drawing'
+            // With whatsThatGerber(), files named strangely can have a type 
+            // incorrectly resolved as 'drawing'
+            //
+            // See UCamCo Gerber specification section 5.6.3:
+            //
+            // %TF.FileFunction,Copper,L<n>,(Top|Inr|Bot)
+            // where
+            //   <n> = Layer number. Top layer is "1". Highest number is bottom.
+            // or
+            // %TF.FileFunction,Profile,(P|NP)
+            // or
+            // %TF.FileFunction,Soldermask,(Top|Bot)
+            // or
+            // %TF.FileFunction,Legend,(Top|Bot)
+            //
             let typeByFile = whatsThatGerber([gerberFileName]);
             gType = typeByFile[gerberFileName];
             if (!gerbValid(gType)) {
