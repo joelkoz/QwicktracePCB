@@ -255,9 +255,12 @@ class UIController {
     }
 
 
-    startWizard(wizard) {
+    startWizard(wizard, wizardStepId) {
         this.wizard = wizard;
-        this.gotoWizardPage(wizard.steps[0].id);
+        if (!wizardStepId) {
+            wizardStepId = wizard.steps[0].id;
+        }
+        this.gotoWizardPage(wizardStepId);
     }
 
 
