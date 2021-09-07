@@ -483,9 +483,8 @@ class CNCController  extends MainSubProcess {
         // Start at home pos...
         let mpos = { x: 0, y: 0};
         // Move to upper right of frame
-        let frameMargin = cncConfig.pcbFrame.margin;
-        mpos.x += cncConfig.locations.ur.x - frameMargin; 
-        mpos.y += cncConfig.locations.ur.y - frameMargin;
+        mpos.x += cncConfig.locations.ur.x; 
+        mpos.y += cncConfig.locations.ur.y;
         // Now, estimate the lower left position...
         mpos.x -= profile.stock.width;
         mpos.y -= profile.stock.height;
@@ -509,9 +508,8 @@ class CNCController  extends MainSubProcess {
         this.boardOriginM = laserCoord;
         let origin = this.boardOriginM;
         let ur = Config.cnc.locations.ur;
-        let margin = Config.cnc.pcbFrame.margin;
-        let actualWidth = -(origin.x - ur.x) + margin;
-        let actualHeight = -(origin.y - ur.y) + margin;
+        let actualWidth = -(origin.x - ur.x);
+        let actualHeight = -(origin.y - ur.y);
         this.profile.stock.actual = { width: actualWidth, height: actualHeight }; 
 
         this.cnc.goto({x: 0, y: 0}, wcsPCB_WORK);
@@ -611,23 +609,17 @@ class CNCController  extends MainSubProcess {
             this.findPCBSurfaceInProgress = true;
 
             let zheight = Config.cnc.zheight;
-            let pcbFrame = Config.cnc.pcbFrame;
 
             await this.gotoSafeZ();
 
             // Next move the probe away from the pad to over the PCB by 5mm...
-            let moveY = 0 - pcbFrame.width - 5;
+            let moveX = 0 - 5;
 
-            await this.cnc.feedGCode(['G91', `G0 Y${moveY}`, 'G90']);
+            await this.cnc.feedGCode(['G91', `G${moveX} Y0`, 'G90']);
 
             // Move to 2 mm above the PCB surface...
-            let estZ;
-            if (pcbFrame.probedHeight) {
-                estZ = zpadZ - pcbFrame.probedHeight + 2
-            }
-            else {
-                estZ = zpadZ - pcbFrame.height + 3;
-            }
+            let estZ = zpadZ + zheight.zpad.pcbOffset + 2
+
             await this.cnc.untilGoto({z: estZ}, wcsMACHINE_WORK);
 
 
@@ -646,8 +638,6 @@ class CNCController  extends MainSubProcess {
             this.findPCBSurfaceInProgress = false;
 
             if (probeVal.ok) {
-                let pcbSurfaceM = this.cnc.mpos;
-
                 // Set the primary work coordinate Z height to the probe value
                 await this.cnc.feedGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
 
@@ -658,8 +648,8 @@ class CNCController  extends MainSubProcess {
                 // Retract 4mm
                 await this.cnc.feedGCode(['G91', 'G0 Z4', 'G90'])
 
-                let probedFrameHeight = zpadZ - probeVal.z;
-                pcbFrame.probedHeight = probedFrameHeight;
+                let probedOffset = zpadZ - probeVal.z;
+                zheight.zpad.pcbOffsetProbed = probedOffset;
                 zheight.pcb = { lastZ: probeVal.z }
                 Config.save();
                 

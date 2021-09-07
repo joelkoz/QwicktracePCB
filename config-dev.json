@@ -44,14 +44,7 @@
 
       "pointer": {
          "offset": { "x": 20.3, "y": 7.3 }
-      },
-
-      "pcbFrame": {
-         "margin": 2,
-         "width": 9,
-         "height": 11
       }
-
    },
 
    "joystick": {
