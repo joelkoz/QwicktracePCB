@@ -597,14 +597,6 @@ class UIController {
         }
     }
 
-    startJogMode() {
-        ipcRenderer.invoke('cnc-jog-mode');
-    }
-
-    endJogMode() {
-        ipcRenderer.invoke('cnc-cancel');
-        this.showPage('settingsPage', false);
-    }
 }
 
 export { UIController }

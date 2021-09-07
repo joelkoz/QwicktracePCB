@@ -16,7 +16,7 @@ class FileLoader  extends MainSubProcess {
 
     constructor(win) {
 
-      super(win);
+      super(win, 'files');
 
       let thiz = this;
       ipcMain.handle('fileloader-load-svg', (event, data) => {

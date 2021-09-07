@@ -5,7 +5,7 @@ const GPIO = require('./GPIO.js');
 class UVController  extends MainSubProcess {
 
     constructor(win) {
-        super(win);
+        super(win, 'uv');
 
         this.timer = null;
         this.pigpio = new GPIO();

@@ -7,7 +7,7 @@ const uiPageDir = "./app/render/ui";
 class UILoader extends MainSubProcess {
 
     constructor(win) {
-        super(win);
+        super(win, 'ui');
         this.loadUI();
     }
 

@@ -1,7 +1,9 @@
+const RPCServer = require('./RPCServer.js');
 
-class MainSubProcess {
+class MainSubProcess extends RPCServer {
 
-    constructor(win) {
+    constructor(win, rpcServerId = 'none') {
+        super(rpcServerId);
         this.win = win;
     }
 

@@ -58,7 +58,7 @@ const wcsPCB_WORK = 1;
 class CNCController  extends MainSubProcess {
 
     constructor(win) {
-        super(win);
+        super(win, 'cnc');
 
         console.log('Initializing CNC mill...');
 
@@ -249,13 +249,6 @@ class CNCController  extends MainSubProcess {
         });
 
 
-        ipcMain.handle('cnc-home', (event, data) => {
-            thiz.cnc.home();
-            if (data && data.callbackName) {
-                MainMQ.once('cnc-homed', () => { thiz.ipcSend(data.callbackName, thiz.cnc.mpos) });
-            }
-        });
-
         ipcMain.handle('cnc-zpad-position', (event) => {
             thiz.zPadPosition();
         });
@@ -292,15 +285,41 @@ class CNCController  extends MainSubProcess {
             thiz.millPCB(data.profile, data.callbackName);
         });
 
+        this.rpcAPI( {
+            async home() {
+                thiz.cnc.home();
+                await untilEvent(MainMQ.getInstance(), 'cnc-homed', 60000);
+                return thiz.cnc.mpos;
+            },
 
-        ipcMain.handle('cnc-jog-mode', (event) => {
-            thiz.jogMode = true;
-            thiz.jogZ = false;
-        });
+            async zPadPosition() {
+                let result = await thiz.zPadPosition();
+                return result;
+            },
+
+            async zProbePad() {
+                let result = await thiz.findZPadSurface();
+                return result;
+            },
 
 
-        ipcMain.handle('cnc-reset', (event, paramObj) => {
-            this.resetCNC(paramObj.callbackName);
+            async jogMode(modeOn) {
+                let oldMode = thiz.jogMode;
+                thiz.jogMode = modeOn;
+                thiz.jogZ = false;
+                return oldMode;
+            },
+
+            async cancelProcesses() {
+                await thiz.cancelProcesses();
+                return true;
+            },
+
+            async reset() {
+                await thiz.resetCNC();
+                return true;
+            }
+
         });
 
         const server = Config.cnc.server;
@@ -337,7 +356,9 @@ class CNCController  extends MainSubProcess {
         console.log('CNC reset: waiting for idle state...');
         await this.cnc.untilState(CNC.CTRL_STATE_IDLE)
         console.log('CNC reset: request completed.');
-        this.ipcSend(callbackName)
+        if (callbackName) {
+           this.ipcSend(callbackName)
+        }
     }
 
 

@@ -7,7 +7,7 @@ const profileDir = "./profiles/";
 class ProfileLoader extends MainSubProcess {
 
     constructor(win) {
-       super(win);
+       super(win, 'profiles');
 
        this.lastProfileSyncMs = 0;
 

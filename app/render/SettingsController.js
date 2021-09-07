@@ -1,10 +1,13 @@
 "use strict"
 
 const { ipcRenderer } = require('electron')
+import { RPCClient } from './RPCClient.js'
 
-class SettingsController {
+
+class SettingsController extends RPCClient {
 
     constructor(config) {
+        super('settings');
 
         let thiz = this;
         this.config = config;
@@ -23,7 +26,7 @@ class SettingsController {
                                 { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                                 ],
                                 onActivate: (wizStep) => {
-                                    ui.publish('cnc-home', { callbackName: 'ui-wizard-next' });
+                                    thiz.rpcCall('cnc.home', [], thiz.finishWizard)
                                 }
                             }                       
                     ]
@@ -44,12 +47,54 @@ class SettingsController {
                                    { label: "Done", fnAction: () => { thiz.finishWizard() } }                      
                                 ],
                                 onActivate: (wizStep) => {
-                                    ui.publish('cnc-jog-mode');
-                                }
-                            }                            
+                                    thiz.rpcCall('cnc.jogMode', true)
+                                },
+                                onDeactivate: (wizStep) => {
+                                    thiz.rpcCall('cnc.jogMode', false)
+                                }                                   
+                            }
                     ]
                  }
                },
+
+
+               { id: "zprobe",
+                 wizard: {
+                    title: "ZProbe Pad",
+                    finishLandingPage: "settingsPage",
+                    steps: [
+                        { id: "posZProbe",
+                        subtitle: "Z Probe",
+                        instructions: "Use joystick to position spindle approx 2 to 3 mm over ZPad and press Continue",
+                        buttonDefs: [
+                           { label: "Continue", next: true },
+                           { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                        ],
+                        onActivate: async (wizStep) => {
+                           await thiz.rpcCallAsync('cnc.zPadPosition');
+                           await thiz.rpcCallAsync('cnc.jogMode', true)
+                        },
+                        onDeactivate: (wizStep) => {
+                            thiz.rpcCall('cnc.jogMode', false)
+                        }                  
+                      },                
+              
+                      { id: "zprobe",
+                        subtitle: "Z Probe",
+                        instructions: "Searching pad surface. Standby...",
+                        buttonDefs: [
+                          { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                        ],
+                        onActivate: async (wizStep) => {
+                           await thiz.rpcCallAsync('cnc.zProbePad')
+                           thiz.finishWizard();
+                        }
+                      }
+      
+                    ]
+                 }
+               },
+
 
                { id: "millReset",
                  wizard: {
@@ -63,12 +108,12 @@ class SettingsController {
                                 { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                                 ],
                                 onActivate: (wizStep) => {
-                                    ui.publish('cnc-reset', { callbackName: 'ui-wizard-next' });
+                                    thiz.rpcCall('cnc.reset', [], thiz.finishWizard)
                                 }
                             }                              
                     ]
                  }
-               }               
+               }
 
         ];
     }
@@ -101,11 +146,19 @@ class SettingsController {
         }
     }
 
+    wizardNext() {
+        window.uiController.wizardNext();
+    }
+
     cancelWizard() {
+        this.rpcCall('cnc.cancelProcesses');
+        this.rpcClearAll();
         window.uiController.cancelWizard();
     }
 
     finishWizard() {
+        this.rpcCall('cnc.cancelProcesses');
+        this.rpcClearAll();
         window.uiController.finishWizard();
     }
 

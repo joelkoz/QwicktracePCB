@@ -28,7 +28,7 @@ class ProjectLoader  extends MainSubProcess {
 
     constructor(win) {
 
-      super(win);
+      super(win, 'projects');
 
       this.lastFileSyncMs = 0;
 
