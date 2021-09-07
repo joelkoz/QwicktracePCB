@@ -1,9 +1,12 @@
 const GPIO = require('../GPIO.js');
 const Config = require('../Config.js');
+const EventEmitter = require('events')
 
-class LaserPointer {
+class LaserPointer extends EventEmitter {
 
     constructor() {
+        super();
+
         this.pigpio = new GPIO();
 
         if (Config.cnc) {
@@ -36,6 +39,7 @@ class LaserPointer {
                 this.pin.analogWrite(0);
                 this.laserOn = false;
             }
+            this.emit('state', this.laserOn);
         }
     }
 

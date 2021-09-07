@@ -46,7 +46,7 @@ RenderMQ.on('render.cnc.state', (state) => {
 });
 
 
-ipcRenderer.on('render-zprobe-state', (event, state) => {
+RenderMQ.on('render.cnc.zprobe', (state) => {
    window.cncZProbe = state;
 });
 

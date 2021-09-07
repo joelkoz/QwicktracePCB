@@ -170,7 +170,11 @@ class CNCController  extends MainSubProcess {
         });
 
         this.zprobe.on(ZProbe.EVT_PRESSED, (state) => {
-            thiz.ipcSend('render-zprobe-state', state);
+            MainMQ.emit('render.cnc.zprobe', state);
+        });
+
+        this.pointer.on('state', (state) => {
+            MainMQ.emit('render.cnc.laser', state);
         });
 
         this.cnc.on('sent', (data) => {
