@@ -60,12 +60,12 @@ class SettingsController extends RPCClient {
 
                { id: "zprobe",
                  wizard: {
-                    title: "ZProbe Pad",
+                    title: "ZProbe",
                     finishLandingPage: "settingsPage",
                     steps: [
                         { id: "posZProbe",
                         subtitle: "Z Probe",
-                        instructions: "Use joystick to position spindle approx 2 to 3 mm over ZPad and press Continue",
+                        instructions: "Use joystick to position spindle approx 2 to 3 mm over desired area and press Continue",
                         buttonDefs: [
                            { label: "Continue", next: true },
                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
@@ -86,7 +86,7 @@ class SettingsController extends RPCClient {
                           { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                         ],
                         onActivate: async (wizStep) => {
-                           await thiz.rpcCallAsync('cnc.zProbePad')
+                           await thiz.rpcCallAsync('cnc.zProbePad', false);
                            thiz.finishWizard();
                         }
                       }

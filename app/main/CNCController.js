@@ -285,6 +285,7 @@ class CNCController  extends MainSubProcess {
             thiz.millPCB(data.profile, data.callbackName);
         });
 
+        // Define the RPC API that this object serves...
         this.rpcAPI( {
             async home() {
                 thiz.cnc.home();
@@ -297,8 +298,8 @@ class CNCController  extends MainSubProcess {
                 return result;
             },
 
-            async zProbePad() {
-                let result = await thiz.findZPadSurface();
+            async zProbePad(saveXY = false) {
+                let result = await thiz.findZPadSurface(saveXY);
                 return result;
             },
 
@@ -545,7 +546,7 @@ class CNCController  extends MainSubProcess {
     }
 
 
-    async findZPadSurface() {
+    async findZPadSurface(saveNewXY = false) {
 
         this.findZPadInProgress = true;
 
@@ -584,8 +585,10 @@ class CNCController  extends MainSubProcess {
             }
 
             let zpad = Config.cnc.locations.zpad;
-            zpad.x = probeVal.x;
-            zpad.y = probeVal.y;
+            if (saveNewXY) {
+                zpad.x = probeVal.x;
+                zpad.y = probeVal.y;
+            }
             zheight.zpad.lastZ = probeVal.z;
             Config.save();
 
