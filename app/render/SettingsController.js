@@ -81,7 +81,7 @@ class SettingsController extends RPCClient {
               
                       { id: "zprobe",
                         subtitle: "Z Probe",
-                        instructions: "Searching pad surface. Standby...",
+                        instructions: "Searching for surface. Standby...",
                         buttonDefs: [
                           { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                         ],
