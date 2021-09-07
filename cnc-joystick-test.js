@@ -6,7 +6,17 @@ const ZProbe = require('./app/main/cnc/ZProbe');
 const LaserPointer = require('./app/main/cnc/LaserPointer');
 const GPIO = require('./app/main/GPIO');
 
-const mockConfig = { cnc: {},
+// const HOST = "127.0.0.1"
+const HOST = "192.168.0.152"
+
+const mockConfig = { cnc: {
+                        server: {
+                          host: HOST,
+                          port: 8000,
+                          serialPort: "/dev/ttyUSB0",
+                          baudRate: 115200
+                        }
+                    },
                     joystick: {
                       invertY: true,
                       invertX: false,
@@ -17,7 +27,7 @@ const mockConfig = { cnc: {},
                                     }
                     },
                      pigpio: {
-                        "host": "192.168.0.160",
+                        "host": HOST,
                         "port": 8888
                    } };
 
@@ -110,12 +120,12 @@ process.stdin.on('keypress', (str, key) => {
   if (key.name === 'l') {
       if (!pointer.laser) {
         // Laser is OFF, so turn it ON...
-        cnc.sendGCode(['G91', `G0 X${LaserPointer.offsetX} Y${LaserPointer.offsetY}`, 'G90']);
+        // cnc.sendGCode(['G91', `G0 X${LaserPointer.offsetX} Y${LaserPointer.offsetY}`, 'G90']);
         pointer.laser = true;
       }
       else {
         // Laser is ON, so turn it OFF...
-        cnc.sendGCode(['G91', `G0 X${-LaserPointer.offsetX} Y${-LaserPointer.offsetY}`, 'G90']);
+        // cnc.sendGCode(['G91', `G0 X${-LaserPointer.offsetX} Y${-LaserPointer.offsetY}`, 'G90']);
         pointer.laser = false;
       }
       console.log(`Laser is ${pointer.laser ? 'ON' : 'OFF'}`);
@@ -215,6 +225,5 @@ zprobe.on(ZProbe.EVT_PRESSED, (pressed) => {
     console.log('z probe: ' + (pressed ? "ON" : "OFF"));
 });
 
-
-cnc.connect();
-
+let server = mockConfig.cnc.server;
+cnc.connect(server.host, server.port, server.serialPort, server.baudRate);
