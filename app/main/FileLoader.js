@@ -11,35 +11,35 @@ const GerberData = require('./pcb/GerberData.js');
 const ProjectLoader = require('./ProjectLoader.js');
 
 const MainMQ = require('./MainMQ.js');
+const { untilEvent } = require('../common/promise-utils/index.js');
 
-class FileLoader  extends MainSubProcess {
+class FileLoader extends MainSubProcess {
 
     constructor(win) {
 
       super(win, 'files');
 
       let thiz = this;
-      ipcMain.handle('fileloader-load-svg', (event, data) => {
-         let { profile, callbackEvt } = data;
-         ProjectLoader.prepareForWork(profile)
-            .then(results => {
-               thiz.loadGerberAsSvg(results.gbr, profile, callbackEvt);
-            });
+      this.rpcAPI( {
+
+         async loadSVG(profile) {
+            let results = await ProjectLoader.prepareForWork(profile);
+            let svgObj = await thiz.loadGerberAsSvg(results.gbr, profile);
+            return svgObj;
+         },
+
+
+         async loadDrillInfo(profile) {
+            let results = await ProjectLoader.prepareForWork(profile);
+            let drillObj = await thiz.loadDrillFile(results.drl, profile);
+            return drillObj;
+         }
+
       });
-
-      ipcMain.handle('fileloader-load-holes', (event, data) => {
-         let { profile, callbackEvt } = data;
-         ProjectLoader.prepareForWork(profile)
-            .then(results => {
-               thiz.loadDrillFile(results.drl, profile, callbackEvt);
-            });
-      });
-
-
     }
 
 
-    loadGerberAsSvg(fileName, profile, callbackEvt) {
+    async loadGerberAsSvg(fileName, profile) {
 
         console.log(`Creating SVG from Gerber file ${fileName}`);
      
@@ -52,16 +52,16 @@ class FileLoader  extends MainSubProcess {
         };
      
         try {
-         let converter = gerberToSvg(strmGerber, options);
-      
-         let buffer = '';
-      
-         converter.on('data', (chunk) => {
-            buffer += chunk;
-         });
-      
-         let thiz = this;        
-         converter.on('end', () => {
+            let converter = gerberToSvg(strmGerber, options);
+
+            let buffer = '';
+            converter.on('data', (chunk) => {
+               buffer += chunk;
+            });
+         
+            let thiz = this;
+            await untilEvent(converter, 'end', 8000);
+
             let obj = {
                "width": converter.width,
                "height": converter.height,
@@ -72,29 +72,25 @@ class FileLoader  extends MainSubProcess {
             };
 
             console.log('SVG render complete');
-            thiz.ipcSend(callbackEvt, obj);
-         });
+            return obj;
       }
       catch (err) {
-         console.log(`Error loading GBR file ${fileName}`);
-         console.error(err);
+         console.error(`Error loading GBR file ${fileName}`, err);
+         return new Error(`Error loading GBR file ${fileName}`, { cause: err });
       }      
     }
      
-     
 
-    loadDrillFile(fileName, profile, callbackEvt) {
+    async loadDrillFile(fileName, profile, callbackEvt) {
          this.drillData = new GerberData([fileName]);
          let thiz = this;
-         this.drillData.on('ready', () => {
-            let drillLoadInfo = { "holes": thiz.drillData.holes, 
-                                  "boundingBox": thiz.drillData.boundingBox, 
-                                  "units": thiz.drillData.units,
-                                  "drillSide": profile.state.side };
-
-            thiz.ipcSend(callbackEvt, drillLoadInfo);
-         });
-    }
+         await untilEvent(this.drillData, 'ready', 8000);
+         let drillLoadInfo = { "holes": thiz.drillData.holes, 
+                               "boundingBox": thiz.drillData.boundingBox, 
+                               "units": thiz.drillData.units,
+                               "drillSide": profile.state.side };
+         return drillLoadInfo;
+   }
     
 }
 

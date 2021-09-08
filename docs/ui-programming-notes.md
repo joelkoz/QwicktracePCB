@@ -14,9 +14,9 @@
 
   6. `app/main/main.js` responds to `render-start-done` by instantiating `UILoader()`
 
-  7. `UILoader()` reads the contents of every '.html' file in `app/render/ui`, invoking `ui-page-add` for each one
+  7. `UILoader()` reads the contents of every '.html' file in `app/render/ui`, invoking `render.ui.pageAdd` for each one
 
-  8. `UIController()` responds to `ui-page-add` by adding the page contents as a child of `<div id="ui">` in `index.html`
+  8. `UIController()` responds to `render.ui.pageAdd` by adding the page contents as a child of `<div id="ui">` in `index.html`
 
   9. After the last .html file is processed, `UILoader()` invokes `ui-start`
 

@@ -1,5 +1,3 @@
-const { ipcMain } = require('electron')
-
 const fse = require('fs-extra');
 const path = require('path');
 const fsprReadFile = require('fs').promises.readFile;
@@ -39,15 +37,15 @@ class ProjectLoader  extends MainSubProcess {
       let thiz = this;
       setInterval(() => { thiz.refreshFileList(); }, 5000);
 
-      ipcMain.handle('projectloader-prepare', (event, data) => {
-         let { profile, callbackName } = data;
-         console.log('Preparing project work directory using profile:', profile)
-         ProjectLoader.prepareForWork(profile)
-            .then(results => {
-                console.log('Project work directory prep completed.')
-                thiz.ipcSend(callbackName, results)
-            });
-      });      
+      this.rpcAPI( {
+        async prepareForWork(profile) {
+           let updatedProfile = await ProjectLoader.prepareForWork(profile);
+           console.log('Project work directory prep completed.')
+           return updatedProfile;
+        }
+      });
+
+
     }
 
 
@@ -281,7 +279,7 @@ class ProjectLoader  extends MainSubProcess {
 
         if (modified || drillWasUpdated) {
             let uiObj = project.getUiObj();
-            thiz.ipcSend('ui-project-update', uiObj);
+            MainMQ.emit('render.ui.projectUpdate', uiObj);
 
             if (project.projectId === _currentProfile.projectId) {
                 // Time to re-create the project work files...

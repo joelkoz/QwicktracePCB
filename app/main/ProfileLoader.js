@@ -1,4 +1,5 @@
 const MainSubProcess = require('./MainSubProcess.js')
+const MainMQ = require('./MainMQ.js');
 const path = require('path');
 const fs = require('fs');
 
@@ -32,7 +33,7 @@ class ProfileLoader extends MainSubProcess {
                           try {
                             let profile = JSON.parse(json);
                             profile.id = path.parse(file).name;
-                            thiz.ipcSend('ui-profile-update', profile);
+                            MainMQ.emit('render.ui.profileUpdate', profile);
                             if (path.basename(file) == 'default.json') {
                                 thiz.ipcSend('mask-profile-default', profile);
                             }

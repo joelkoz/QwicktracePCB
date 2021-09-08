@@ -29,7 +29,7 @@ class UIController extends RPCClient {
 
         let thiz = this;
 
-        ipcRenderer.on('ui-profile-update', (event, profile) => {
+        RenderMQ.on('render.ui.profileUpdate', (event, profile) => {
 
             console.log(`event profile-update: ${profile.id}`);
             profile.value = profile.id;
@@ -53,7 +53,7 @@ class UIController extends RPCClient {
         });
          
 
-        ipcRenderer.on('ui-project-update', (event, projObj) => {
+        RenderMQ.on('render.ui.projectUpdate', (event, projObj) => {
 
             console.log(`event project-update: ${projObj.projectId}`);
             projObj.name = projObj.projectId;
@@ -78,9 +78,9 @@ class UIController extends RPCClient {
         });
          
          
-        ipcRenderer.on('ui-page-add', (event, pageContents) => {
+        RenderMQ.on('render.ui.pageAdd', (event, pageContents) => {
             try {
-                console.log(`event ui-page-add`);
+                console.log(`event render.ui.pageAdd`);
                 let _ui = $('#ui');
                 let newPage = _ui.append(pageContents);
                 newPage.show();
@@ -106,10 +106,6 @@ class UIController extends RPCClient {
         });
 
 
-        ipcRenderer.on('ui-final-prep', (event, profile) => {
-            thiz.finalPrep(profile);
-        });
- 
         ipcRenderer.on('ui-show-page', (event, data) => {
             if (data.clearPageStack) {
                 thiz.clearPageStack();
@@ -489,7 +485,7 @@ class UIController extends RPCClient {
     }
 
 
-    initProcessing() {
+    async initProcessing() {
         let state = this.state;
         let stock = this.profileList[state.stockId].stock;
         let material = this.profileList[stock.materialId].material;
@@ -512,15 +508,10 @@ class UIController extends RPCClient {
         delete profile.id;
         delete profile.value;
    
+        profile = await this.rpcCall('projects.prepareForWork', profile);
+
         this.currentProfile = profile;
 
-        ipcRenderer.invoke('projectloader-prepare', { callbackName: "ui-final-prep", profile });
-    }
-
-
-
-    finalPrep(profile) {
-        this.currentProfile = profile;
         if (!this.checkBoardSize(profile)) {
             // Board will not fit on stock
             let popup = {
