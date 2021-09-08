@@ -14,7 +14,7 @@ class RPCClient {
                 callback.call(thiz, ...args);
             }
             else {
-                log.error(`No active RPC callback found for ${bundle.callbackName}`);
+                console.log(`No active RPC callback found for ${bundle.callbackName}`);
             }
          })
       }
@@ -48,7 +48,12 @@ class RPCClient {
 
           try {
             this.rpcCall(cmdName, argv, (result) => {
-                _resolve(result)
+                if (result instanceof Error) {
+                   _reject(result);
+                }
+                else {
+                   _resolve(result)
+                }
             });
           }
           catch (err) {

@@ -11,7 +11,14 @@ class RPCServer {
             let fnCmd = this.api[cmdName];
             if (fnCmd) {
                 let args = bundle.args;
-                let result = await fnCmd.call(thiz, ...args);
+                let result;
+                try {
+                   result = await fnCmd.call(thiz, ...args);
+                }
+                catch (err) {
+                    console.log(`RPC call for ${eventName} failed`, err)
+                    result = new Error(`RPC call for ${eventName} failed`, { cause: err });
+                }
                 if (bundle.callbackName) {
                     let results;
                     if (Array.isArray(result)) {
