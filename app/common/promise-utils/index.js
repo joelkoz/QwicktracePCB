@@ -18,16 +18,19 @@
     let _reject;
   
     let fnRejected;
-    
+    let rejectReason;
+
     if (typeof fnRejectedOrTimeout === 'number') {
         let startRun = Date.now();
         let timeout = fnRejectedOrTimeout;
-          fnRejected = () => {
+        fnRejected = () => {
            return (Date.now() - startRun) > timeout;
         }    
+        rejectReason = 'timeout'
     }
     else {
        fnRejected = fnRejectedOrTimeout;
+       rejectReason = 'user function'
     }
   
     let p = new Promise((resolve, reject) => {
@@ -39,7 +42,7 @@
       if (fnResolved()) {
         return _resolve();
       } else if (fnRejected()) {
-        return _reject();
+        return _reject(`untilTrue() rejected via ${rejectReason}`);
       }
       setTimeout(loop, msInterval);
     }
@@ -70,16 +73,19 @@
     let _reject;
   
     let fnRejected;
-    
+    let rejectReason;
+
     if (typeof fnRejectedOrTimeout === 'number') {
         let startRun = Date.now();
         let timeout = fnRejectedOrTimeout;
-          fnRejected = () => {
+        fnRejected = () => {
            return (Date.now() - startRun) > timeout;
-        }    
+        }
+        rejectReason = 'timeout' 
     }
     else {
        fnRejected = fnRejectedOrTimeout;
+       rejectReason = 'user function'
     }
   
     let p = new Promise((resolve, reject) => {
@@ -97,7 +103,7 @@
     const msInterval = 200;
     function loop() {
       if (waiting && fnRejected()) {
-        return _reject();
+        return _reject(`untilEvent() failed waiting for ${evtName} due to ${rejectReason}`);
       }
       if (waiting) {
          setTimeout(loop, msInterval);
