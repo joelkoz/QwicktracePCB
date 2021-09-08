@@ -1,12 +1,16 @@
 const { ipcRenderer } = require('electron')
+import { RPCClient } from './RPCClient.js'
+import { RenderMQ } from './RenderMQ.js'
 
 /**
  * Class for handling the display logic for the UI, maintaining
  * state of the UI, and communicating with the main process.
  */
-class UIController {
+class UIController extends RPCClient {
 
     constructor(appConfig) {
+        super('ui')
+
         this.profileList = {};
         this.projectList = {};
         this.state = {};
@@ -93,12 +97,12 @@ class UIController {
         });
 
 
-        ipcRenderer.on('ui-joystick', (event, stickPos) => {
-            // TODO handle joystick in UI
+        RenderMQ.on('global.cnc.joystick', (stickPos) => {
+            console.log('Joystick: ', stickPos);
         });
 
-        ipcRenderer.on('ui-joystick-press', (event) => {
-            // TODO handle joystick press in UI
+        RenderMQ.on('global.cnc.joystickPress', (jogMode) => {
+            console.log(`Joystick pressed (jog mode ${jogMode})`);
         });
 
 
@@ -106,25 +110,6 @@ class UIController {
             thiz.finalPrep(profile);
         });
  
-        ipcRenderer.on('ui-process-done', (event) => {
-            try {
-                console.log(`event ui-process-done`);
-                thiz.state.lastProjectId = this.state.projectId;
-                thiz.state.lastAction = this.state.action;
-                thiz.state.lastSide = this.state.side;
-                thiz.state.lastStockId = this.state.stockId;
-                thiz.clearPageStack();
-                thiz.finishWizard();
-                thiz.state.action = undefined;
-                thiz.state.side = undefined;
-            }
-            catch (err) {
-                console.log('Error ending process');
-                console.error(err);
-             }            
-        });
-
-
         ipcRenderer.on('ui-show-page', (event, data) => {
             if (data.clearPageStack) {
                 thiz.clearPageStack();
@@ -141,10 +126,6 @@ class UIController {
             }
         });
 
-
-        ipcRenderer.on('ui-wizard-next', (event, data) => {
-            thiz.wizardNext();
-        });
     }
 
 
@@ -338,10 +319,11 @@ class UIController {
     cancelWizard() {
         if (this.wizard) {
            this.endCurrentWizardPage();
-           let cancelPage = this.wizard.cancelLandingPage;
+           let wiz = this.wizard;
+           let cancelPage = wiz.cancelLandingPage ? wiz.cancelLandingPage : wiz.finishLandingPage;
            delete this.wizard;
            this.clearPageStack();
-           ipcRenderer.invoke('cnc-cancel');
+           this.rpcCallAsync('cnc.cancelProcesses');
            this.showPage(cancelPage, false);
         }
     }
