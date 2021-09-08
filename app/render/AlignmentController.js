@@ -3,46 +3,47 @@
 const { ipcRenderer } = require('electron')
 
 import { GerberCanvas } from './GerberCanvas.js';
+import { RPCClient } from './RPCClient.js'
 
+class AlignmentController extends RPCClient {
 
-class AlignmentController {
+    constructor(rpcPrefix) {
 
-    constructor(actionPrefix) {
+        super(rpcPrefix)
 
-        this.actionPrefix = actionPrefix;
-
-        this.gerberCanvas = new GerberCanvas(`${actionPrefix}-canvas`, `${actionPrefix}-align-instructions`);
+        this.gerberCanvas = new GerberCanvas(rpcPrefix);
 
         let thiz = this;
-        ipcRenderer.on(`${this.actionPrefix}-svg-loaded`, (event, renderObj) => {
+        ipcRenderer.on(`${this.rpcPrefix}-svg-loaded`, (event, renderObj) => {
             thiz.gerberCanvas.reset();
             thiz.gerberCanvas.setSVG(renderObj, thiz.profile);
-            ui.showPage(`${thiz.actionPrefix}AlignPage`, false);
+            ui.showPage(`alignPage`, false);
 
             // Request the holes also...
             thiz.loadHoles(thiz.profile);
         });
 
-        ipcRenderer.on(`${this.actionPrefix}-holes-loaded`, (event, drillObj) => {
+        ipcRenderer.on(`${this.rpcPrefix}-holes-loaded`, (event, drillObj) => {
             thiz.gerberCanvas.setHoles(drillObj, thiz.profile);
-            if (thiz.profile.state.initStock) {
-                thiz.gerberCanvas.initAlignment(this.fnAlignmentComplete);
+            if (thiz.profile.state.alignStock) {
+                thiz.gerberCanvas.initAlignment(thiz.fnAlignmentComplete);
             }
         });
 
     }
 
     startAlignment(profile, fnAlignmentComplete) {
+        window.uiMouseHandler = this;
         this.fnAlignmentComplete = fnAlignmentComplete;
         this.profile = profile;
-        let callbackEvt = `${this.actionPrefix}-svg-loaded`;
+        let callbackEvt = `${this.rpcPrefix}-svg-loaded`;
         Object.assign(profile, { traceColor: GerberCanvas.TRACE_COLOR });
         ipcRenderer.invoke('fileloader-load-svg', { profile, callbackEvt })
     }
 
 
     loadHoles(profile) {
-        let callbackEvt = `${this.actionPrefix}-holes-loaded`;
+        let callbackEvt = `${this.rpcPrefix}-holes-loaded`;
         ipcRenderer.invoke('fileloader-load-holes', { profile, callbackEvt })
     }
 
