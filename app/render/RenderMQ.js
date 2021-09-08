@@ -25,10 +25,16 @@ class RenderMQ extends EventEmitter2 {
 
     static emit(eventName, ...args) {
         let thiz = RenderMQ.getInstance();
-        if (eventName.startsWith('main.')) {
+        let isGlobal = eventName.startsWith('global.');
+        if (eventName.startsWith('main.') || isGlobal) {
             // This is addressed to the main process...
             let bundle = { eventName, args }
             ipcRenderer.invoke('main-ipc-forward', bundle)
+
+            if (isGlobal) {
+                // Global events are also sent locally
+                thiz.emit(eventName, ...args);
+            }
         }
         else {
            thiz.emit(eventName, ...args);

@@ -26,13 +26,19 @@ class MainMQ extends EventEmitter2 {
     static emit(eventName, ...args) {
 
         let thiz = MainMQ.getInstance();
-        if (eventName.startsWith('render.')) {
+        let isGlobal = eventName.startsWith('global.');
+        if (eventName.startsWith('render.') || isGlobal) {
             // This is addressed to the render process...
             if (!thiz.win) {
                 throw new Error('MainMQ.setWindow() has not been called to allow forwarding to render process')
             }
             let bundle = { eventName, args }
             thiz.win.webContents.send('render-ipc-forward', bundle)
+
+            if (isGlobal) {
+                // Global events are also sent locally
+                thiz.emit(eventName, ...args);
+            }
         }
         else {
            thiz.emit(eventName, ...args);
