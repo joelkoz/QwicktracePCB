@@ -1,6 +1,4 @@
 "use strict"
-
-const { ipcRenderer } = require('electron')
 import { RPCClient } from './RPCClient.js'
 
 
@@ -152,13 +150,11 @@ class SettingsController extends RPCClient {
 
     cancelWizard() {
         this.rpcCall('cnc.cancelProcesses');
-        this.rpcClearAll();
         window.uiController.cancelWizard();
     }
 
     finishWizard() {
         this.rpcCall('cnc.cancelProcesses');
-        this.rpcClearAll();
         window.uiController.finishWizard();
     }
 

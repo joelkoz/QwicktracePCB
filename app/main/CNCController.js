@@ -89,7 +89,7 @@ class CNCController  extends MainSubProcess {
                }
             }
             else {
-                thiz.ipcSend('ui-joystick', stick);
+                MainMQ.emit('global.cnc.joystick', stick);
             }
         });
         
@@ -101,6 +101,7 @@ class CNCController  extends MainSubProcess {
             thiz.stickBtnDebounceDelay = setTimeout(() => {
                 thiz.stickBtnDebounceDelay = null;
                 if (pressed) {
+                     MainMQ.emit('global.cnc.joystickPress', thiz.jogMode);
                     if (thiz.alignmentMode) {
                         thiz.finishAlignment();
                     }
@@ -109,9 +110,6 @@ class CNCController  extends MainSubProcess {
                     }
                     else if (thiz.jogMode) {
                         thiz.jogZ = !thiz.jogZ;
-                    }
-                    else {
-                        thiz.ipcSend('ui-joystick-press');
                     }
                 }
             }, 100);
@@ -185,14 +183,14 @@ class CNCController  extends MainSubProcess {
                     let endNdx = data.indexOf(' points')
                     let probeCount = parseInt(data.slice(18, endNdx));
                     console.log(`Autolevel starting on ${probeCount} points`);
-                    thiz.ipcSend('mill-autolevel-probe-count', probeCount);
+                    MainMQ.emit('render.cnc.autolevelProbeCount', probeCount);
                 }
                 else if (data.startsWith('(AL: probing point')) {
                     // (AL: probing point ${this.planedPointCount + 1})
                     let endNdx = data.indexOf(')')
                     let probeNum = parseInt(data.slice(19, endNdx));
                     console.log(`Autolevel probing point`, probeNum);
-                    thiz.ipcSend('mill-autolevel-probe-num', probeNum);
+                    MainMQ.emit('render.cnc.autolevelProbeNum', probeNum);
                 }
                 else if (data.startsWith('(AL: done')) {
                     thiz.autolevelInProgress = false;
@@ -229,60 +227,8 @@ class CNCController  extends MainSubProcess {
         //
         // Define commands to the cnc from the render process...
         //
-        ipcMain.handle('cnc-cancel', (event, paramObj) => {
-            thiz.cancelProcesses();
-        });
-
-
         ipcMain.handle('cnc-get-align', (event, paramObj) => {
             thiz.getAlignmentHole(paramObj.callbackName, paramObj.sampleCoord, paramObj.profile);
-        });
-
-
-        ipcMain.handle('cnc-find-work-origin', (event, paramObj) => {
-            thiz.findWorkOrigin(paramObj.callbackName, paramObj.profile);
-        });
-
-
-        ipcMain.handle('cnc-set-deskew', (event, deskew) => {
-            thiz.setDeskew(deskew);
-        });
-
-
-        ipcMain.handle('cnc-zpad-position', (event) => {
-            thiz.zPadPosition();
-        });
-
-        ipcMain.handle('cnc-zpad-position-set', (event) => {
-            thiz.zPadPositionSet();
-        });
-
-        ipcMain.handle('cnc-probe-z', async (event, data) => {
-            try {
-               let pcbZHeight = await thiz.findPCBSurface();
-               if (pcbZHeight) {
-                   thiz.ipcSend(data.callbackName, pcbZHeight)
-               }
-            }
-            catch (err) {
-                console.log('Error during cnc-probe-z: ', err);
-            }
-        });
-
-        ipcMain.handle('cnc-load-pcb', () => {
-            thiz.loadStock();
-        });
-
-        ipcMain.handle('cnc-autolevel', (event, data) => {
-            let callbackName = data.callbackName;
-            let profile = data.profile;
-            MainMQ.once('cnc-autolevel-complete', () => { thiz.ipcSend(callbackName)})
-            thiz.autolevelPCB(profile);
-        });
-
-
-        ipcMain.handle('cnc-mill-pcb', (event, data) => {
-            thiz.millPCB(data.profile, data.callbackName);
         });
 
         // Define the RPC API that this object serves...
@@ -304,6 +250,44 @@ class CNCController  extends MainSubProcess {
             },
 
 
+            async zProbePCB() {
+                let result = await thiz.findPCBSurface();
+                return result;
+            },
+
+
+            async moveXY(mmX, mmY) {
+                let mpos = thiz.cnc.mpos;
+                let x = mpos.x + mmX;
+                let y = mpox.y + mmY;
+                await thiz.cnc.untilGoto({ x, y }, wcsMACHINE_WORK);
+                return thiz.cnc.mpos;
+            },
+
+            async getMPos() {
+                return thiz.cnc.mpos;
+            },
+
+            async getWPos() {
+                return thiz.cnc.wpos;
+            },
+
+            async goto(pos, wcsNum = wcsMACHINE_WORK) {
+                await thiz.cnc.untilGoto(pos, wcsMACHINE_WORK);
+                return thiz.cnc.mpos;
+            },
+
+            async setWorkCoord(pos = { x: 0, y: 0}, wcsNum = wcsPCB_WORK) {
+                thiz.cnc.setWorkCoord(pos, wcsNum);
+                await thiz.cnc.untilOk();
+                return thiz.getPos(wcsNum);
+            },
+
+
+            async zeroPCBWorkPos() {
+                return await thiz.api.setWorkCoord(pos = { x: 0, y: 0}, wcsNum = wcsPCB_WORK);
+            },
+
             async jogMode(modeOn) {
                 let oldMode = thiz.jogMode;
                 thiz.jogMode = modeOn;
@@ -319,6 +303,31 @@ class CNCController  extends MainSubProcess {
             async reset() {
                 await thiz.resetCNC();
                 return true;
+            },
+
+            async loadStock() {
+                let load = Config.cnc.locations.load;
+                await thiz.gotoSafeZ();
+                await thiz.cnc.untilGoto({ x: load.x, y: load.y }, wcsMACHINE_WORK);
+                return thiz.cnc.mpos;
+            },
+
+
+            async locatePoint(startingPos, wcsNum = wcsMACHINE_WORK) {
+                return thiz.locatePoint(startingPos, wcsNum);
+            },
+
+            async findPCBOrigin(stock) {
+                return thiz.findPCBOrigin(stock);
+            },
+
+            async autolevelPCB(stock) {
+                await thiz.autolevelPCB(stock);
+                return true;
+            },
+
+            async millPCB(profile) {
+                return await thiz.millPCB(profile)
             }
 
         });
@@ -361,17 +370,6 @@ class CNCController  extends MainSubProcess {
            this.ipcSend(callbackName)
         }
     }
-
-
-    setProfile(profile) {
-        this.profile = profile;
-        console.log(`setting current profile: ${JSON.stringify(profile, undefined, 3)}`);
-    }
-
-    setDeskew(deskew) {
-        this.profile.state.deskew = deskew;
-    }
-
 
     async killFeeder() {
         console.log("Killing feeder queue...");
@@ -439,6 +437,80 @@ class CNCController  extends MainSubProcess {
         this.pointer.laser = false;
     }
     
+
+    getPos(wcsNum = wcsMACHINE_WORK) {
+        if (wcsNum == wcsMACHINE_WORK) {
+            return this.cnc.mpos;
+        }
+        else {
+            return this.cnc.wpos;
+        }
+    }
+
+
+    async setPointer(newVal, newCoord, wcsNum = wcsMACHINE_WORK) {
+
+        if (!newCoord) {
+            // No coordinate specified, so use the current position...
+            newCoord = this.getPos(wcsNum);
+            delete newCoord.z;
+        }
+
+        if (newVal) {
+            // Turning the laser on...
+            this.pointer.laser = true;
+            let laserCoord = newCoord;
+            let spindleCoord  = this.pointer.toSpindlePos(laserCoord);
+            await this.cnc.untilGoto(spindleCoord, wcsNum);
+        }
+        else if (this.pointer.laser) {
+           // Turning the laser off...
+           this.pointer.laser = false;
+           let spindleCoord = newCoord;
+           let laserCoord = this.pointer.toLaserPos(spindleCoord);
+           await this.cnc.untilGoto(laserCoord, wcsNum);
+        }
+    }
+
+
+    async locatePoint(startingPos, wcsNum = wcsMACHINE_WORK) {
+        // Turn laser on...
+        await this.setPointer(true, startingPos, wcsNum);
+        thiz.jogMode = true;
+        let thiz = this;
+        await untilEvent(MainMQ.getInstance(), 'global.cnc.joystickPress', () => { return thiz.jogMode === false })
+        thiz.jogMode = false;
+        await this.setPointer(false);
+        return this.getPos(wcsNum);
+    }
+
+
+    async findPCBOrigin(stock) {
+        console.log(`Starting findPCBOrigin()...`)
+
+        // Calculate the estimated position of the stock's lower
+        // left corner, in machine coordinates.  Start at 
+        // upper right corner...
+        let ur = Config.cnc.locations.ur;
+        let mpos = { x: ur.x, y: ur.y }
+
+        // Now, estimate the lower left position...
+        mpos.x -= stock.width;
+        mpos.y -= stock.height;
+
+        // Have end user select the starting point...
+        let origin = await this.locatePoint(mpos);
+
+        // Zero that out as the PCB word coordinate
+        await this.zeroPCBWorkPos();
+
+        let actualWidth = -(origin.x - ur.x);
+        let actualHeight = -(origin.y - ur.y);
+        let stockActual = { width: actualWidth, height: actualHeight }; 
+        return stockActual;
+    }
+
+
     getAlignmentHole(callbackName, sampleCoord, profile) {
         console.log(`Starting getAlignmentHole().  Callback event is ${callbackName}`)
         this.setProfile(profile);
@@ -464,61 +536,6 @@ class CNCController  extends MainSubProcess {
         let callbackName = this.alignmentCallbackName;
         console.log(`Finished getAlignmentHole().  Calling ${callbackName} with ${JSON.stringify(pcbCoord)}`)
         this.ipcSend(callbackName, pcbCoord);
-    }
-
-
-    findWorkOrigin(callbackName, profile) {
-        console.log(`Starting findWorkOrigin().  Callback event is ${callbackName}`)
-        this.boardOriginM = undefined;
-        this.setProfile(profile);
-
-        this.findOriginMode = true;
-        this.jogMode = true;
-        this.jogZ = false;
-        this.pointer.laser = true;
-        this.findOriginCallbackName = callbackName;
-
-        // Calculate the estimated position of the stock's lower
-        // left corner, in machine coordinates;
-        let cncConfig = Config.cnc;
-        // Start at home pos...
-        let mpos = { x: 0, y: 0};
-        // Move to upper right of frame
-        mpos.x += cncConfig.locations.ur.x; 
-        mpos.y += cncConfig.locations.ur.y;
-        // Now, estimate the lower left position...
-        mpos.x -= profile.stock.width;
-        mpos.y -= profile.stock.height;
-
-        let laserCoord = mpos;
-        let spindleCoord  = this.pointer.toSpindlePos(laserCoord);
-        console.log(`Goto estimated work start(${JSON.stringify(spindleCoord )})...`);
-        this.cnc.goto(spindleCoord, wcsMACHINE_WORK);
-    }
-
-
-    finishFindWorkOrigin() {
-        this.findOriginMode = false;
-        this.jogMode = false;
-        this.pointer.laser = false;
-        let spindleCoord = this.cnc.mpos;
-        let laserCoord = this.pointer.toLaserPos(spindleCoord);
-        this.cnc.goto(laserCoord, wcsMACHINE_WORK);
-        this.cnc.zeroWorkXY(wcsPCB_WORK);
-
-        this.boardOriginM = laserCoord;
-        let origin = this.boardOriginM;
-        let ur = Config.cnc.locations.ur;
-        let actualWidth = -(origin.x - ur.x);
-        let actualHeight = -(origin.y - ur.y);
-        this.profile.stock.actual = { width: actualWidth, height: actualHeight }; 
-
-        this.cnc.goto({x: 0, y: 0}, wcsPCB_WORK);
-
-        let callbackName = this.findOriginCallbackName;
-        let returnData = this.profile.stock.actual;
-        console.log(`Finished findWorkOrigin().  Calling ${callbackName} with ${JSON.stringify(returnData)}`)        
-        this.ipcSend(callbackName, returnData);
     }
 
 
@@ -604,86 +621,71 @@ class CNCController  extends MainSubProcess {
 
 
     async findPCBSurface() {
+        this.findPCBSurfaceInProgress = true;
 
-        // First, adjust for possible tool change by probing the ZPad surface...
-        let zpadZ = await this.findZPadSurface();
+        let zheight = Config.cnc.zheight;
 
-        if (zpadZ) {
-            this.findPCBSurfaceInProgress = true;
+        await this.gotoSafeZ();
 
-            let zheight = Config.cnc.zheight;
+        // Next move the probe away from the pad to over the PCB by 5mm...
+        let moveX = 0 - 5;
 
-            await this.gotoSafeZ();
+        await this.cnc.feedGCode(['G91', `G${moveX} Y0`, 'G90']);
 
-            // Next move the probe away from the pad to over the PCB by 5mm...
-            let moveX = 0 - 5;
+        // Move to 2 mm above the PCB surface...
+        let estZ = zpadZ + zheight.zpad.pcbOffset + 2
 
-            await this.cnc.feedGCode(['G91', `G${moveX} Y0`, 'G90']);
-
-            // Move to 2 mm above the PCB surface...
-            let estZ = zpadZ + zheight.zpad.pcbOffset + 2
-
-            await this.cnc.untilGoto({z: estZ}, wcsMACHINE_WORK);
+        await this.cnc.untilGoto({z: estZ}, wcsMACHINE_WORK);
 
 
-            // Now start another Z probe...
-            await this.cnc.feedGCode(['(Start pcb probe)', 'G91']);            
-            this.cnc.sendGCode('G38.2 Z-10 F20');
-            let probeVal = await untilEvent(this.cnc, 'probe');
+        // Now start another Z probe...
+        await this.cnc.feedGCode(['(Start pcb probe)', 'G91']);            
+        this.cnc.sendGCode('G38.2 Z-10 F20');
+        let probeVal = await untilEvent(this.cnc, 'probe');
 
-            await this.cnc.feedGCode(['G90', '(End pcb probe)']);
+        await this.cnc.feedGCode(['G90', '(End pcb probe)']);
 
-            if (!this.findPCBSurfaceInProgress) {
-                this.gotoSafeZ();
-                return null;
-            }
+        if (!this.findPCBSurfaceInProgress) {
+            this.gotoSafeZ();
+            return null;
+        }
 
-            this.findPCBSurfaceInProgress = false;
+        this.findPCBSurfaceInProgress = false;
 
-            if (probeVal.ok) {
-                // Set the primary work coordinate Z height to the probe value
-                await this.cnc.feedGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
+        if (probeVal.ok) {
+            // Set the primary work coordinate Z height to the probe value
+            await this.cnc.feedGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
 
-                // This delay seems to be necessary to prevent 'Unsupported Command'
-                // errors from the Gbrl controller following the coordinate reset.
-                await untilDelay(1500);
+            // This delay seems to be necessary to prevent 'Unsupported Command'
+            // errors from the Gbrl controller following the coordinate reset.
+            await untilDelay(1500);
 
-                // Retract 4mm
-                await this.cnc.feedGCode(['G91', 'G0 Z4', 'G90'])
+            // Retract 4mm
+            await this.cnc.feedGCode(['G91', 'G0 Z4', 'G90'])
 
-                let probedOffset = zpadZ - probeVal.z;
-                zheight.zpad.pcbOffsetProbed = probedOffset;
-                zheight.pcb = { lastZ: probeVal.z }
-                Config.save();
-                
-                console.log(`Zprobe of pcb found at ${probeVal.z}`)
-                return probeVal.z;
-            }
-            else {
-                this.ipcSend('ui-popup-message', `ERROR: Z probe failed`);
-                return null;
-            }
+            let probedOffset = zpadZ - probeVal.z;
+            zheight.zpad.pcbOffsetProbed = probedOffset;
+            zheight.pcb = { lastZ: probeVal.z }
+            Config.save();
+            
+            console.log(`Zprobe of pcb found at ${probeVal.z}`)
+            return probeVal.z;
         }
         else {
+            this.ipcSend('ui-popup-message', `ERROR: Z probe failed`);
             return null;
         }
     }
 
 
-    loadStock() {
-        let load = Config.cnc.locations.load;
-        this.cnc.goto({x: load.x, y: load.y, z: -1 }, wcsMACHINE_WORK);
-    }
-
-
-    autolevelPCB(profile) {
+    async autolevelPCB(stock) {
 
         this.cnc.selectWCS(wcsPCB_WORK);
         this.cnc.goto({x: 0, y: 0}, wcsPCB_WORK);
         let probeFeedRate = 50;
         let margin = 5;
-        let stockWidth = this.profile.stock.width;
-        let stockHeight = this.profile.stock.height;
+        let stockWidth = stock.width;
+        let stockHeight = stock.height;
         let probeHeight = 1;
         let gridSize = 7.5;
         let gcode = `(#autolevel D${gridSize} H${probeHeight} F${probeFeedRate} M${margin} P1 X${stockWidth} Y${stockHeight})`;
@@ -691,10 +693,12 @@ class CNCController  extends MainSubProcess {
         this.autolevelInProgress = true;
         console.log('Starting autolevel');
         this.cnc.sendGCode(gcode);
+
+        await untilEvent(MainMQ.getInstance(), 'cnc-autolevel-complete', () => { return this.autolevelInProgress === false })        
     }
 
 
-    async millPCB(profile, callbackName) {
+    async millPCB(profile) {
         let thiz = this;
         this.millPCBInProgress = true;
 
@@ -729,13 +733,12 @@ class CNCController  extends MainSubProcess {
             await this.gotoSafeZ();
 
             console.log(`Completed PCB mill of ${profile.state.projectId}`)
-            this.ipcSend(callbackName, thiz.cnc.getSenderState().elapsedTime);            
-
+            return thiz.cnc.getSenderState().elapsedTime;
         }
         catch (err) {
             this.millPCBInProgress = false;
             console.log('Error during milling');
-            console.log(err);
+            return new Error('Error during milling.', { cause: err} );
         }
     }
 
