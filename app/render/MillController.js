@@ -236,6 +236,7 @@ class MillController extends AlignmentController {
                   ],
                   onActivate: async (wizStep) => {
                       await thiz.rpCall('cnc.millPCB', profile)
+                      await thiz.rpCall('cnc.loadStock')
                       thiz.finishWizard();
                   }
                 }

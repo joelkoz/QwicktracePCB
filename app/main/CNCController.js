@@ -694,6 +694,8 @@ class CNCController  extends MainSubProcess {
 
             await this.gotoSafeZ();
 
+            this.millPCBInProgress = false;
+
             console.log(`Completed PCB mill of ${profile.state.projectId}`)
             return thiz.cnc.getSenderState().elapsedTime;
         }
