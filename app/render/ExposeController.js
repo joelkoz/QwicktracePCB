@@ -1,7 +1,6 @@
 
 "use strict"
-
-const { ipcRenderer } = require('electron')
+import { RPCClient } from './RPCClient.js'
 
 /*
 Visible area of LCD screen: (26, 43) to (1411, 2530)
@@ -25,9 +24,11 @@ window.innerHeight: 2560
 // const ppinHeight = 109;
 
 
-class ExposeController {
+class ExposeController extends RPCClient {
 
    constructor(config) {
+        super('expose');
+
         this.config = config.mask;
         this.config.height = config.window.height;
         this.paintCtx = { url: null};
@@ -44,16 +45,6 @@ class ExposeController {
            thiz.paint();
         });
      
-        ipcRenderer.on('mask-load-svg', (event, renderObj) => {
-            thiz.renderSVG(renderObj);
-        });
-
-        ipcRenderer.on('mask-profile-default', (event, profileDefault) => {
-           console.log('event mask-profile-default');
-           thiz.defaultProfile = profileDefault;
-           thiz.resetPaintCtx();
-         });
-     
         this.resetPaintCtx();
 
         window.uiDispatch.expose = (profile) => {
@@ -62,34 +53,29 @@ class ExposeController {
    }
 
 
-   prepareExposure(profile) {
-      let ui = window.uiController;
-
-      let projectId = ui.state.projectId;
-
+   async prepareExposure(profile) {
       this.exposureProfile = profile;
-
-      let callbackEvt = "mask-load-svg";
-      ipcRenderer.invoke('fileloader-load', { fileDef, profile, callbackEvt });        
+      let renderObj = await this.rpCall('files.loadSVG', profile);
+      this.renderSVG(renderObj);
   }
 
 
   startExposure() {
      let ui = window.uiController;
      let exposure = this.exposureProfile.exposure;
-     ipcRenderer.invoke('uv-expose', exposure);
+     this.rpCall('uv.expose', exposure);
   }
 
 
   cancelExposure() {
      let ui = window.uiController;
-     ipcRenderer.invoke('uv-cancel');
+     this.rpCall('uv.cancel');
      ui.showPage('exposureStartPage');
   }
 
 
   peek() {
-     ipcRenderer.invoke('uv-peek');
+     this.rpCall('uv.peek');
   }   
 
    invertImage() {
@@ -175,11 +161,8 @@ class ExposeController {
    
       this.paintCtx = {
          img: null,
-         url: null
-      }
-
-      if (this.defaultProfile) {
-         this.paintCtx.profile = this.defaultProfile;
+         url: null,
+         profile: {}
       }
       
    }

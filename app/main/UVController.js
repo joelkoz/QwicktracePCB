@@ -1,6 +1,6 @@
-const { ipcMain } = require('electron')
 const MainSubProcess = require('./MainSubProcess.js')
 const GPIO = require('./GPIO.js');
+const MainMQ = require('./MainMQ.js');
 
 class UVController  extends MainSubProcess {
 
@@ -11,18 +11,6 @@ class UVController  extends MainSubProcess {
         this.pigpio = new GPIO();
 
         let thiz = this;
-        ipcMain.handle('uv-expose', (event, exposure) => {
-            thiz.expose(exposure);
-        });
-  
-        ipcMain.handle('uv-cancel', (event) => {
-            thiz.cancel();
-        });
-  
-        ipcMain.handle('uv-peek', (event) => {
-            thiz.peek();
-        });
-
         this.pigpio.whenReady(() => {
             thiz.uv = thiz.pigpio.gpio(14);
             thiz.uv.modeSet('output');
@@ -33,6 +21,23 @@ class UVController  extends MainSubProcess {
         this.pigpio.once('error', (error) => {
             thiz.failed = true;
             console.log(`Failed to initialize UV control pin. Is pigpiod daemon running?: ${error.name}, code ${error.code}, ${error.message}`);
+        });
+
+        // Define the RPC API that this object serves...
+        this.rpcAPI( {
+            async expose(exposure) {
+                thiz.expose(exposure);
+            },
+
+            async peek() {
+                thiz.peek();
+            },
+            
+            async cancel() {
+                thiz.cancel();
+            },
+            
+
         });
     }
 
@@ -66,7 +71,7 @@ class UVController  extends MainSubProcess {
 
 
     exposureUpdate() {
-        this.ipcSend('ui-exposure-update', this.exposure);
+        MainMQ.emit('render.ui.exposureUpdate', this.exposure);
     }
 
 

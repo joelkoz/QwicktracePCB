@@ -766,7 +766,28 @@ class CNC extends EventEmitter {
         await this.untilData('ok', msTimeout);
     }
 
+    alreadyPositioned(pos, wcsNum) {
+        let pos2;
+        if (wcsNum === 0) {
+            pos2 = this.mpos;
+        }
+        else {
+            pos2 = this.wpos;
+        }
+
+        for (const key of Object.keys(pos)) {
+            if (pos[key] != pos2[key]) {
+                return false;
+            }
+        } // for
+        return true;
+    }
+
     async untilGoto(wpos, wcsNum = 1) {
+        if (this.alreadyPositioned(wpos, wcsNum)) {
+            console.log('Ignoring untilGoto(), already positioned at ', wpos);
+            return;
+        }
         this.goto(wpos, wcsNum);
         await this.untilOk(10000);
         await this.untilState(CNC.CTRL_STATE_IDLE);

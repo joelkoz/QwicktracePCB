@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron')
+
 import { RPCClient } from './RPCClient.js'
 import { RenderMQ } from './RenderMQ.js'
 
@@ -29,7 +29,7 @@ class UIController extends RPCClient {
 
         let thiz = this;
 
-        RenderMQ.on('render.ui.profileUpdate', (event, profile) => {
+        RenderMQ.on('render.ui.profileUpdate', (profile) => {
 
             console.log(`event profile-update: ${profile.id}`);
             profile.value = profile.id;
@@ -53,7 +53,7 @@ class UIController extends RPCClient {
         });
          
 
-        RenderMQ.on('render.ui.projectUpdate', (event, projObj) => {
+        RenderMQ.on('render.ui.projectUpdate', (projObj) => {
 
             console.log(`event project-update: ${projObj.projectId}`);
             projObj.name = projObj.projectId;
@@ -78,7 +78,7 @@ class UIController extends RPCClient {
         });
          
          
-        RenderMQ.on('render.ui.pageAdd', (event, pageContents) => {
+        RenderMQ.on('render.ui.pageAdd', (pageContents) => {
             try {
                 console.log(`event render.ui.pageAdd`);
                 let _ui = $('#ui');
@@ -92,7 +92,7 @@ class UIController extends RPCClient {
         });
          
 
-        ipcRenderer.on('ui-start', (event, pageContents) => {
+        RenderMQ.on('render.startup.startUI', () => {
             thiz.start();
         });
 
@@ -106,19 +106,19 @@ class UIController extends RPCClient {
         });
 
 
-        ipcRenderer.on('ui-show-page', (event, data) => {
+        RenderMQ.on('render.ui.showPage', (pageId) => {
             if (data.clearPageStack) {
                 thiz.clearPageStack();
             }
-            thiz.showPage(data.pageId);
+            thiz.showPage(pageId);
         });
 
 
-        ipcRenderer.on('ui-popup-message', (event, data) => {
-            console.log('Popup msg: ', data)
-            let isError = (data.startsWith('ERROR'));
+        RenderMQ.on('render.ui.popupMessage', (msg) => {
+            console.log('Popup msg: ', msg)
+            let isError = (msg.startsWith('ERROR'));
             if (!isError || !window.appConfig.ui.ignoreErrors) {
-               thiz.popupMessage({ message: data });
+               thiz.popupMessage({ message: msg });
             }
         });
 
@@ -133,7 +133,7 @@ class UIController extends RPCClient {
         // like one would expect. Make all our buttons respond
         // to touchstart events as if a mouse was clicked...
         $('.btn').on('touchstart', function() {
-            ui.publish('btn-press');
+            ui.publish('global.ui.btnPress');
             $(this).trigger('click');
         });
 
@@ -222,13 +222,15 @@ class UIController extends RPCClient {
         if (btnDef.pageId) {
             this.showPage(btnDef.pageId, btnDef.pushOld);
         }
-        else if (btnDef.invoke) {
-            this.publish(btnDef.invoke.evtName, btnDef.invoke.data);
+        else if (btnDef.emit) {
+            MainMQ.emit(btnDef.emit.evtName, btnDef.emit.data);
+        }
+        else if (btnDef.call) {
+            this.rpCall(btnDef.call.name, btnDef.call.data);
         }
         else if (btnDef.fnAction) {
             btnDef.fnAction();
         }
-
     }
 
 
@@ -319,7 +321,7 @@ class UIController extends RPCClient {
            let cancelPage = wiz.cancelLandingPage ? wiz.cancelLandingPage : wiz.finishLandingPage;
            delete this.wizard;
            this.clearPageStack();
-           this.rpcCallAsync('cnc.cancelProcesses');
+           this.rpCall('cnc.cancelProcesses');
            this.showPage(cancelPage, false);
         }
     }
@@ -385,13 +387,12 @@ class UIController extends RPCClient {
     }
 
     publish(event, data) {
-        ipcRenderer.invoke(event, data);
+        RenderMQ.emit(event, data);
     }
 
     subscribe(event, callback) {
-        ipcRenderer.on(event, callback);
+        RenderMQ.on(event, callback);
     }    
-
  
     isOptionExpose() {
         let appConfig = window.appConfig;
@@ -507,8 +508,8 @@ class UIController extends RPCClient {
         // Remove superfluous values that came from from defaults...
         delete profile.id;
         delete profile.value;
-   
-        profile = await this.rpcCall('projects.prepareForWork', profile);
+
+        profile = await this.rpCall('projects.prepareForWork', profile);
 
         this.currentProfile = profile;
 

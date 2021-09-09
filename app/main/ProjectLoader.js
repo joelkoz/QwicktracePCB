@@ -9,6 +9,7 @@ const MainSubProcess = require('./MainSubProcess.js');
 const PCBProject = require('./pcb/PCBProject.js');
 const GcodeUtils = require('./cnc/GcodeUtils.js');
 const GerberTransforms = require('./pcb/GerberTransforms.js');
+const MainMQ = require('./MainMQ.js');
 
 // _projectCache is an object that maps a projectId to one or 
 // more PCBProject() objects.
@@ -40,7 +41,6 @@ class ProjectLoader  extends MainSubProcess {
       this.rpcAPI( {
         async prepareForWork(profile) {
            let updatedProfile = await ProjectLoader.prepareForWork(profile);
-           console.log('Project work directory prep completed.')
            return updatedProfile;
         }
       });

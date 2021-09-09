@@ -1,8 +1,12 @@
 
 "use strict"
-
-const { ipcRenderer } = require('electron')
+import { RPCClient } from './RPCClient.js'
+import { RenderMQ } from './RenderMQ.js'
 const { deskew } = require('deskew')
+
+
+const CANVAS_ID = 'align-canvas';
+const DIV_INSTRUCTIONS_ID = 'align-instructions';
 
 const CANVAS_SAVE_WIDTH = 24;
 
@@ -21,13 +25,11 @@ const DRAW_BLINK_WIDTH = 2;
  * both the the traces and the drilled holes of the PCB. It also
  * can optionally handle deskew.
  */
-class GerberCanvas {
+class GerberCanvas extends RPCClient {
 
-    constructor(canvasId, instructionsDivId) {
+    constructor(parentRpcPrefix) {
 
-        this.canvasId = canvasId;
-        this.instructionsDivId = instructionsDivId;
-        this.holeAlignmentCallback = `${this.canvasId}-hole-aligned`;
+        super(`${parentRpcPrefix}Canvas`)
 
         let config = window.appConfig;
         this.uiWidth = config.ui.width;
@@ -38,11 +40,6 @@ class GerberCanvas {
         this.saveImage.height = CANVAS_SAVE_WIDTH;
 
         this.blinkPoint = null;
-
-        ipcRenderer.on(this.holeAlignmentCallback, (event, pcbCoord) => {
-            thiz.setDeskew(pcbCoord);
-        });
-
     }
 
 
@@ -72,13 +69,13 @@ class GerberCanvas {
         this.blinkOff(false);
         this.deskewIndex++;
 
-        let instructionsSelector = '#' + this.instructionsDivId;
+        let instructionsSelector = '#' + DIV_INSTRUCTIONS_ID;
         if (this.deskewIndex <= 1) {
            $(instructionsSelector).text(`Adjust pointer to hole ${this.deskewIndex+1} and press joystick`);
            this.startBlink();
            let thiz = this;
            let sample = this.deskewData[this.deskewIndex].sample
-           ipcRenderer.invoke('cnc-get-align', { callbackName: this.holeAlignmentCallback, sampleCoord: sample, profile: this.profile } );
+           this.getAlignmentHole(sample);
         }
         else {
             $(instructionsSelector).text(`Done`);
@@ -89,7 +86,8 @@ class GerberCanvas {
 
     // Sets the alignment data for the current sample hole to
     // the specified PCB coordinate.
-    setDeskew(pcbCoord) {
+    async getAlignmentHole(samplePoint) {
+        let pcbCoord = await this.rpCall('cnc.locatePoint', samplePoint)
         if (this.deskewIndex >= 0 && this.deskewIndex <= 1) {
             this.deskewData[this.deskewIndex].actual = pcbCoord;
 
@@ -183,7 +181,7 @@ class GerberCanvas {
         // for display and milling sideways (i.e. the pcb's
         // X axis plotted along display and mill's Y axis)...
 
-        this.canvas = document.getElementById(this.canvasId);
+        this.canvas = document.getElementById(CANVAS_ID);
 
         // Set the canvas to its maximum pixel size
         // which is the pixel size of the parent div

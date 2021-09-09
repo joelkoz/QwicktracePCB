@@ -19,7 +19,7 @@ class RPCClient {
          })
       }
 
-      rpcCall(cmdName, argv = [], callbackMethod) {
+      rpCallCb(cmdName, argv = [], callbackMethod) {
           let evtName = `main.call.${cmdName}`;
           let bundle = {};
           if (Array.isArray(argv)) {
@@ -38,7 +38,8 @@ class RPCClient {
       }
 
 
-      async rpcCallAsync(cmdName, argv = []) {
+      async rpCall(cmdName, ...argv) {
+
           let _resolve;
           let _reject;
           let p = new Promise((resolve, reject) => {
@@ -47,7 +48,7 @@ class RPCClient {
           });
 
           try {
-            this.rpcCall(cmdName, argv, (result) => {
+            this.rpCallCb(cmdName, argv, (result) => {
                 if (result instanceof Error) {
                    _reject(result);
                 }

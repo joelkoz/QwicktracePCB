@@ -31,7 +31,8 @@ class RPCServer {
                 }
             }
             else {
-                log.error(`No RPC server handler found for ${eventName}`);
+                console.error(`No RPC server handler found for ${eventName}`);
+                MainMQ.emit(bundle.callbackName, { callbackName: bundle.callbackName, results: [ new Error(`No RPC server handler found for ${eventName}`) ]} )
             }
 
          })

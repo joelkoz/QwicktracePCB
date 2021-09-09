@@ -23,8 +23,9 @@ class SettingsController extends RPCClient {
                                 buttonDefs: [
                                 { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                                 ],
-                                onActivate: (wizStep) => {
-                                    thiz.rpcCall('cnc.home', [], thiz.finishWizard)
+                                onActivate: async (wizStep) => {
+                                    await thiz.rpCall('cnc.home')
+                                    thiz.finishWizard();
                                 }
                             }                       
                     ]
@@ -45,10 +46,10 @@ class SettingsController extends RPCClient {
                                    { label: "Done", fnAction: () => { thiz.finishWizard() } }                      
                                 ],
                                 onActivate: (wizStep) => {
-                                    thiz.rpcCall('cnc.jogMode', true)
+                                    thiz.rpCall('cnc.jogMode', true)
                                 },
                                 onDeactivate: (wizStep) => {
-                                    thiz.rpcCall('cnc.jogMode', false)
+                                    thiz.rpCall('cnc.jogMode', false)
                                 }                                   
                             }
                     ]
@@ -69,11 +70,11 @@ class SettingsController extends RPCClient {
                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                         ],
                         onActivate: async (wizStep) => {
-                           await thiz.rpcCallAsync('cnc.zPadPosition');
-                           await thiz.rpcCallAsync('cnc.jogMode', true)
+                           await thiz.rpCall('cnc.zPadPosition');
+                           await thiz.rpCall('cnc.jogMode', true)
                         },
                         onDeactivate: (wizStep) => {
-                            thiz.rpcCall('cnc.jogMode', false)
+                            thiz.rpCall('cnc.jogMode', false)
                         }                  
                       },                
               
@@ -84,7 +85,7 @@ class SettingsController extends RPCClient {
                           { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                         ],
                         onActivate: async (wizStep) => {
-                           await thiz.rpcCallAsync('cnc.zProbePad', false);
+                           await thiz.rpCall('cnc.zProbePad', false);
                            thiz.finishWizard();
                         }
                       }
@@ -105,8 +106,9 @@ class SettingsController extends RPCClient {
                                 buttonDefs: [
                                 { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                                 ],
-                                onActivate: (wizStep) => {
-                                    thiz.rpcCall('cnc.reset', [], thiz.finishWizard)
+                                onActivate: async (wizStep) => {
+                                    await thiz.rpCall('cnc.reset');
+                                    thiz.finishWizard()
                                 }
                             }                              
                     ]
@@ -149,12 +151,12 @@ class SettingsController extends RPCClient {
     }
 
     cancelWizard() {
-        this.rpcCall('cnc.cancelProcesses');
+        this.rpCall('cnc.cancelProcesses');
         window.uiController.cancelWizard();
     }
 
     finishWizard() {
-        this.rpcCall('cnc.cancelProcesses');
+        this.rpCall('cnc.cancelProcesses');
         window.uiController.finishWizard();
     }
 

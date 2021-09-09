@@ -1,5 +1,4 @@
-const { app, BrowserWindow, screen, ipcMain } = require('electron')
-const fs = require('fs');
+const { app, BrowserWindow, screen } = require('electron')
 
 const GPIO = require('./GPIO.js');
 const ProjectLoader = require('./ProjectLoader.js');
@@ -52,12 +51,12 @@ function createWindow () {
       win.webContents.openDevTools();
   }
 
-  ipcMain.handle('toggle-debugger', (event, ...args) => {
+  MainMQ.on('main.app.toggleDebugger', () => {
      win.webContents.openDevTools();
   });
 
 
-  ipcMain.handle('exit', () => {
+  MainMQ.on('main.app.exit', () => {
     win.close();
     app.quit();
   })
@@ -87,17 +86,17 @@ app.on('activate', () => {
 })
 
 
-ipcMain.handle('render-ready', event => {
-    win.webContents.send('render-start', Config.json);
+MainMQ.on('main.startup.renderReady', () => {
+    MainMQ.emit('render.startup.initialize', Config.json);
 });
 
 
-ipcMain.handle('btn-press', event => {
+MainMQ.on('global.ui.btnPress', () => {
    // Make a tone upon button press?
 });
 
 
-ipcMain.handle('render-start-done', () => {
+MainMQ.on('main.startup.initializeDone', () => {
   projectLoader = new ProjectLoader(win);
   fileLoader = new FileLoader(win);
   profileLoader = new ProfileLoader(win);

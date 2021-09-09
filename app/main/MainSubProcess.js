@@ -6,10 +6,6 @@ class MainSubProcess extends RPCServer {
         super(rpcServerId);
         this.win = win;
     }
-
-    ipcSend(msg, obj) {
-        this.win.webContents.send(msg, obj);
-    }
 }
 
 module.exports = MainSubProcess;

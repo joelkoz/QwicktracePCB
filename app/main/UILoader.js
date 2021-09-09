@@ -14,7 +14,7 @@ class UILoader extends MainSubProcess {
 
     loadUI() {
       this.scanDir(uiPageDir);
-      this.ipcSend('ui-start');
+      MainMQ.emit('render.startup.startUI');
     }    
 
 

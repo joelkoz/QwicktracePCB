@@ -1,5 +1,3 @@
-const { ipcMain } = require('electron')
-
 const fs = require('fs');
 const gerberToSvg = require('gerber-to-svg');
 const path = require('path');
@@ -10,7 +8,6 @@ const MainSubProcess = require('./MainSubProcess.js');
 const GerberData = require('./pcb/GerberData.js');
 const ProjectLoader = require('./ProjectLoader.js');
 
-const MainMQ = require('./MainMQ.js');
 const { untilEvent } = require('../common/promise-utils/index.js');
 
 class FileLoader extends MainSubProcess {

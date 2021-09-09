@@ -1,6 +1,4 @@
 "use strict"
-
-const { ipcRenderer } = require('electron')
 import { ExposeController } from './ExposeController.js'
 import { UIController } from './UIController.js'
 import { DrillController } from './DrillController.js';
@@ -11,7 +9,7 @@ import { RenderMQ } from './RenderMQ.js';
 document.addEventListener('keydown', (event) => {
 
     if (event.code == "KeyD") {
-      ipcRenderer.invoke('toggle-debugger');
+      RenderMQ.emit('main.app.toggleDebugger');
     }
  
  
@@ -20,13 +18,13 @@ document.addEventListener('keydown', (event) => {
     }
 
     if (event.code == "KeyX") {
-      ipcRenderer.invoke('exit');
+      RenderMQ.emit('main.app.exit');
    }
    
 });
 
  
-ipcRenderer.on('render-start', (event, config) => {
+RenderMQ.on('render.startup.initialize', (config) => {
    window.appConfig = config;
    window.uiDispatch = {};
    window.uiCancelProcess = {};
@@ -36,7 +34,7 @@ ipcRenderer.on('render-start', (event, config) => {
    window.uiMill = new MillController(config);
    window.uiSettings = new SettingsController(config);
 
-   ipcRenderer.invoke('render-start-done');
+   RenderMQ.emit('main.startup.initializeDone');
 });
 
 
@@ -51,4 +49,4 @@ RenderMQ.on('render.cnc.zprobe', (state) => {
 });
 
 
-ipcRenderer.invoke('render-ready');
+RenderMQ.emit('main.startup.renderReady');

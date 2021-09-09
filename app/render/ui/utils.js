@@ -16,7 +16,7 @@ function uiListDown(listId) {
     }
     $(selector).prop('selectedIndex', ndx);
 
-    ui.publish('btn-press');
+    ui.publish('global.ui.btnPress');
   
 }
 
@@ -35,7 +35,7 @@ function uiListUp(listId) {
     }
     $(selector).prop('selectedIndex', ndx);
 
-    ui.publish('btn-press');
+    ui.publish('global.ui.btnPress');
 }
 
 
@@ -63,7 +63,7 @@ function uiInitList(listId, valueList, fnSort, nextPageId, fnFilter) {
 
     // Mouse clicks (or touches) on individual options auto select them..
     $('#' + listId + ' option').on('click touchstart', function() {
-        ui.publish('btn-press');
+        ui.publish('global.ui.btnPress');
         ui.select(listId, this.value, nextPageId);
     });
 }

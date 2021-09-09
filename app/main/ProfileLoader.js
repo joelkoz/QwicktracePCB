@@ -34,9 +34,6 @@ class ProfileLoader extends MainSubProcess {
                             let profile = JSON.parse(json);
                             profile.id = path.parse(file).name;
                             MainMQ.emit('render.ui.profileUpdate', profile);
-                            if (path.basename(file) == 'default.json') {
-                                thiz.ipcSend('mask-profile-default', profile);
-                            }
                           }
                           catch (err) {
                             console.log(`Error loading profile ${fileName}`);

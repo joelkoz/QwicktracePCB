@@ -1,37 +1,74 @@
 "use strict"
-
-const { ipcRenderer } = require('electron')
-
 import { AlignmentController } from './AlignmentController.js';
+import { RenderMQ } from './RenderMQ.js'
 
 
 class DrillController extends AlignmentController {
 
-    constructor(config) {
+    constructor() {
 
         super('drill');
 
         let thiz = this;
+        
+        // Tell UI controller to call to our start method
+        // when dispatching to a process action.
         window.uiDispatch.drill = (profile) => {
-            thiz.prepareDrill(profile);
+            thiz.startDrillWizard(profile);
         }        
 
+        // Tell UI controller to call our cancel
+        // method if a request to cancel the active
+        // process comes in
         window.uiCancelProcess.drill = () => {
-            thiz.cancelProcesses();
-        }        
+            thiz.cancelWizard();
+        }
+
+        RenderMQ.on('render.cnc.drillCount', (probeCount) => {
+           thiz.setDrillCount(probeCount);
+        });      
+
+        RenderMQ.on('render.cnc.drillNum', (probeNum) => {
+          thiz.setDrillNum(probeNum);
+       });         
     }
 
-    prepareDrill(profile) {
-        this.startAlignment(profile, (deskew) => { 
-            profile.deskew = deskew;
-            window.uiController.showPage('drillStartPage');
-        });
+
+    startDrillWizard(profile) {
+        this.activeProfile = profile;
+
+        let thiz = this;
+        let ui = window.uiController;
     }
 
     
-    cancelProcesses() {
-        ipcRenderer.invoke('cnc-cancel');
-    }
+    updateUiDrillStatus() {
+        window.setWizardStatusText(`Probing ${this.probeNum} of ${this.probeCount}`)
+     }
+ 
+     setDrillCount(probeCount) {
+       this.probeCount = probeCount;
+       this.probeNum = 1;
+       this.updateUiDrillStatus()
+     }
+ 
+     setDrillNum(probeNum) {
+       this.probeNum = probeNum
+       this.updateUiDrillStatus();
+     }
+ 
+     cancelWizard() {
+         this.rpCall('cnc.cancelProcesses');
+         this.rpcClearAll();
+         window.uiController.cancelWizard();
+         delete this.activeProfile;
+     }
+ 
+     finishWizard() {
+         this.rpCall('cnc.cancelProcesses');
+         this.rpcClearAll();
+         window.uiController.finishWizard();
+     }
 }
 
 export  { DrillController };
