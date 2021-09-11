@@ -42,11 +42,11 @@ class RenderMQ extends EventEmitter2 {
     }
 
     static on(eventName, listener) {
-        RenderMQ._instance.on(eventName, listener);
+        return RenderMQ._instance.on(eventName, listener, {objectify: true});
     }
 
     static once(eventName, listener) {
-        RenderMQ._instance.once(eventName, listener);
+        return RenderMQ._instance.once(eventName, listener, {objectify: true});
     }
 
     static getInstance() {

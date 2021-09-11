@@ -46,11 +46,11 @@ class MainMQ extends EventEmitter2 {
     }
 
     static on(eventName, listener) {
-        MainMQ._instance.on(eventName, listener);
+        return MainMQ._instance.on(eventName, listener, {objectify: true});
     }
 
     static once(eventName, listener) {
-        MainMQ._instance.once(eventName, listener);
+        return MainMQ._instance.once(eventName, listener, {objectify: true});
     }
 
     static getInstance() {
