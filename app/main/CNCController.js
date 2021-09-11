@@ -78,8 +78,8 @@ class CNCController  extends MainSubProcess {
         this.stick = Kefir.fromPoll(msStickCheck, Joystick.stickVal).filter(hasChanged());
         this.stickBtn = Kefir.fromPoll(msStickCheck, Joystick.btnVal).filter(hasChanged());
         
+        this.__jogZ = false;
         this.jogMode = false;
-        this.jogZ = false;
 
         this.stick.onValue(stick => {
             if (thiz.jogMode) {
@@ -308,6 +308,13 @@ class CNCController  extends MainSubProcess {
                 return thiz.locatePoint(startingPos, wcsNum);
             },
 
+            async setPointer(newVal, newCoord, wcsNum = wcsMACHINE_WORK) {
+                if (newVal === undefined) {
+                    newVal = !this.pointer.laser;
+                }
+                return await thiz.setPointer(newVal, newCoord, wcsNum);
+            },
+
             async findPCBOrigin(stock) {
                 return thiz.findPCBOrigin(stock);
             },
@@ -336,6 +343,27 @@ class CNCController  extends MainSubProcess {
         this.cnc.connect(server.host, server.port, server.serialPort, server.baudRate);
     }
 
+    get jogMode() {
+        return this.__jogMode;
+    }
+
+    set jogMode(newMode) {
+        if (this.__jogMode != newMode) {
+           this.__jogMode = newMode;
+           MainMQ.emit('render.cnc.jog', { jogMode: this.__jogMode, jogZ: this.__jogZ })
+        }
+    }
+
+    get jogZ() {
+        return this.__jogZ;
+    }
+
+    set jogZ(newMode) {
+        if (this.__jogZ != newMode) {
+           this.__jogZ = newMode;
+           MainMQ.emit('render.cnc.jog', { jogMode: this.__jogMode, jogZ: this.__jogZ })
+        }
+    }
 
     initCNC() {
         console.log('Initializing CNC');
@@ -467,6 +495,7 @@ class CNCController  extends MainSubProcess {
            let laserCoord = this.pointer.toLaserPos(spindleCoord);
            await this.cnc.untilGoto(laserCoord, wcsNum);
         }
+        return this.pointer.laser;
     }
 
 
