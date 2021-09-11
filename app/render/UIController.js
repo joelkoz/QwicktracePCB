@@ -227,7 +227,7 @@ class UIController extends RPCClient {
             MainMQ.emit(btnDef.emit.evtName, btnDef.emit.data);
         }
         else if (btnDef.call) {
-            this.rpCall(btnDef.call.name, btnDef.call.data);
+            this.rpCall(btnDef.call.name, ...(btnDef.call.data));
         }
         else if (btnDef.fnAction) {
             btnDef.fnAction();
@@ -264,7 +264,9 @@ class UIController extends RPCClient {
         });
 
         if (wdata) {
-            return Object.assign({}, wdata, { title: this.wizard.title });
+            wdata.title = this.wizard.title;
+            return wdata;
+            // return Object.assign({}, wdata, { title: this.wizard.title });
         }
         else {
             this.popupMessage({ message: `Can not find wizard step ${wizardStepId}` });

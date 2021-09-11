@@ -32,7 +32,9 @@ RenderMQ.on('render.startup.initialize', (config) => {
    window.uiDrill = new DrillController(config);
    window.uiMill = new MillController(config);
    window.uiSettings = new SettingsController(config);
-
+   window.RenderMQ = RenderMQ;
+   window.wcsMACHINE_WORK = 0;
+   window.wcsPCB_WORK = 1;
    RenderMQ.emit('main.startup.initializeDone');
 });
 
@@ -46,6 +48,19 @@ RenderMQ.on('render.cnc.state', (state) => {
 RenderMQ.on('render.cnc.zprobe', (state) => {
    window.cncZProbe = state;
 });
+
+RenderMQ.on('render.cnc.pos', (pos) => {
+   window.cncPos = pos;
+})
+
+RenderMQ.on('render.cnc.laser', (state) => {
+   window.cncLaser = state;
+});
+
+
+RenderMQ.on('render.cnc.jog', (jog) => {
+   window.cncJog = jog;
+})
 
 
 RenderMQ.emit('main.startup.renderReady');

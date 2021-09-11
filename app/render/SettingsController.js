@@ -43,13 +43,16 @@ class SettingsController extends RPCClient {
                                               "Up/Down controlling the Y axis or Z axis.  Press Done when " +
                                               "you have completed.",
                                 buttonDefs: [
+                                   { label: "Toggle Laser", call: { name: 'cnc.setPointer', data: [] } },
                                    { label: "Done", fnAction: () => { thiz.finishWizard() } }                      
                                 ],
                                 onActivate: (wizStep) => {
                                     thiz.rpCall('cnc.jogMode', true)
+                                    wizStep.cncPosDisplay = uiAddPosDisplay('#wizardPage .status-area')
                                 },
                                 onDeactivate: (wizStep) => {
                                     thiz.rpCall('cnc.jogMode', false)
+                                    uiRemovePosDisplay(wizStep.cncPosDisplay);
                                 }                                   
                             }
                     ]

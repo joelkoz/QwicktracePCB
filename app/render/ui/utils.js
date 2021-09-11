@@ -74,3 +74,98 @@ function uiAddButton(divSelector, label, onClick, classDef = "btn w3") {
     newBtn.on('click', onClick);
     $(divSelector).append(newBtn);
 }
+
+
+function uiAddPosDisplay(parentDivSelector, wcsNum = wcsMACHINE_WORK) {
+
+    let pos = cncPos;
+    let jog = cncJog;
+    let laser = cncLaser;
+    let displayDiv = {};
+
+    function refreshUI() {
+        let p;
+        let offset = { x: 0, y: 0 }
+        if (wcsNum === wcsMACHINE_WORK) {
+            p = pos.mpos;
+        }
+        else {
+            p = pos.wpos;
+        }
+
+        if (laser) {
+            offset = appConfig.cnc.pointer.offset;
+        }
+        else {
+            offset = { x: 0, y: 0 }
+        }
+
+        if (jog.jogMode) {
+           displayDiv.jog.text(jog.jogZ ? 'Jog Z' : 'Jog XY');
+        }
+        else {
+            displayDiv.jog.text('');
+        }
+
+        let x = (parseFloat(p.x) + offset.x).toFixed(3);
+        let y = (parseFloat(p.y) + offset.y).toFixed(3);
+        displayDiv.x.text(x);
+        displayDiv.y.text(y);
+        displayDiv.z.text(Number(p.z).toFixed(3));
+
+    }
+
+    displayDiv.posListener = RenderMQ.on('render.cnc.pos', (newPos) => {
+        pos = newPos;
+        refreshUI();
+    })
+
+    displayDiv.jogListener = RenderMQ.on('render.cnc.jog', (newJog) => {
+        jog = newJog;
+        refreshUI();
+     })
+     
+    displayDiv.laserListener = RenderMQ.on('render.cnc.laser', (state) => {
+        laser = state;
+        refreshUI();
+     });
+     
+
+    // Create the UI display:
+    let parent = $(parentDivSelector);
+    const labelDiv = '<div style="width: 2ch; margin-left: 2ch">'
+    const valDiv = '<div style="width: 8ch; text-align: right"></div>'
+
+    const html = '<div style="display: flex; margin: auto; width: 40ch">' +
+                    `${labelDiv}X:</div>` +
+                    valDiv +
+                    `${labelDiv}Y:</div>` +
+                    valDiv +
+                    `${labelDiv}Z:</div>` +
+                    valDiv +
+                    '<div style="width: 10ch; margin-left: 3ch"></div>' +
+                 '</div>'
+
+
+    parent.append(html);
+    displayDiv.parent = parent;
+
+    let mainDiv = parent.children();
+    let divs = mainDiv.children();
+
+    displayDiv.x = $(divs.get(1));
+    displayDiv.y = $(divs.get(3));
+    displayDiv.z = $(divs.get(5));
+    displayDiv.jog = $(divs.get(6));
+
+    refreshUI();
+
+    return displayDiv;
+}
+
+function uiRemovePosDisplay(displayDiv) {
+    displayDiv.posListener.off();
+    displayDiv.jogListener.off();
+    displayDiv.laserListener.off();
+    displayDiv.parent.empty();
+}
