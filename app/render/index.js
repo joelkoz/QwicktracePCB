@@ -27,7 +27,6 @@ document.addEventListener('keydown', (event) => {
 RenderMQ.on('render.startup.initialize', (config) => {
    window.appConfig = config;
    window.uiDispatch = {};
-   window.uiCancelProcess = {};
    window.uiController = new UIController(config);
    window.uiExpose = new ExposeController(config);
    window.uiDrill = new DrillController(config);

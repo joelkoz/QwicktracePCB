@@ -47,7 +47,7 @@
         uiPageActivate['stockSelectPage'] = function() {
              console.log('Activate stockSelectPage');
              ui.clearState('stockId');
-             ui.setState('stockIsBlank', true);
+             ui.stockIsNew();
              let stockList = ui.getStockList();
              uiInitList('stockId', ui.getStockList(), null, 'initProcessPage');
         };

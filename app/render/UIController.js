@@ -14,6 +14,7 @@ class UIController extends RPCClient {
         this.profileList = {};
         this.projectList = {};
         this.state = {};
+        this.lastProfile = {}
         this.clearPageStack();
 
         // Make this object available to the html scripts via
@@ -357,7 +358,7 @@ class UIController extends RPCClient {
     }
 
     clearState(propertyName) {
-        this.state[propertyName] = undefined;
+        delete this.state[propertyName];
     }
 
 
@@ -440,21 +441,41 @@ class UIController extends RPCClient {
 
 
 
+    /**
+     * Returns TRUE if using the stock already in the mill is an option 
+     * the user has.
+     */
     isOptionStockContinue() {
-        let state = this.state;
-        return (state.projectId === state.lastProjectId &&
-                state.action != 'expose' && state.lastAction != 'expose' &&
-                state.side === state.lastSide);
+        let lastState = this.lastProfile.state;
+        if (lastState) {
+            let state = this.state;
+            return (state.projectId === lastState.projectId &&
+                    state.action != 'expose' && lastState.action != 'expose' &&
+                    state.side === lastState.side);
+        }
+        return false;
     }
 
 
+    /**
+     * Returns TRUE if loading previously processed stock into
+     * the mill is an option.
+     */
     isOptionStockProcessed() {
-        let state = this.state;
-        return (state.projectId === state.lastProjectId &&
-                state.side != state.lastSide);
+        let lastState = this.lastProfile.state;
+        if (lastState) {
+            let state = this.state;
+            return (state.projectId === lastState.projectId &&
+                    state.side != lastState.side);
+        }
+        return false;
     }
 
 
+    /**
+     * Returns a list of options of blank stock the user
+     * can chose to process in the mill.
+     */
     getStockList() {
         let list = [];
 
@@ -474,15 +495,35 @@ class UIController extends RPCClient {
     }
 
 
+    /**
+     * Called when the user wants to continue with the current side
+     * already in the mill
+     */
     stockContinue() {
         this.setState('alignStock', false)
+        this.setState('stockIsBlank', false);
         this.showPage('initProcessPage');
     }
 
 
+    /**
+     * Called when the user wants to continue with a previously 
+     * processed board that is not currently in the mill
+     */
     stockProcessed() {
         this.setState('alignStock', true)
+        this.setState('stockIsBlank', false);
         this.showPage('initProcessPage');
+    }
+
+    /**
+     * Called to indicate that new blank stock is going to be used
+     * in the mill.
+     */
+    stockIsNew() {
+        this.lastProfile = {}
+        this.setState('stockIsBlank', true);
+        this.setState('alignStock', false)
     }
 
 
@@ -494,9 +535,6 @@ class UIController extends RPCClient {
 
         // Build the complete profile used by all processing of this action...
         let profile = Object.assign({}, defaults, { material }, { stock }, { state });
-        if (profile.state.stockIsBlank) {
-            profile.state.alignStock = false;
-        }
 
         // Normalize so the width of the stock is always the long side...
         let longSide = Math.max(profile.stock.width, profile.stock.height);
@@ -508,6 +546,8 @@ class UIController extends RPCClient {
         // Remove superfluous values that came from from defaults...
         delete profile.id;
         delete profile.value;
+        delete profile.state.activeListId;
+        delete profile.state.page;
 
         profile = await this.rpCall('projects.prepareForWork', profile);
 
@@ -560,15 +600,10 @@ class UIController extends RPCClient {
     }
 
     /**
-     * Cancel control currently managed by the individual process controllers. The uiCancelProcess[action]
-     * cancel functiomn is defined for each action (expose, mill, drill) in the individual
-     * process controller classes (ExposeController, MillController, etc.)
+     * Marks the active process as completed and prepares to start a new one.
      */    
-    cancelProcesses() {
-        let fnCancel = window.uiCancelProcess[this.state.action];
-        if (fnCancel) {
-            fnCancel();
-        }
+    finishProcess() {
+        this.lastProfile = profile;
     }
 
 }

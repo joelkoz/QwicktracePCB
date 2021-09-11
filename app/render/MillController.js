@@ -17,13 +17,6 @@ class MillController extends AlignmentController {
             thiz.startMillWizard(profile);
         }        
 
-        // Tell UI controller to call our cancel
-        // method if a request to cancel the active
-        // process comes in
-        window.uiCancelProcess.mill = () => {
-            thiz.cancelWizard();
-        }
-
         RenderMQ.on('render.cnc.autolevelProbeCount', (probeCount) => {
            thiz.setAutolevelProbeCount(probeCount);
         });      
@@ -46,8 +39,8 @@ class MillController extends AlignmentController {
             steps: [
 
                 { id: "loadMill",
-                  subtitle: "Load Mill",
-                  instructions: "Load mill with PCB stock and bit used for milling.  Press Continue when done",
+                  subtitle: "Load Mill with Stock",
+                  instructions: "Load mill with PCB stock used for milling.  Press Continue when done",
                   buttonDefs: [
                      { label: "Continue", next: true },
                      { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
@@ -67,7 +60,7 @@ class MillController extends AlignmentController {
        
                 { id: "connectZProbe",
                   subtitle: "Prepare to zprobe Zpad",
-                  instructions: "Connect zprobe clip to milling bit. Place zprobe arm onto Zpad. ",
+                  instructions: "Load mill with milling bit. Connect zprobe clip to milling bit. Place zprobe arm onto Zpad. ",
                   buttonDefs: [
                      { label: "Continue", next: true, btnClass: 'zProbeContinue' },
                      { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
@@ -270,6 +263,7 @@ class MillController extends AlignmentController {
 
     finishWizard() {
         this.rpCall('cnc.cancelProcesses');
+        window.uiController.finishProcess();
         window.uiController.finishWizard();
     }
 
