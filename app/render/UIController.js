@@ -605,7 +605,7 @@ class UIController extends RPCClient {
      * Marks the active process as completed and prepares to start a new one.
      */    
     finishProcess() {
-        this.lastProfile = profile;
+        this.lastProfile = this.profile;
     }
 
 }
