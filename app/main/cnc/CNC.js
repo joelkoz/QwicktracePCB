@@ -673,32 +673,39 @@ class CNC extends EventEmitter {
     jog(stickX, stickY, jogZ) {
         if (stickX !== 0 || stickY !== 0) {
              if (this.canJog()) {
-                let fastestRate = Math.max(Math.abs(stickX), Math.abs(stickY));
-                let feedRate;
-                let multiplier;
-                if (fastestRate > 0.8 && !jogZ) {
-                    feedRate = 500;
-                    multiplier = 2;
-                }
-                else if (fastestRate > 0.5) {
-                    feedRate = 250;
-                    multiplier = 1;
+                let joystickDeflection
+                let xMultiplier, otherMultiplier
+                let moveRate, feedRate;
+
+                if (Math.abs(stickX) >= Math.abs(stickY)) {
+                    joystickDeflection = Math.abs(stickX);
+                    xMultiplier = Math.sign(stickX);
+                    otherMultiplier = 0
                 }
                 else {
-                    feedRate = 100;
-                    multiplier = 0.5;
+                    joystickDeflection = Math.abs(stickY);
+                    xMultiplier = 0
+                    otherMultiplier = Math.sign(stickY)
+                }
+
+                if (joystickDeflection > 0.8 && !jogZ) {
+                    feedRate = 250;
+                    moveRate = 1;
+                }
+                else {
+                    feedRate = 50;
+                    moveRate = 1;
                 }
                 
                 let jogLetter;
                 if (jogZ) {
                     // Jog the Z axis instead...
-                    stickX = 0;
                     jogLetter = 'Z';
                 }
                 else {
                     jogLetter = 'Y';
                 }
-                let jCmd = `$J=G91 G21 X${Math.sign(stickX)*multiplier} ${jogLetter}${Math.sign(stickY)*multiplier} F${feedRate}`;
+                let jCmd = `$J=G91 G21 X${xMultiplier*moveRate} ${jogLetter}${otherMultiplier*moveRate} F${feedRate}`;
                 this.jogInProgress = true;
                 this.jogWaiting = true;
                 this.sendGCode(jCmd);

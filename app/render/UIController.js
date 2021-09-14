@@ -99,7 +99,7 @@ class UIController extends RPCClient {
 
 
         RenderMQ.on('global.cnc.joystick', (stickPos) => {
-            console.log('Joystick: ', stickPos);
+            // console.log('Joystick: ', stickPos);
         });
 
         RenderMQ.on('global.cnc.joystickPress', (jogMode) => {
