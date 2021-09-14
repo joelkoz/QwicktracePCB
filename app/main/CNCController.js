@@ -146,7 +146,6 @@ class CNCController  extends MainSubProcess {
                     // Zero out the work coordinates...
                     thiz.homeInProgress = false;
                     thiz.mposHome = thiz.cnc.mpos;
-                    thiz.cnc.setWorkCoord({ x: 0, y: 0 }, wcsPCB_WORK);
                     thiz.cnc.once('pos', data => {
                         console.log('Home completed: ', data);
                     });
@@ -674,7 +673,7 @@ class CNCController  extends MainSubProcess {
         this.cnc.selectWCS(wcsPCB_WORK);
         this.cnc.goto({x: 0, y: 0}, wcsPCB_WORK);
         let probeFeedRate = 50;
-        let margin = 5;
+        let margin = 7;
         let stockWidth = stock.width;
         let stockHeight = stock.height;
         let probeHeight = 1;
