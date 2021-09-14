@@ -60,7 +60,7 @@ class MillController extends AlignmentController {
        
                 { id: "connectZProbe",
                   subtitle: "Prepare to zprobe Zpad",
-                  instructions: "Load mill with milling bit. Connect zprobe clip to milling bit. Place zprobe arm onto Zpad. ",
+                  instructions: "Load mill with milling bit. Connect zprobe clip to milling bit.",
                   buttonDefs: [
                      { label: "Continue", next: true, btnClass: 'zProbeContinue' },
                      { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
@@ -136,7 +136,7 @@ class MillController extends AlignmentController {
                   ],
                     onActivate: async (wizStep) => {
                       await thiz.rpCall('cnc.zPadPosition');
-                      await thiz.rpCall('cnc.moveXY', -5, 0)
+                      await thiz.rpCall('cnc.moveXY', -9, 0)
                       await thiz.rpCall('cnc.jogMode', true)
                     },
                     onDeactivate: (wizStep) => {
@@ -194,7 +194,7 @@ class MillController extends AlignmentController {
         
                 { id: "removeProbe",
                   subtitle: "Ready to mill",
-                  instructions: "Remove probe from bit and return to its original mount.",
+                  instructions: "Remove probe from bit and the probe arm from the PCB and return them to their original positions.",
                   buttonDefs: [
                     { label: "Start mill", next: true, btnClass: 'removeProbeContinue' },
                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
