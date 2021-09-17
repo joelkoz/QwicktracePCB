@@ -64,8 +64,8 @@ const RESET_MSG = '[MSG:Reset to continue]';
  *   <li>sent - Reports data sent to Grbl (i.e. written to the serial port)</li>
  *   <li>data - Reports raw data received from Grbl (i.e. read from serial port)</li>
  *   <li>pos - Reports an object with the mpos, wpos, and spindle speed at the current moment</li>
- *   <li>sender - Reports the current state of the CNCjs sender</li>
- *   <li>feeder - Reports the current state of the CNCjs feeder</li>
+ *   <li>sender - Reports the current state of the CNCjs GCode file sender</li>
+ *   <li>feeder - Reports the current state of the CNCjs Macro command feeder</li>
  *   <li>alarm - Reports any alarm received from Grbl</li>
  *   <li>msg - Reports any messages received from Grbl</li>
  *   <li>probe - Reports any zprobe result messages received from Grbl</li>
@@ -402,12 +402,22 @@ class CNC extends EventEmitter {
      * @param {object} wpos An object with properties x, y, z.
      * @param {number} wcsNum The work coordinate system to use for positioning.
      *   Valid numbers are 0 thru 6.  Zero is used for "machine coordinates"
+     * @param {number} feedRate If specified and non-zero, the goto command
+     *   will be issued to the CNC using the G1 "linear interpolation" command.
+     *   Otherwise, the C0 "rapid move" will be used.
      */
-    goto(wpos, wcsNum = 1) {
+    goto(wpos, wcsNum = 1, feedRate = null) {
 
        let wcsSelect = `G${53 + wcsNum}`;
        let sendXY = false;
-       let xyCode = `${wcsSelect} G0 `;
+       let xyCode;
+
+       if (feedRate) {
+          xyCode = `${wcsSelect} G01 `;
+       }
+       else {
+          xyCode = `${wcsSelect} G0 `;
+       }
 
        if (wpos.hasOwnProperty('x')) {
            xyCode += `X${wpos.x.toFixed(3)} `
@@ -419,12 +429,21 @@ class CNC extends EventEmitter {
            sendXY = true;
        }
 
+       if (feedRate) {
+         xyCode += ` F${feedRate}`
+       }
+
        if (sendXY) {
           this.sendGCode(xyCode);
        }
 
        if (wpos.hasOwnProperty('z')) {
-            this.sendGCode(`${wcsSelect} G0 Z${wpos.z.toFixed(3)}`);
+            if (feedRate) {
+                this.sendGCode(`${wcsSelect} G01 Z${wpos.z.toFixed(3)} F${feedRate}`);
+            }
+            else {
+               this.sendGCode(`${wcsSelect} G0 Z${wpos.z.toFixed(3)}`);
+            }
        }
     }
 
@@ -659,8 +678,8 @@ class CNC extends EventEmitter {
         this.sendCommand('jogCancel');
         await this.untilSent();
       
-         // Use "feedhold" if "jogCancel" patch is not installed on CNCjs...
-//        this.sendCommand('feedhold');
+         // Use direct write if "jogCancel" patch is not installed on CNCjs...
+//        this.rawWrite(0x85);
 
     }
 
@@ -790,12 +809,12 @@ class CNC extends EventEmitter {
         return true;
     }
 
-    async untilGoto(wpos, wcsNum = 1) {
+    async untilGoto(wpos, wcsNum = 1, feedRate = null) {
         if (this.alreadyPositioned(wpos, wcsNum)) {
             console.log('Ignoring untilGoto(), already positioned at ', wpos);
             return;
         }
-        this.goto(wpos, wcsNum);
+        this.goto(wpos, wcsNum, feedRate);
         await this.untilOk(10000);
         await this.untilState(CNC.CTRL_STATE_IDLE);
     }
