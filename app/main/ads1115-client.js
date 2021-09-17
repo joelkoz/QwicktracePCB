@@ -87,7 +87,7 @@ module.exports = (handle, addr = 0x48, delay = 10, shift = 0) => {
         const config = 0x0183 // No comparator | 1600 samples per second | single-shot mode
         await writeConfig(config | gain | mux | START_CONVERSION)
         await sleep(delay)
-        return readResults()
+        return await readResults()
       }
       catch (err) {
          console.log('Error taking ADS1115 measurement', err)

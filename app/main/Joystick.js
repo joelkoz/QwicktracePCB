@@ -16,7 +16,7 @@ class Joystick {
          this.sampY = 13000;
          this.sampBtn = 9999;
  
-         Joystick.msJOYSTICK_SAMPLE_INTERVAL = 100;
+         Joystick.msJOYSTICK_SAMPLE_INTERVAL = 25;
  
          Joystick.i2cJoystick = [ 1, 0x48 ]
       
@@ -67,11 +67,11 @@ class Joystick {
             thiz.sampX = await ads1115.measure('0+GND');
             thiz.sampY = await ads1115.measure('1+GND');
             thiz.sampBtn = await ads1115.measure('2+GND');
- 
+
          }, Joystick.msJOYSTICK_SAMPLE_INTERVAL);
-         
+
          Joystick.ready = true;
- 
+         
        }).catch((err) => {
           console.log(`ERROR initializing Joystick: ${JSON.stringify(err)}`);
        });
@@ -112,7 +112,24 @@ class Joystick {
     }
  
 
-    static btnVal() {
+    static rawVal() {
+      if (Joystick.instance.calibration) {
+         Joystick.instance.calibrate();
+      }
+      return { x: Joystick.instance.sampX, y: Joystick.instance.sampY };
+   }
+
+   static rawBtn() {
+      return Joystick.instance.sampBtn;
+   }
+
+
+   static calibrate() {
+      Joystick.instance.calibration = { x: { min: 999999, max: 0, mid: -99 }, y: { min: 999999, max: 0, mid: -99  }, btn: { min: 999999, max: 0, mid: -99  } }
+   }
+
+
+   static btnVal() {
       if (Joystick.ready) {
          let thiz = Joystick.instance;
          return (thiz.sampBtn < Joystick.btnPressThreshold);
@@ -123,7 +140,15 @@ class Joystick {
     }
  
  
-    calibrate(cal, val) {
+    calibrate() {
+        if (this.calibration) {
+           this._saveCalibrationSample(this.calibration.x, this.sampX);
+           this._saveCalibrationSample(this.calibration.y, this.sampY);
+           this._saveCalibrationSample(this.calibration.btn, this.sampBtn);
+        }
+    }
+
+    _saveCalibrationSample(cal, val) {
        if (val < cal.min) {
           cal.min = val;
        }
@@ -167,5 +192,5 @@ class Joystick {
     }
  
  }
- 
+
 module.exports = Joystick;
