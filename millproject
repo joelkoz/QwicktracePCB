@@ -8,15 +8,15 @@ nog64=true
 nog81=true
 
 # Engraving traces
-zwork=-0.5
+zwork=-0.2
 zsafe=1.7
-mill-feed=100
+mill-feed=30
 mill-speed=9500
-offset=0.35
+offset=0.5
 
 # Drilling holes
 zdrill=-2.1
 zchange=1.0
-drill-feed=95
-drill-speed=9500
+drill-feed=75
+drill-speed=10000
 onedrill=true
