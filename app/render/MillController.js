@@ -93,6 +93,11 @@ class MillController extends AlignmentController {
                      { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                   ],
                     onActivate: async (wizStep) => {
+                      if (profile.state.stockIsBlank) {
+                        // Skip zpad probing and go straight to copper board...
+                        ui.gotoWizardPage('posProbeArmPCB')
+                        return;
+                      }
                       await thiz.rpCall('cnc.zPadPosition');
                       await thiz.rpCall('cnc.jogMode', true)
                     },
@@ -122,6 +127,11 @@ class MillController extends AlignmentController {
                      { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                   ],
                     onActivate: async (wizStep) => {
+                      if (!profile.state.stockIsBlank) {
+                        // Skip zpad probing and go straight to copper board...
+                        ui.gotoWizardPage('findLL')
+                        return;
+                      }
                       await thiz.rpCall('cnc.gotoSafeZ');
                     }
                 },                
