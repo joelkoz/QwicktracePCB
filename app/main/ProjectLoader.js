@@ -1,6 +1,7 @@
 const fse = require('fs-extra');
 const path = require('path');
 const fsprReadFile = require('fs').promises.readFile;
+const fsprWriteFile = require('fs').promises.writeFile;
 
 const dropDir = "./pcb-files/";
 const workDir = "./temp/";
@@ -167,7 +168,7 @@ class ProjectLoader  extends MainSubProcess {
 
 
 
-    static async getWorkAsGcode(profile) {
+    static async getFinalGerber(profile) {
 
         await ProjectLoader.prepareForWork(profile);
 
@@ -211,18 +212,34 @@ class ProjectLoader  extends MainSubProcess {
             gTrans.deskew(state.deskew);
         }
 
-        let gbrTarget = workDir + 'final-' + state.side;
+        let gbrFinal = workDir + 'final-' + state.side;
+
+        if (state.action === 'mill') {
+           gbrFinal += '.gbr';
+           await gTrans.transformGbr(gbrSource, gbrFinal);
+        }
+        else {
+            gbrFinal += '.drl';
+            await gTrans.transformDrl(gbrSource, gbrFinal);  
+        }
+
+        return gbrFinal;
+
+    }
+ 
+
+    static async getWorkAsGcode(profile) {
+
+        let gbrFinal = await ProjectLoader.getFinalGerber(profile);
+
+        let state = profile.state;
         let gcTarget = workDir + state.side + "-" + state.action + ".nc"
 
         if (state.action === 'mill') {
-           gbrTarget += '.gbr';
-           await gTrans.transformGbr(gbrSource, gbrTarget);
-           await GcodeUtils.gbrToMill(gbrTarget, gcTarget);
+           await GcodeUtils.gbrToMill(gbrFinal, gcTarget);
         }
         else {
-            gbrTarget += '.drl';
-            await gTrans.transformDrl(gbrSource, gbrTarget);  
-            await GcodeUtils.drlToDrill(gbrTarget, gcTarget); 
+            await GcodeUtils.drlToDrill(gbrFinal, gcTarget); 
         }
 
         // Read in the contents of the gcode file...
@@ -235,13 +252,31 @@ class ProjectLoader  extends MainSubProcess {
             let ndxRemoveEnd = contents.indexOf('( retract )');
             contents = contents.substring(0, ndxRemoveStart) + 
                        '\nM3\n' +
-                       contents.substring(ndxRemoveEnd+11) 
+                       contents.substring(ndxRemoveEnd+11)
+
+
+            // Write out file contents for testing purposes...
+            let gcFinalContents = workDir + state.side + "-" + state.action + "-final.nc"
+            await fsprWriteFile(gcFinalContents, contents);
+
         }
 
         return { name: `${state.projectId}-${state.side}`, contents };
     }
 
 
+
+
+    static async getWorkAsGerberData(profile) {
+
+        let gbrFinal = await ProjectLoader.getFinalGerber(profile);
+        let gData = new GerberData();
+        await gData.loadFilesAsync([ gbrFinal ]);
+        return gData;
+    }
+
+
+    
     checkProjectFile(gbrJobFileName) {
         let project = new PCBProject(gbrJobFileName);
         let projId = project.projectId;

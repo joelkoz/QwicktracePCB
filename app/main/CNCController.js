@@ -83,9 +83,7 @@ class CNCController  extends MainSubProcess {
 
         this.stick.onValue(stick => {
             if (thiz.jogMode) {
-               if (this.state != CNC.CTRL_STATE_JOG) {
-                  thiz.cnc.jog(stick.x, stick.y, thiz.jogZ);
-               }
+                thiz.cnc.jog(stick.x, stick.y, thiz.jogZ);
             }
             else {
                 MainMQ.emit('global.cnc.joystick', stick);
@@ -101,13 +99,7 @@ class CNCController  extends MainSubProcess {
                 thiz.stickBtnDebounceDelay = null;
                 if (pressed) {
                      MainMQ.emit('global.cnc.joystickPress', thiz.jogMode);
-                    if (thiz.alignmentMode) {
-                        thiz.finishAlignment();
-                    }
-                    else if (thiz.findOriginMode) {
-                        thiz.finishFindWorkOrigin();
-                    }
-                    else if (thiz.jogMode) {
+                    if (thiz.jogMode) {
                         thiz.jogZ = !thiz.jogZ;
                     }
                 }
@@ -334,6 +326,10 @@ class CNCController  extends MainSubProcess {
 
             async millPCB(profile) {
                 return await thiz.millPCB(profile)
+            },
+
+            async drillPCB(profile) {
+                return await thiz.drillPCB(profile)
             }
 
         });
@@ -410,17 +406,6 @@ class CNCController  extends MainSubProcess {
 
     async cancelProcesses() {
 
-        if (this.alignmentMode) {
-           console.log("Canceling active CNC alignment.");
-           this.alignmentMode = false;
-        }
-
-        if (this.findOriginMode) {
-           console.log("Canceling active find origin mode")
-           this.findOriginMode = false;
-        }
-
-
         if (this.findZPadInProgress) {
             console.log("Canceling active zpad zprobe")
             this.findZPadInProgress = false;
@@ -447,9 +432,20 @@ class CNCController  extends MainSubProcess {
         if (this.millPCBInProgress) {
              console.log("Canceling PCB milling");
              this.millPCBInProgress = false;
+             this.cnc.rawWriteLn('!');
+             this.cnc.rpm = 0;
              this.cnc.senderStop();
-             await this.cnc.untilState(CNC.CTRL_STATE_IDLE);
+             await this.cnc.untilSent();
              await this.gotoSafeZ();
+             await this.cnc.untilState(CNC.CTRL_STATE_IDLE);
+        }
+
+
+        if (this.drillPCBInProgress) {
+            console.log("Canceling PCB drilling");
+            this.drillPCBInProgress = false;
+            this.cnc.rpm = 0;
+            await this.gotoSafeZ();
         }
 
 
@@ -505,6 +501,10 @@ class CNCController  extends MainSubProcess {
         let thiz = this;
         await untilEvent(MainMQ.getInstance(), 'global.cnc.joystickPress', () => { return thiz.jogMode === false })
         this.jogMode = false;
+        if (this.cnc.state !== CNC.CTRL_STATE_IDLE) {
+            // Wait for the jog to finish...
+            await this.cnc.untilState(CNC.CTRL_STATE_IDLE);
+        }
         await this.setPointer(false);
         return this.getPos(wcsNum);
     }
@@ -593,7 +593,7 @@ class CNCController  extends MainSubProcess {
             await this.cnc.feedGCode(['G91', 'G0 Z4', 'G90'])
 
             if (this.cnc.wpos.z != 4) {
-                console.log('Post zPad probe position unexpected. Trying again...');
+                console.log('Post probe zPad Z position unexpected. Repositioning...');
                 await this.cnc.untilGoto({z: 4}, wcsPCB_WORK);
             }
 
@@ -729,11 +729,69 @@ class CNCController  extends MainSubProcess {
         }
         catch (err) {
             this.millPCBInProgress = false;
-            console.log('Error during milling');
+            console.log('Error during milling...');
+            console.log(err)
             return new Error('Error during milling.', { cause: err} );
         }
     }
 
+
+    async drillPCB(profile) {
+        let thiz = this;
+        this.drillPCBInProgress = true;
+
+        let fnRejectIfCanceled = () => {
+            return (!thiz.drillPCBInProgress);
+        };
+
+        try {
+            console.log(`Starting drilling of ${profile.state.projectId}`, profile)
+       
+            let gbrData = await ProjectLoader.getWorkAsGerberData(profile);
+
+            let holes = gbrData.holes;
+            let holeCount = holes.length;
+            let drillConfig = Config.cnc.drill;
+
+            MainMQ.emit('render.cnc.drillCount', holeCount);
+            let holeNum = 0;
+
+            await this.gotoSafeZ();
+
+            // Turn the drill on...
+            this.cnc.rpm = drillConfig.rpm;
+            await untilDelay(drillConfig.msStartupDelay)
+            
+            // Now, drill all of the holes...
+            while (this.drillPCBInProgress && holeNum < holeCount) {
+
+                  MainMQ.emit('render.cnc.drillNum', holeNum);
+                  
+                  let hole = holes[holeNum];
+                  await this.cnc.untilGoto( hole.coord, wcsPCB_WORK );
+                  await this.cnc.untilGoto({ z: drillConfig.startHeight }, wcsPCB_WORK)
+                  await this.cnc.untilGoto({ z: drillConfig.drillDepth }, wcsPCB_WORK, drillConfig.plungeRate)
+                  await this.cnc.untilGoto({ z: drillConfig.startHeight }, wcsPCB_WORK)
+
+                  holeNum++;
+
+            } // while
+
+            this.cnc.rpm = 0
+
+            await this.gotoSafeZ();
+
+            this.drillPCBInProgress = false;
+
+            console.log(`Completed PCB drill of ${profile.state.projectId}`)
+            return true
+        }
+        catch (err) {
+            this.drillPCBInProgress = false;
+            console.log('Error during drilling');
+            return new Error('Error during drilling.', { cause: err} );
+        }
+    }
 
     toCNC(pcbCoord) {
         return Object.assign({}, pcbCoord);

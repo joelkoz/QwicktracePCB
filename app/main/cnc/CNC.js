@@ -673,6 +673,20 @@ class CNC extends EventEmitter {
     }
 
 
+    async setSoftLimit(alarmIfReached) {
+        let cmd = `$20=${alarmIfReached ? "1" : "0"}`
+        this.rawWriteLn(cmd);
+        await this.untilOk();
+    }
+
+
+    async setHardLimit(alarmIfReached) {
+        let cmd = `$21=${alarmIfReached ? "1" : "0"}`
+        this.rawWriteLn(cmd);
+        await this.untilOk();
+    }
+
+
     async jogStop() {
         // await this.feederReset();
         this.sendCommand('jogCancel');
@@ -700,11 +714,23 @@ class CNC extends EventEmitter {
                     joystickDeflection = Math.abs(stickX);
                     xMultiplier = Math.sign(stickX);
                     otherMultiplier = 0
+                    if (xMultiplier > 0 && this.mpos.x >= -1) {
+                        // Ignore moving outside of limit
+                        return;
+                    }
                 }
                 else {
                     joystickDeflection = Math.abs(stickY);
                     xMultiplier = 0
                     otherMultiplier = Math.sign(stickY)
+
+                    if (otherMultiplier > 0) {
+                        if (jogZ && this.mpos.z >= -1 ||
+                            !jogZ && this.mpos.y >= -1)
+                        // Ignore moving outside of limit
+                        return;
+                    }
+
                 }
 
                 if (joystickDeflection > 0.8 && !jogZ) {
