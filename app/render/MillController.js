@@ -96,10 +96,11 @@ class MillController extends AlignmentController {
                       if (profile.state.stockIsBlank) {
                         // Skip zpad probing and go straight to copper board...
                         ui.gotoWizardPage('posProbeArmPCB')
-                        return;
                       }
-                      await thiz.rpCall('cnc.zPadPosition');
-                      await thiz.rpCall('cnc.jogMode', true)
+                      else {
+                         await thiz.rpCall('cnc.zPadPosition');
+                         await thiz.rpCall('cnc.jogMode', true)
+                      }
                     },
                     onDeactivate: (wizStep) => {
                       thiz.rpCall('cnc.jogMode', false)
@@ -130,9 +131,10 @@ class MillController extends AlignmentController {
                       if (!profile.state.stockIsBlank) {
                         // Skip zpad probing and go straight to copper board...
                         ui.gotoWizardPage('findLL')
-                        return;
                       }
-                      await thiz.rpCall('cnc.gotoSafeZ');
+                      else {
+                         await thiz.rpCall('cnc.gotoSafeZ');
+                      }
                     }
                 },                
         
