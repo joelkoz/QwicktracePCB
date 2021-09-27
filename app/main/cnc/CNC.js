@@ -6,7 +6,6 @@ const io = require('socket.io-client')
 const jwt = require('jsonwebtoken')
 const { untilTrue, untilEvent } = require('promise-utils')
 
-
 // Controller initialization...
 function getUserHome() {
     return process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME']
@@ -49,6 +48,9 @@ const RESERVED_EVENTS = [ 'error', 'ready', 'closed', 'state', 'sent', 'data', '
 
 
 const RESET_MSG = '[MSG:Reset to continue]';
+
+// The raw bytes for "Jog stop"
+JOG_STOP_CMD = '\x85';
 
 /**
  * A Class for controlling a Grbl based CNC controlled by CNCjs running on the local machine. To
@@ -183,43 +185,36 @@ class CNC extends EventEmitter {
         this.socket.on('serialport:read', (data) => {
             thiz.emit('data', data);
 
-            if (thiz.jogWaiting && data === 'ok') {
-                thiz.jogWaiting = false;
+            if (data.startsWith('ALARM:')) {
+                this.emit('state', CNC.CTRL_STATE_ALARM);
+                this.emit('alarm', data.substring(6));
             }
-            else {
-                if (data.startsWith('ALARM:')) {
-                    this.emit('state', CNC.CTRL_STATE_ALARM);
-                    this.emit('alarm', data.substring(6));
-                }
-                else if (data.startsWith('error:')) {
-                     let msg = data.substring(6, data.length);
-                     console.log(`CNC reported an error: ${msg}`);
-                     this.emit('error', new Error(msg));
-                }
+            else if (data.startsWith('error:')) {
+                    let msg = data.substring(6, data.length);
+                    console.log(`CNC reported an error: ${msg}`);
+                    this.emit('error', new Error(msg));
+            }
 
-                if (data === RESET_MSG && this.autoReset) {
-                    console.log('Auto-reset after alarm condition...')
-                    this.reset();
-                }
-                else if (data.startsWith('[MSG:')) {
-                    console.log('Message from CNC: ', data);
-                    this.emit('msg', data.substring(5, data.length - 1))
-                }
-                else if (data.startsWith('[PRB:')) {
-                    // [PRB:-183.458,-179.270,-25.948:1]
-                    let pStr = data.substring(5, data.length-1);
-                    let values = pStr.split(',');
-                    let zVals = values[2].split(':');
-                    let results = { x: parseFloat(values[0]), y: parseFloat(values[1]), z: parseFloat(zVals[0]), ok: zVals[1] === '1' }
-                    this.emit('probe', results);
-                }
-
-
+            if (data === RESET_MSG && this.autoReset) {
+                console.log('Auto-reset after alarm condition...')
+                this.reset();
+            }
+            else if (data.startsWith('[MSG:')) {
+                console.log('Message from CNC: ', data);
+                this.emit('msg', data.substring(5, data.length - 1))
+            }
+            else if (data.startsWith('[PRB:')) {
+                // [PRB:-183.458,-179.270,-25.948:1]
+                let pStr = data.substring(5, data.length-1);
+                let values = pStr.split(',');
+                let zVals = values[2].split(':');
+                let results = { x: parseFloat(values[0]), y: parseFloat(values[1]), z: parseFloat(zVals[0]), ok: zVals[1] === '1' }
+                this.emit('probe', results);
             }
 
         });
- 
     }
+
     
     checkSenderStatus(alwaysEmit) {
         let workflow = this.workflow;
@@ -665,7 +660,7 @@ class CNC extends EventEmitter {
     canJog() {
         let state = this.state;
         if (state) {
-            return (this.ready && !this.jogWaiting && (state === CNC.CTRL_STATE_IDLE || state === CNC.CTRL_STATE_JOG));
+            return (this.ready && !this.jogCmdPending && (state === CNC.CTRL_STATE_IDLE || state === CNC.CTRL_STATE_JOG));
         }
         else {
             return false;
@@ -688,15 +683,88 @@ class CNC extends EventEmitter {
 
 
     async jogStop() {
-        // await this.feederReset();
-        this.sendCommand('jogCancel');
-        await this.untilSent();
-      
-         // Use direct write if "jogCancel" patch is not installed on CNCjs...
-//        this.rawWrite(0x85);
+         // Send an immediate "jog stop"
+         this.rawWrite(JOG_STOP_CMD);
+         await this.untilSent();
 
+         this.rawWriteLn(JOG_STOP_CMD);
+         await this.untilSent();
+
+         this.rawWrite(JOG_STOP_CMD);
+         await this.untilSent();
+
+         this.jogInProgress = false;
     }
 
+
+    async setJogState(newState) {
+
+        if (!this.jogState) {
+            this.jogState = { axis: '', dir: 0, feedRate: 0 }
+        }
+
+        let jState = this.jogState;
+
+        if (jState.axis != newState.axis ||
+            jState.dir != newState.dir ||
+            jState.feedRate != newState.feedRate) {
+
+            this.jogState = newState;
+
+            // We have a new state to change to...
+            await this.jogStop();
+
+            // await this.untilState(CNC.CTRL_STATE_IDLE)
+
+            let distance;
+            switch (newState.axis) {
+                case 'X': {
+                    if (newState.dir > 0) {
+                        distance = -1 - this.mpos.x;
+                    }
+                    else {
+                        distance = -this.mpos.x - CNC.travel.x;
+                    }
+                }
+                break;
+
+                case 'Y': {
+                    if (newState.dir > 0) {
+                        distance = -1 - this.mpos.y;
+                    }
+                    else {
+                        distance = -this.mpos.y - CNC.travel.y;
+                    }
+                }
+                break;
+
+                case 'Z': {
+                    if (newState.dir > 0) {
+                        distance = -1 - this.mpos.z;
+                    }
+                    else {
+                        distance = -this.mpos.z - CNC.travel.z;
+                    }
+                }
+                break;
+
+            }
+
+            if (distance != 0) {
+                let jCmd = `$J=G91 G21 ${newState.axis}${distance.toFixed(3)} F${newState.feedRate}`;
+                this.jogInProgress = true;
+                this.jogCmdPending = true;
+
+                this.sendGCode(jCmd);
+
+                await this.untilOk();
+
+                this.jogCmdPending = false;
+            }
+
+        }
+
+    }
 
     /**
      * Commands the spindle to jog, but only if the status is idle or in jog mode. Arguments of (0, 0)
@@ -706,61 +774,43 @@ class CNC extends EventEmitter {
     jog(stickX, stickY, jogZ) {
         if (stickX !== 0 || stickY !== 0) {
              if (this.canJog()) {
-                let joystickDeflection
-                let xMultiplier, otherMultiplier
-                let moveRate, feedRate;
 
-                if (Math.abs(stickX) >= Math.abs(stickY)) {
-                    joystickDeflection = Math.abs(stickX);
-                    xMultiplier = Math.sign(stickX);
-                    otherMultiplier = 0
-                    if (xMultiplier > 0 && this.mpos.x >= -1) {
-                        // Ignore moving outside of limit
-                        return;
-                    }
+                 let axis;
+                 let dir = 0;
+                 let deflection = 0;
+
+                 if (Math.abs(stickX) >= Math.abs(stickY)) {
+                    dir = Math.sign(stickX);
+                    deflection = Math.abs(stickX);
+                    axis = 'X'
                 }
                 else {
-                    joystickDeflection = Math.abs(stickY);
-                    xMultiplier = 0
-                    otherMultiplier = Math.sign(stickY)
-
-                    if (otherMultiplier > 0) {
-                        if (jogZ && this.mpos.z >= -1 ||
-                            !jogZ && this.mpos.y >= -1)
-                        // Ignore moving outside of limit
-                        return;
+                    deflection = Math.abs(stickY);
+                    dir = Math.sign(stickY)
+                    if (jogZ) {
+                        axis = 'Z'
                     }
-
+                    else {
+                        axis = 'Y'
+                    }
                 }
 
-                if (joystickDeflection > 0.8 && !jogZ) {
+                let feedRate;
+                if (deflection > 0.9) {
                     feedRate = 250;
-                    moveRate = 1;
                 }
                 else {
                     feedRate = 50;
-                    moveRate = 1;
                 }
                 
-                let jogLetter;
-                if (jogZ) {
-                    // Jog the Z axis instead...
-                    jogLetter = 'Z';
-                }
-                else {
-                    jogLetter = 'Y';
-                }
-                let jCmd = `$J=G91 G21 X${xMultiplier*moveRate} ${jogLetter}${otherMultiplier*moveRate} F${feedRate}`;
-                this.jogInProgress = true;
-                this.jogWaiting = true;
-                this.sendGCode(jCmd);
+                let jogState = { axis, dir, feedRate }
+                this.setJogState(jogState);
              }
         }
         else {
-            if (this.jogInProgress) {
+            if (this.jogInProgress && !this.jogCmdPending) {
                this.jogStop();
-               this.jogInProgress = false;
-               this.jogWaiting = false;
+               delete this.jogState;
             }
         }
     }
@@ -867,5 +917,11 @@ CNC.SENDER_LOADED = 'loaded';
 CNC.SENDER_RUNNING = 'running';
 CNC.SENDER_PAUSED = 'paused';
 CNC.SENDER_DONE = 'done';
+
+CNC.travel = {
+    x: 97,
+    y: 78,
+    z: 28
+}
 
 module.exports = CNC;
