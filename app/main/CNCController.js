@@ -81,6 +81,11 @@ class CNCController  extends MainSubProcess {
         this.__jogZ = false;
         this.jogMode = false;
 
+        // Pass on some configuration values...
+        CNC.travel.x = Math.abs(Config.cnc.locations.maxLL.x)
+        CNC.travel.y = Math.abs(Config.cnc.locations.maxLL.y)
+        CNC.travel.z = Math.abs(Config.cnc.zheight.maxJog)
+
         this.stick.onValue(stick => {
             if (thiz.jogMode) {
                 thiz.cnc.jog(stick.x, stick.y, thiz.jogZ);
