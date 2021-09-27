@@ -50,7 +50,7 @@ const RESERVED_EVENTS = [ 'error', 'ready', 'closed', 'state', 'sent', 'data', '
 const RESET_MSG = '[MSG:Reset to continue]';
 
 // The raw bytes for "Jog stop"
-JOG_STOP_CMD = '\x85';
+const JOG_STOP_CMD = '\x85';
 
 /**
  * A Class for controlling a Grbl based CNC controlled by CNCjs running on the local machine. To
