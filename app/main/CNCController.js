@@ -3,6 +3,9 @@ const MainMQ = require('./MainMQ.js');
 const ProjectLoader = require('./ProjectLoader.js');
 const { untilTrue, untilEvent, untilDelay } = require('promise-utils');
 const Config = require('./Config.js');
+const { setIntervalAsync, SetIntervalAsyncError } = require('set-interval-async/fixed')
+const { clearIntervalAsync } = require('set-interval-async')
+
 
 // An "equals" function that does a "shallow" comparison
 // of objects, ensuring all keys of one object exists in
@@ -158,7 +161,17 @@ class CNCController  extends MainSubProcess {
             MainMQ.emit('render.cnc.state', state);
         });
 
+        this.__lastSpindle = -1
+
         this.cnc.on('pos', (data) => {
+            // For debugging spindle status...
+            let spindle = data.spindle
+            if (spindle != thiz.__lastSpindle) {
+                console.log('Spindle rpm: ', spindle)
+                thiz.__lastSpindle = spindle;
+            }
+            // ------------------------------
+
             MainMQ.emit('render.cnc.pos', data);
         });
 
@@ -243,6 +256,13 @@ class CNCController  extends MainSubProcess {
                 return result;
             },
 
+
+            async zProbeGeneric(probeSurfaceName = 'generic') {
+                let result = await thiz.genericZProbe(probeSurfaceName)
+                return result;
+            },
+
+
             async moveXY(mmX, mmY) {
                 let mpos = thiz.cnc.mpos;
                 let x = mpos.x + mmX;
@@ -259,8 +279,8 @@ class CNCController  extends MainSubProcess {
                 return thiz.cnc.wpos;
             },
 
-            async goto(pos, wcsNum = wcsMACHINE_WORK) {
-                await thiz.cnc.untilGoto(pos, wcsMACHINE_WORK);
+            async goto(pos, wcsNum = wcsMACHINE_WORK, feedRate = null) {
+                await thiz.cnc.untilGoto(pos, wcsNum, feedRate);
                 return thiz.cnc.mpos;
             },
 
@@ -311,6 +331,10 @@ class CNCController  extends MainSubProcess {
                 return await thiz.setPointer(newVal, newCoord, wcsNum);
             },
 
+            async setLaserOnly(newVal) {
+                thiz.pointer.laser = newVal;
+            },
+
             async findPCBOrigin(stock) {
                 return thiz.findPCBOrigin(stock);
             },
@@ -335,8 +359,37 @@ class CNCController  extends MainSubProcess {
 
             async drillPCB(profile) {
                 return await thiz.drillPCB(profile)
-            }
+            },
 
+            async enableHardLimits(enabled) {
+                return await thiz.cnc.setHardLimit(enabled)
+            },
+
+            async getPinReport() {
+                return await thiz.getPinReport()
+            },
+
+            async streamPinReport(eventName, msInterval = 1000) {
+                return thiz.streamPinReport(eventName, msInterval)
+            },
+
+            async setRpm(newRpm) {
+                return await thiz.setRpm(newRpm)
+            },
+
+            async calibratePointer(calibration) {
+                let s = calibration.spindle;
+                let l = calibration.laser;
+                let pointer = Config.cnc.pointer || {}
+                let offset = pointer.offset || {}
+                offset.x = s.x - l.x;
+                offset.y = s.y - l.y;
+                Config.cnc.pointer = pointer;
+                Config.cnc.pointer.offset = offset;
+                thiz.pointer.setCalibration(offset);
+                Config.save();
+                return offset;
+            }
         });
 
         const server = Config.cnc.server;
@@ -409,14 +462,86 @@ class CNCController  extends MainSubProcess {
     }
 
 
+    async getPinReport() {
+        this.cnc.report();
+
+        let rpt = { xLimit: false, yLimit: false, zLimit: false, probe: false }
+
+        await this.cnc.untilData((data) => {
+            if (data.startsWith('<')) {
+                // Report data. Example:
+                // <Idle|MPos:-1.000,-1.000,-1.000|FS:0,0|Pn:PXZ>
+                let vals = data.split('|');
+                for (let val of vals) {
+                    if (val.startsWith('Pn:')) {
+                        // This is pin report...
+                        rpt.xLimit = (val.indexOf('X', 3) > 0)
+                        rpt.yLimit = (val.indexOf('Y', 3) > 0)
+                        rpt.zLimit = (val.indexOf('Z'), 3 > 0)
+                        rpt.probe = (val.indexOf('P', 3) > 0)
+                    }
+                    else if (val.startsWith('FS:')) {
+                        let strSpindle = val.slice(3)
+                        let parts = strSpindle.split(',');
+                        rpt.feedRate = parseInt(parts[0], 10)
+                        rpt.spindle = parseInt(parts[1], 10);
+                    }
+                }
+                return true;
+            }
+            else {
+                // Not the data we are looking for...
+                return false;
+            }
+        });
+
+        // Return the results...
+        return rpt;
+    }
+
+
+    streamPinReport(eventName, msInterval = 1000) {
+        if (eventName) {
+            // A request to turn ON report streaming...
+            this._streamPinReportOff();
+            let fnChanged = hasChanged();
+            this.autoReportId = setIntervalAsync(async () => {
+                let rpt = await this.getPinReport();
+                if (fnChanged(rpt)) {
+                    MainMQ.emit(eventName, rpt);
+                }
+            }, msInterval);
+        }
+        else {
+            // A request to end report streaming...
+            this._streamPinReportOff();
+        }
+    }
+
+    _streamPinReportOff() {
+        if (this.autoReportId) {
+            clearIntervalAsync(this.autoReportId);
+            delete this.autoReportId;
+        }
+    }
+
+
     async cancelProcesses() {
+
+        this.streamPinReport(false);
+
+        if (this.genericZProbeInProgress) {
+            console.log("Canceling active zprobe")
+            this.genericZProbeInProgress = false;
+            await this.killFeeder();
+        }
+        
 
         if (this.findZPadInProgress) {
             console.log("Canceling active zpad zprobe")
             this.findZPadInProgress = false;
             await this.killFeeder();
         }
- 
 
         if (this.findPCBSurfaceInProgress) {
             console.log("Canceling active pcb zprobe")
@@ -460,6 +585,10 @@ class CNCController  extends MainSubProcess {
         }
 
         this.pointer.laser = false;
+
+        if (this.cnc.rpm > 0) {
+            this.cnc.rpm = 0;
+        }
     }
     
 
@@ -473,6 +602,23 @@ class CNCController  extends MainSubProcess {
     }
 
 
+    async setRpm(newRpm) {
+
+        this.cnc.rpm = newRpm;
+
+        let spindle = -1
+
+        let rptInterval = setIntervalAsync(async () => {
+            let rpt = await this.getPinReport();
+            spindle = rpt.spindle;
+        }, 500);
+
+        await untilTrue(700, () => { return spindle === newRpm || this.cnc.rpm === newRpm })
+
+        clearIntervalAsync(rptInterval);
+    }
+
+    
     async setPointer(newVal, newCoord, wcsNum = wcsMACHINE_WORK) {
 
         if (!newCoord) {
@@ -671,6 +817,55 @@ class CNCController  extends MainSubProcess {
             return null;
         }
     }
+
+
+    async genericZProbe(probeSurfaceName = 'generic') {
+
+        this.genericZProbeInProgress = true;
+
+        // Start to probe...      
+        await this.cnc.feedGCode([`(Start ${probeSurfaceName} zprobe)`, 'G91']);
+
+        this.cnc.sendGCode('G38.2 Z-14 F20');
+        let probeVal = await untilEvent(this.cnc, 'probe');
+
+        await this.cnc.feedGCode(['G90', `(End ${probeSurfaceName} zprobe)`])
+
+        if (!this.genericZProbeInProgress) {
+            this.gotoSafeZ();
+            return null;
+        }
+
+        this.genericZProbeInProgress = false;
+
+        if (probeVal.ok) {
+            // Set the primary work coordinate Z height to the probe value
+            this.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
+            await this.cnc.untilOk();
+
+            // This delay seems to be necessary to prevent 'Unsupported Command'
+            // errors from the Gbrl controller following the coordinate reset.
+            await untilDelay(1500);
+
+            // Then retract 4 mm
+            await this.cnc.feedGCode(['G91', 'G0 Z4', 'G90'])
+
+            if (this.cnc.wpos.z != 4) {
+                console.log('Post probe zPad Z position unexpected. Repositioning...');
+                await this.cnc.untilGoto({z: 4}, wcsPCB_WORK);
+            }
+
+            console.log(`Zprobe found at ${probeVal.z}`)
+            return probeVal;
+        }
+        else {
+            MainMQ.emit('render.ui.popupMessage', `ERROR: Z probe failed`);
+            return null;
+        }
+
+    }
+
+
 
 
     async autolevelPCB(stock) {

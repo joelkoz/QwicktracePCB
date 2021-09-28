@@ -87,6 +87,11 @@
         }
 
 
+        function setWizardInstructions(text) {
+            setWizardText('#wizardPage .instructions-area', text)
+        }
+
+
         function wizardPageActivate(wizardStep) {
 
             let buttonDefs = wizardStep.buttonDefs;
@@ -96,7 +101,7 @@
 
             setWizardText('#wizardPage .title-area', wizardStep.title)
             setWizardText('#wizardPage .subtitle-area', wizardStep.subtitle)
-            setWizardText('#wizardPage .instructions-area', wizardStep.instructions)
+            setWizardInstructions(wizardStep.instructions)
             setWizardStatusText('');
             
             let btnSelector = "#wizardPage .button-area";

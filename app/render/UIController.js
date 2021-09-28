@@ -341,7 +341,11 @@ class UIController extends RPCClient {
         }
     }
 
+    get wizardActive() {
+        return (this.wizard ? true : false)
+    }
 
+    
     setActiveList(listId) {
         this.state.activeListId = listId;
     }
@@ -606,6 +610,22 @@ class UIController extends RPCClient {
      */    
     finishProcess() {
         this.lastProfile = this.profile;
+    }
+
+    /**
+     * Returns TRUE if the profiles are such that we are now drilling holes in the
+     * same side of the same board we just milled.
+     */
+    skipStockLoading() {
+        if (this.lastProfile) {
+            let currentState = this.currentProfile.state;
+            let lastState = this.lastProfile.state;
+            return currentState.action === 'drill' &&
+                   currentState.projectId === lastState.projectId &&
+                   currentState.side == lastState.side &&
+                   currentState.stockId == lastState.stockId
+        }
+        return false;
     }
 
 }

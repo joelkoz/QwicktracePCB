@@ -11,8 +11,7 @@ class LaserPointer extends EventEmitter {
 
         if (Config.cnc) {
             if (Config.cnc.pointer && Config.cnc.pointer.offset) {
-                LaserPointer.offsetX = Config.cnc.pointer.offset.x;
-                LaserPointer.offsetY = Config.cnc.pointer.offset.y;
+                this.setCalibration(Config.cnc.pointer.offset);
             } 
         }
 
@@ -41,6 +40,11 @@ class LaserPointer extends EventEmitter {
             }
             this.emit('state', this.laserOn);
         }
+    }
+
+    setCalibration(offset) {
+        LaserPointer.offsetX = offset.x;
+        LaserPointer.offsetY = offset.y;
     }
 
     // Assuming the laser is on and currently pointing

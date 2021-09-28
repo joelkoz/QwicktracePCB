@@ -34,6 +34,7 @@ function createWindow () {
     fullscreen: Config.window.fullScreen,
     show: false,
     frame: Config.window.frame,
+    nodeIntegration: true,
     webPreferences: {
       nodeIntegration: true,
       // webSecurity: false
