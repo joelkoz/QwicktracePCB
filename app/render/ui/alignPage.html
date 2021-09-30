@@ -36,7 +36,7 @@
     </style>
     <div class="page-header">
         <div class="header-area">
-           <button type="button" class="btn w1 back">&#8592;</button>
+           <button type="button" class="btn w1 wizardBack">&#8592;</button>
            Board Alignment
         </div>
     </div>
@@ -50,7 +50,7 @@
     </div>
 
     <script>
-        if (appConfig.super.debug) {
+        if (appConfig.window.debug) {
             // For using mouse when debugging alignment code...
             $("#align-canvas").click(function(e) {
                 let canvas = document.getElementById("align-canvas");

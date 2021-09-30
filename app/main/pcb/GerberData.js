@@ -219,9 +219,17 @@ class GerberData extends EventEmitter {
 
     nextFile() {
        if (this.fileList.length > 0) {
+
           let fileName = this.fileList.pop();
-          let aType = whatsThatGerber([fileName]);
-          let gType = aType[fileName];
+          let gType = {};
+          if (fileName.endsWith('.drl')) {
+              gType.type = 'drill'
+          }
+          else {
+             let aType = whatsThatGerber([fileName]);
+             gType = aType[fileName];
+          }
+
           switch (gType.type) {
               case 'drill':
                   this.loadDrillFile(fileName);

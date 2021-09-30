@@ -142,6 +142,8 @@ class UIController extends RPCClient {
 
         $(".btn.back").on("click", () => { thiz.backPage() });
 
+        $(".btn.wizardBack").on("click", () => { thiz.cancelWizard() });
+
         this.showPage(appConfig.ui.startPageId);
         console.log('ui started');
     }
@@ -474,7 +476,7 @@ class UIController extends RPCClient {
             return (state.projectId === lastState.projectId &&
                     state.side != lastState.side);
         }
-        return false;
+        return this.state.action === 'drill';
     }
 
 
@@ -534,10 +536,22 @@ class UIController extends RPCClient {
 
 
     async initProcessing() {
+
         let state = this.state;
-        let stock = this.profileList[state.stockId].stock;
-        let material = this.profileList[stock.materialId].material;
         let defaults = this.profileList.default;
+
+        let stock, material;
+        if (state.stockId) {
+            // Use user selected stock in the processing profile
+            stock = this.profileList[state.stockId].stock; 
+            material = this.profileList[stock.materialId].material;
+        }
+        else {
+            // No explicit stock was selected. Use implied values from the Gerber definitions...
+            let originalSize = await this.rpCall('projects.getOriginalSize', state.projectId)
+            stock = { width: originalSize.x, height: originalSize.y, materialId: defaults.material.name }
+            material = defaults.material;
+        }
 
         // Build the complete profile used by all processing of this action...
         let profile = Object.assign({}, defaults, { material }, { stock }, { state });
@@ -570,11 +584,14 @@ class UIController extends RPCClient {
             }
             this.popupMessage(popup)
         }
-        else if (profile.state.stockIsBlank) {
+        else if (profile.state.stockIsBlank && !profile.state.alignStock) {
+            // Board is smaller than stock and we are not going to pre-align.
+            // See if user wants to center the board on the stock.
             this.showPage('centerPage', false)
         }
         else {
-           // Time to continue...
+           // Just continue on without any explicit board centering...
+           profile.state.centerBoard = false
            this.dispatchProcess(profile);
         }
     }
@@ -617,7 +634,7 @@ class UIController extends RPCClient {
      * same side of the same board we just milled.
      */
     skipStockLoading() {
-        if (this.lastProfile) {
+        if (this?.lastProfile?.state) {
             let currentState = this.currentProfile.state;
             let lastState = this.lastProfile.state;
             return currentState.action === 'drill' &&

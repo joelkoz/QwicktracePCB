@@ -10,6 +10,7 @@ const ProjectLoader = require('./ProjectLoader.js');
 
 const { untilEvent } = require('../common/promise-utils/index.js');
 
+
 class FileLoader extends MainSubProcess {
 
     constructor(win) {
@@ -20,15 +21,15 @@ class FileLoader extends MainSubProcess {
       this.rpcAPI( {
 
          async loadSVG(profile) {
-            let results = await ProjectLoader.prepareForWork(profile);
-            let svgObj = await thiz.loadGerberAsSvg(results.gbr, profile);
+            let currentProfile = await ProjectLoader.prepareForWork(profile);
+            let svgObj = await thiz.loadGerberAsSvg(currentProfile.files.gbr, profile);
             return svgObj;
          },
 
 
          async loadDrillInfo(profile) {
-            let results = await ProjectLoader.prepareForWork(profile);
-            let drillObj = await thiz.loadDrillFile(results.drl, profile);
+            let currentProfile = await ProjectLoader.prepareForWork(profile);
+            let drillObj = await thiz.loadDrillFile(currentProfile.files.drl, profile);
             return drillObj;
          }
 
@@ -79,12 +80,11 @@ class FileLoader extends MainSubProcess {
      
 
     async loadDrillFile(fileName, profile, callbackEvt) {
-         this.drillData = new GerberData([fileName]);
-         let thiz = this;
-         await untilEvent(this.drillData, 'ready', 8000);
-         let drillLoadInfo = { "holes": thiz.drillData.holes, 
-                               "boundingBox": thiz.drillData.boundingBox, 
-                               "units": thiz.drillData.units,
+         let drillData = new GerberData([fileName]);
+         await untilEvent(drillData, 'ready', 8000);
+         let drillLoadInfo = { "holes": drillData.holes, 
+                               "boundingBox": drillData.boundingBox, 
+                               "units": drillData.units,
                                "drillSide": profile.state.side };
          return drillLoadInfo;
    }

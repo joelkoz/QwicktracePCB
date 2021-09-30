@@ -20,6 +20,8 @@ const DRAW_HOLE_DIAMETER = 4;
 const DRAW_BLINK_DIAMETER = 6;
 const DRAW_BLINK_WIDTH = 2;
 
+const PIXEL_MARGIN = 10;
+
 /**
  * A class that represents a Gerber file and is capable of rendering
  * both the the traces and the drilled holes of the PCB. It also
@@ -48,7 +50,7 @@ class GerberCanvas extends RPCClient {
     initAlignment(fnAlignmentComplete) {
         this.fnAlignmentComplete = fnAlignmentComplete;
 
-        let bb = this.boundingBox;
+        let bb = this.mmBoundingBox;
 
         // For skew correction, we need two points...
         this.deskewData = [
@@ -61,6 +63,13 @@ class GerberCanvas extends RPCClient {
         this.deskew = null;
 
         this.positionNext();
+    }
+
+
+
+    cancelAlignment() {
+        this.blinkOff(false);
+        this.deskewIndex = 99;
     }
 
 
@@ -88,6 +97,11 @@ class GerberCanvas extends RPCClient {
     // the specified PCB coordinate.
     async getAlignmentHole(samplePoint) {
         let pcbCoord = await this.rpCall('cnc.locatePoint', samplePoint)
+        this.saveAlignmentHole(pcbCoord)
+    }    
+
+
+    saveAlignmentHole(pcbCoord) {
         if (this.deskewIndex >= 0 && this.deskewIndex <= 1) {
             this.deskewData[this.deskewIndex].actual = pcbCoord;
 
@@ -98,7 +112,7 @@ class GerberCanvas extends RPCClient {
 
             this.positionNext();
         }
-    }    
+    }
 
 
     // Called when all alignment data has been obtained and completes
@@ -123,6 +137,7 @@ class GerberCanvas extends RPCClient {
 
         this.fnAlignmentComplete(dresult);
     }
+
 
     // Computes the raw client pixel coordinates of
     // the specified alignment sample then sets
@@ -154,33 +169,34 @@ class GerberCanvas extends RPCClient {
     mouseDown(mouseCoord) {
       let canvasCoord = this.clientToCanvas(mouseCoord);
       let pcbCoord = this.toPCB(canvasCoord);
-      this.setDeskew(pcbCoord);
+      console.log('Canvas: ', canvasCoord, 'PCB: ', pcbCoord)
+      //   let pcbCoord = this.toPCB(canvasCoord);
+      //   this.saveAlignmentHole(pcbCoord);
     }
 
-
-    // Preliminary calculations for drawing the drill holes and
+    /**
+     * 
+     * There are two coordinate systems at play:
+     * The PCB and CNC work coordinates are in millimeters 
+     * and have origin (0,0) at the board's lower left 
+     * hand corner.
+     *    The UI display coordiante system is in 
+     * "canvas coordinates" which are in pixels. The 2D
+     * drawing context is modified via setTransform()
+     * so pixel (0,0) is also in the lower left hand
+     * corder, with X+ to the right and Y+ moving up.
+     * However, the SVG image of the PCB traces are
+     * drawn in such a way as to zoom in and maximum
+     * the display such that the smaller of the width
+     * or height fill ups the entire canvas (minus a
+     * small margin), and the other dimension
+     * is centered on the canvas.  The methods
+     * toCanvas() and toPCB() translate back and
+     * forth between these two coordinate systems.
+     * This method pre-calculates certain values used
+     * in those calculations.
+    */
     drawingPreCalc() {
-        // There are three coordinate systems at play. the PCB's
-        // coordinate system assumes (0,0) in lower left
-        // hand corner, with positive X in left direction,
-        // and positive Y from bottom to top. This also
-        // assumes the bounding box's maximum value is in
-        // Y direction (i.e. a rectangular board is taller
-        // than it is wider)
-        //   The UI display's coordinate system has (0,0) in
-        // upper left hand corner, and positive Y is top 
-        // to bottom.  
-        //   The CNC mill's coordinate system
-        // matches the PCB, but the mill dimensions dictate
-        // the PCB be milled sideways with PCB's Y along
-        // the mill's X, and the (0,0) position adjusted
-        // such that the PCB's UPPER left corner is next
-        // to the mill's upper right corner.
-        //
-        // Calculations here assume the PCB will be oriented
-        // for display and milling sideways (i.e. the pcb's
-        // X axis plotted along display and mill's Y axis)...
-
         this.canvas = document.getElementById(CANVAS_ID);
 
         // Set the canvas to its maximum pixel size
@@ -194,38 +210,38 @@ class GerberCanvas extends RPCClient {
         canvas.height = oh;
 
         let bb = this.viewBox;
-        let min = { x: bb[0] /1000, y: bb[1] / 1000 };
-        let max = { x: bb[2]/ 1000, y: bb[3] / 1000 };
-        this.boundingBox = { min, max }
+        let min = { x: bb[0]/ 1000, y: bb[1] / 1000 };
 
-        // Translation necessary to shift PCB origin to be (0,0)
-        this.normalizeX = 0 - min.x;
-        this.normalizeY = 0 - min.y;
+        let mmBoxWidth = bb[2] /1000
+        let mmBoxHeight = bb[3] / 1000;
 
-        let bbWidth = max.x - min.x;
-        let bbHeight = max.y - min.y;
+        let max = { x: min.x + mmBoxWidth, y: min.y + mmBoxHeight }
+
+        this.mmBoundingBox = { min, max }
+
+        // Translation necessary to shift PCB coordinate to the viewBox minimum
+        this.mmNormalizeX = 0 - min.x;
+        this.mmNormalizeY = 0 - min.y;
 
         // Allow for a 10 pixel margin (20 pixels total) 
-        // around plotted board.  Remember, "height" of 
-        // board is plotted along the "width" of 
-        // the display canvas
-        let maxPixelHeight = canvas.width - 20;
-        let maxPixelWidth = canvas.height - 20;
+        // around plotted board.  
+        let pxMaxHeight = canvas.height - PIXEL_MARGIN*2;
+        let pxMaxWidth = canvas.width - PIXEL_MARGIN*2;
 
         // How many pixels per millimeter to we have
         // to display the entire board?
-        let ppmmH = maxPixelHeight / bbHeight;
-        let ppmmW = maxPixelWidth / bbWidth;
+        let ppmmH = pxMaxHeight / mmBoxHeight;
+        let ppmmW = pxMaxWidth / mmBoxWidth;
 
-        this.ppmm = Math.min(ppmmH, ppmmW);
+        this.pxpmm = Math.min(ppmmH, ppmmW);
 
 
         // Finally, calculate a pixel margin that will center
         // the board in the display canvas...
-        this.truePixelHeight = this.ppmm * bbHeight;
-        this.truePixelWidth = this.ppmm * bbWidth;
-        this.marginWidth = (maxPixelHeight - this.truePixelHeight) / 2;
-        this.marginHeight = (maxPixelWidth - this.truePixelWidth) / 2;
+        this.pxBoardHeight = this.pxpmm * mmBoxHeight;
+        this.pxBoardWidth = this.pxpmm * mmBoxWidth;
+        this.pxMarginHeight = (pxMaxHeight - this.pxBoardHeight) / 2 + PIXEL_MARGIN;
+        this.pxMarginWidth = (pxMaxWidth - this.pxBoardWidth) / 2 + PIXEL_MARGIN;
     }
 
 
@@ -295,12 +311,13 @@ class GerberCanvas extends RPCClient {
         ctx.fillStyle = holeColor;
         ctx.strokeStyle = holeColor;
         ctx.lineWidth = 1;
-        const drillDiam = DRAW_HOLE_DIAMETER;
         ctx.beginPath();
         let canvasCoord = this.toCanvas(pcbCoord);
-        ctx.arc(canvasCoord.x, canvasCoord.y, drillDiam, 0, 2.0*Math.PI);
+        ctx.arc(canvasCoord.x, canvasCoord.y, DRAW_HOLE_DIAMETER, 0, 2.0*Math.PI);
         ctx.fill();
         ctx.stroke();
+
+
     }
 
 
@@ -324,14 +341,14 @@ class GerberCanvas extends RPCClient {
         canvas.style.backgroundColor = CANVAS_BG_COLOR;
         ctx.clearRect(0,0,canvas.width, canvas.height);
 
-        this.setTransform(ctx);
 
         if (this.img) {
-            ctx.drawImage(this.img, 0, 0, this.truePixelWidth, this.truePixelHeight);
+            ctx.drawImage(this.img, this.pxMarginWidth, this.pxMarginHeight, this.pxBoardWidth, this.pxBoardHeight);
         }
 
-        if (this.holeList) {
+        this.setTransform(ctx);
 
+        if (this.holeList) {
             this.holeList.forEach(hole => {
                this.drawHole(ctx, hole.coord, CANVAS_HOLE_COLOR);
             });
@@ -350,14 +367,12 @@ class GerberCanvas extends RPCClient {
         ctx.resetTransform();
         ctx.scale(1, -1);
         ctx.translate(0, -this.canvas.height);        
-        ctx.translate(this.marginWidth, this.marginHeight);
-        // ctx.rotate(270 * Math.PI / 180);
 
         if (this.deskew) {
             // Apply additional deskew transformation as this
             // must be a repaint...
             ctx.rotate(2*Math.PI + this.deskew.rotation);
-            ctx.translate(this.deskew.offset.x* this.ppmm, this.deskew.offset.y* this.ppmm);
+            ctx.translate(this.deskew.offset.x* this.pxpmm, this.deskew.offset.y* this.pxpmm);
         }        
     
     }
@@ -404,12 +419,12 @@ class GerberCanvas extends RPCClient {
     setHoles(drillObj, profile) {
 
         this.profile = profile;
-        if (!this.viewBox) {
+        if (!this.mmBoundingBox) {
             // The GerberFile has not been loaded yet. 
             // this.viewBox is necessary for drawingPreCalc()
             // to run, so fake it using the drill's bounding box
-            let bb = drillObj.boundingBox;
-            this.viewBox = [ bb.min.x, bb.min.y, bb.max.x, bb.max.y ];
+            let bb = drillObj.mmBoundingBox;
+            this.viewBox = [ bb.min.x * 1000, bb.min.y * 1000, bb.max.x * 1000, bb.max.y * 1000 ];
             this.drawingPreCalc();
         }
 
@@ -422,15 +437,15 @@ class GerberCanvas extends RPCClient {
     // Translate PCB coordinates to UI display canvas coordinates
     toCanvas(pcbCoord) {
         return {
-            x: (pcbCoord.x + this.normalizeY) * this.ppmm,
-            y: (pcbCoord.y + this.normalizeX) * this.ppmm,
+            x: (pcbCoord.x + this.mmNormalizeX) * this.pxpmm + this.pxMarginWidth,
+            y: (pcbCoord.y + this.mmNormalizeY) * this.pxpmm + this.pxMarginHeight
         };
     }
 
     // Translate canvas coordinates back to PCB coordinates
     toPCB(canvasCoord) {
-        let x = canvasCoord.x / this.ppmm - this.normalizeY;
-        let y = canvasCoord.y / this.ppmm - this.normalizeX;
+        let x = (canvasCoord.x - this.pxMarginWidth) / this.pxpmm - this.mmNormalizeX;
+        let y = (canvasCoord.y - this.pxMarginHeight) / this.pxpmm - this.mmNormalizeY;
 
         return {
             "x": x,
@@ -461,9 +476,15 @@ class GerberCanvas extends RPCClient {
 
 
     /**
-     * Returns the hole closest to the specified coordinate
+     * Returns the hole closest to the specified coordinate that is surrounded
+     * by copper on the current side (allowing the user to identify its posistion)
      */
      closestTo(pcbCoord) {
+
+        // TODO: This needs to select a hole that intersects with traces on the visible
+        // side. Holes that are not surrounded by copper on the visible side should
+        // not be retunred by this method.
+
         let dist = 99999;
         let nearest = null;
 

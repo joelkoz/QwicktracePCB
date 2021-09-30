@@ -40,6 +40,45 @@ class DrillController extends AlignmentController {
 
             steps: [
 
+                { id: "loadMill",
+                  subtitle: "Load Mill with PCB",
+                  instructions: "Load mill with PCB to drill.  Press Continue when done",
+                  buttonDefs: [
+                    { label: "Continue", next: true },
+                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                  ],
+                  onActivate: (wizStep) => {
+                      if (!ui.skipStockLoading()) {
+                          thiz.rpCall('cnc.loadStock')
+                      }
+                      else {
+                          ui.wizardNext();
+                      }
+                  }
+                },
+
+                { id: "alignHoles",
+                  subtitle: "Preparing drill files...",
+                  instructions: "",
+                  buttonDefs: [
+                      { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                  ],
+                  onActivate: async (wizStep) => {
+                      function completeDrillAlignment(dresult) {
+                          profile.state.deskew = dresult;
+                          ui.wizardNext();
+                      }
+
+                      if (thiz.activeProfile.state.alignStock) {
+                          thiz.startAlignment(profile, completeDrillAlignment);
+                      }
+                      else {
+                          ui.wizardNext();
+                      }
+                  }
+                },
+
+
                 { id: "connectZProbe",
                   subtitle: "Prepare to zprobe Zpad",
                   instructions: "Load mill with drilling bit. Connect zprobe clip to drilling bit.",
@@ -52,9 +91,11 @@ class DrillController extends AlignmentController {
                         if (window.cncZProbe) {
                            // We can not continue if ZProbe is currently "pressed"
                            $('#wizardPage .zProbeContinue').css("display", "none");
+                           thiz.setWizardInstructions(wizStep.instructions)                           
                         }
                         else {
                             // Enable continue button
+                            thiz.setWizardInstructions('')
                             $('#wizardPage .zProbeContinue').css("display", "block");
                         }
                     }
@@ -107,11 +148,13 @@ class DrillController extends AlignmentController {
 
                     function updateBtnContinue() {
                       if (window.cncZProbe) {
-                          // We can not continue if ZProbe is currently "pressed"
+                          // We can not continue until ZProbe is currently "pressed"
                           $('#wizardPage .removeProbeContinue').show();
-                       }
+                          thiz.setWizardInstructions('')
+                        }
                        else {
-                          // Enable continue button
+                          // Disable continue button
+                          thiz.setWizardInstructions(wizStep.instructions)                           
                           $('#wizardPage .removeProbeContinue').hide();
                        }
                     }
@@ -123,28 +166,6 @@ class DrillController extends AlignmentController {
                     clearInterval(wizStep.timerId);
                   }
 
-                },
-
-                
-                { id: "alignHoles",
-                  subtitle: "Preparing drill files...",
-                  instructions: "",
-                  buttonDefs: [
-                      { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
-                  ],
-                  onActivate: async (wizStep) => {
-                      function completeDrillAlignment(dresult) {
-                          profile.state.deskew = dresult;
-                          ui.wizardNext();
-                      }
-
-                      if (thiz.activeProfile.state.alignStock) {
-                          thiz.startAlignment(profile, completeDrillAlignment);
-                      }
-                      else {
-                          ui.wizardNext();
-                      }
-                  }
                 },
 
                 
@@ -166,8 +187,15 @@ class DrillController extends AlignmentController {
         window.uiController.startWizard(wizard);        
     }
 
-    
-    updateUiDrillStatus() {
+     setWizardStatusText(status) {
+       window.setWizardStatusText(status)
+     }
+
+     setWizardInstructions(status) {
+       window.setWizardInstructions(status)
+     }
+   
+     updateUiDrillStatus() {
         window.setWizardStatusText(`Drilling ${this.probeNum} of ${this.probeCount}`)
      }
  
@@ -185,6 +213,7 @@ class DrillController extends AlignmentController {
      cancelWizard() {
          this.rpCall('cnc.cancelProcesses');
          window.uiController.cancelWizard();
+         this.gerberCanvas.cancelAlignment();
          delete this.activeProfile;
      }
  

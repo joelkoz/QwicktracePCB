@@ -43,7 +43,14 @@ class ProjectLoader  extends MainSubProcess {
         async prepareForWork(profile) {
            let updatedProfile = await ProjectLoader.prepareForWork(profile);
            return updatedProfile;
+        },
+
+        async getOriginalSize(projectId) {
+            let project = _projectCache[projectId];
+            let originalSize = await project.getSize();
+            return originalSize
         }
+
       });
 
 
@@ -158,6 +165,8 @@ class ProjectLoader  extends MainSubProcess {
                 console.log('ProjectLoader.prepareForWork() is using existing drill file ', drlTarget)
             }
 
+            _currentProfile.files = { gbr: gbrTarget, drl: drlTarget }
+            
             return  _currentProfile;
 
         }
