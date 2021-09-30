@@ -851,6 +851,7 @@ class CNC extends EventEmitter {
         }
         catch (err) {
             console.log(`Error waiting for event ${eventName}`, err)
+            console.trace();
         }       
     }
 
