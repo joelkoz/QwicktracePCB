@@ -1,14 +1,45 @@
 const fs = require('fs');
 const fsp = require('fs').promises;
 
+const RPCServer = require('./RPCServer.js');
+
 const FILENAME="./config.json"
 
-class Config {
+
+function setVal(object, propertyName, propertyValue) {
+     let ndx = propertyName.indexOf('.');
+     if (ndx < 0) {
+         // No sub-objects - use this property name as is
+         object[propertyName] = propertyValue;
+     }
+     else {
+         let parentName = propertyName.slice(0, ndx);
+         let parentObj = object[parentName];
+         if (!parentObj) {
+             parentObj = {};
+             object[parentName] = parentObj;
+         }
+         setVal(parentObj, propertyName.substring(ndx+1), propertyValue)
+     }
+}
+
+
+class Config extends RPCServer {
 
     constructor() {
+        
         if (!Config.instance) {
+            super('config')
             Config.instance = this;
             this.load();
+
+            let thiz = this;
+            this.rpcAPI( {
+                async setAndSave(propertyName, propertyValue) {
+                    return await thiz.setAndSave(propertyName, propertyValue);
+                }
+            });
+
         }
         return Config.instance;
     }
@@ -49,7 +80,6 @@ class Config {
         return this.json[key];
     }
 
-    
     load() {
         console.log('Loading configuraton file...');
         let jStr = fs.readFileSync(FILENAME, 'utf8');
@@ -65,6 +95,12 @@ class Config {
         catch (err) {
             console.log('Error saving configuration file: ', err)
         }
+    }
+
+
+    async setAndSave(propertyName, propertyValue) {
+        setVal(this._config, propertyName, propertyValue);
+        await this.save();
     }
 
 }
