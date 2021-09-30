@@ -1,64 +1,106 @@
 {
-   "window" : {
+   "window": {
        "width": 1520,
        "height": 1000,
        "fullScreen": false,
-       "debug": true
+       "debug": true,
+       "frame": true
    },
-
-   "mask" : {
-      "marginX": 64,
-      "marginY": 64,
-      "ppmmWidth": 4.2,
-      "ppmmHeight": 4.2,
-      "ppinWidth": 109,
-      "ppinHeight":  109        
+   "mask": {
+       "marginX": 64,
+       "marginY": 64,
+       "ppmmWidth": 4.2,
+       "ppmmHeight": 4.2,
+       "ppinWidth": 109,
+       "ppinHeight": 109
    },
-
    "app": {
-      "hasCNC": true,
-      "hasPCB": true
+       "hasCNC": true,
+       "hasPCB": true
    },
-
    "ui": {
-      "startPageId": "startPage",
-      "bodyClass": "ui480",
-      "width": 480,
-      "height": 320
+       "startPageId": "startPage",
+       "bodyClass": "ui480",
+       "width": 480,
+       "height": 320,
+       "ignoreErrors": true
    },
-
-
    "cnc": {
-      "locations": {
-         "ur": { "x": -3.7, "y": -7.7 },
-         "zpad": { "x": -15.7, "y": -3.7 },
-         "maxLL": { "x": -100, "y": -85 },
-         "load": { "x": -1, "y": -15 }
-      },
-
-      "zheight": {
-         "safe": -10,
-         "zpad": { "startZ": -15, "lastZ": -18.853 },
-         "pcb": { "lastZ": -31.115 }
-      },
-
-      "pointer": {
-         "offset": { "x": 20.3, "y": 7.3 }
-      }
+       "server": {
+           "host": "192.168.0.152",
+           "port": 8000,
+           "serialPort": "/dev/ttyUSB0",
+           "baudRate": 115200
+       },
+       "locations": {
+           "ur": {
+               "x": -7,
+               "y": -3
+           },
+           "zpad": {
+               "x": -2,
+               "y": -43
+           },
+           "maxLL": {
+               "x": -97,
+               "y": -78
+           },
+           "load": {
+               "x": -50,
+               "y": -12
+           }
+       },
+       "zheight": {
+           "safe": -15,
+           "maxJog": -28,
+           "zpad": {
+               "startZ": -26,
+               "pcbOffset": 2,
+               "lastZ": -30.425,
+               "pcbProbeOffset": -1.2049999999999983
+           },
+           "pcb": {
+               "lastZ": -29.228
+           }
+       },
+       "pointer": {
+           "offset": {
+               "x": 11.82,
+               "y": 7.645000000000003
+           }
+       },
+       "drill": {
+           "rpm": 7000,
+           "startHeight": 1.5,
+           "drillDepthX": -2.1,
+           "drillDepth": -0.05,
+           "plungeRate": 50,
+           "msStartupDelay": 2000
+       }
    },
-
    "joystick": {
-      "invertY": true,
-      "invertX": false,
-      "calibration": {
-                       "xCal":{"min":174,"max":26514,"mid":13442,"deadLo":50,"deadHi":50},
-                       "yCal":{"min":176,"max":26515,"mid":13098,"deadLo":50,"deadHi":50},
-                       "btnPressThreshold": 500
-                     }
+       "invertY": true,
+       "invertX": true,
+       "calibration": {
+           "yCal": {
+               "min": 174,
+               "max": 26514,
+               "mid": 13500,
+               "deadLo": 1000,
+               "deadHi": 3000
+           },
+           "xCal": {
+               "min": 176,
+               "max": 26515,
+               "mid": 13000,
+               "deadLo": 500,
+               "deadHi": 3000
+           },
+           "btnPressThreshold": 400
+       }
    },
-
    "pigpio": {
-      "host": "192.168.0.160",
-      "port": 8888
+       "host": "192.168.0.152",
+       "port": 8888
    }
 }
