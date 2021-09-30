@@ -4,7 +4,8 @@ const ProjectLoader = require('./ProjectLoader.js');
 const { untilTrue, untilEvent, untilDelay } = require('promise-utils');
 const Config = require('./Config.js');
 const { setIntervalAsync, SetIntervalAsyncError } = require('set-interval-async/fixed')
-const { clearIntervalAsync } = require('set-interval-async')
+const { clearIntervalAsync } = require('set-interval-async');
+const Joystick = require('./Joystick');
 
 
 // An "equals" function that does a "shallow" comparison
@@ -294,6 +295,24 @@ class CNCController  extends MainSubProcess {
             async zeroPCBWorkPos() {
                 return await thiz.api.setWorkCoord({ x: 0, y: 0}, wcsPCB_WORK);
             },
+
+
+            async estimatePCBWorkPos(stock) {
+                let machineLL = {};
+                machineLL.x = Config.cnc.locations.ur.x - stock.width;
+                machineLL.y = Config.cnc.locations.ur.y - stock.height;
+
+                console.log('Estimating PCB work origina to be a machine pos ', machineLL)
+
+                let mpos = thiz.cnc.mpos;
+
+                let currentPCB = {}
+                currentPCB.x = mpos.x - machineLL.x;
+                currentPCB.y = mpos.y - machineLL.y;
+
+                return await thiz.api.setWorkCoord(currentPCB, wcsPCB_WORK)
+            },
+
 
             async jogMode(modeOn) {
                 let oldMode = thiz.jogMode;
@@ -646,12 +665,21 @@ class CNCController  extends MainSubProcess {
 
 
     async locatePoint(startingPos, wcsNum = wcsMACHINE_WORK) {
+
+        // First, if the joystick button is currently down (from a previous press), wait until
+        // it has been released...
+        if (Joystick.btnVal()) {
+            await untilTrue(500, () => { return Joystick.btnVal() === false }, 5000)
+        }
+
         // Turn laser on...
         await this.setPointer(true, startingPos, wcsNum);
         this.jogMode = true;
+        this.jogZ = false;
         let thiz = this;
         await untilEvent(MainMQ.getInstance(), 'global.cnc.joystickPress', () => { return thiz.jogMode === false })
         this.jogMode = false;
+        this.jogZ = false;
         if (this.cnc.state !== CNC.CTRL_STATE_IDLE) {
             // Wait for the jog to finish...
             await this.cnc.untilState(CNC.CTRL_STATE_IDLE);
@@ -733,7 +761,7 @@ class CNCController  extends MainSubProcess {
 
         if (probeVal.ok) {
             // Set the primary work coordinate Z height to the probe value
-            this.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
+            this.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z${zheight.zpad.pcbProbeOffset || 0}`);
             await this.cnc.untilOk();
 
             // This delay seems to be necessary to prevent 'Unsupported Command'
@@ -741,12 +769,7 @@ class CNCController  extends MainSubProcess {
             await untilDelay(1500);
 
             // Then retract 4 mm
-            await this.cnc.feedGCode(['G91', 'G0 Z4', 'G90'])
-
-            if (this.cnc.wpos.z != 4) {
-                console.log('Post probe zPad Z position unexpected. Repositioning...');
-                await this.cnc.untilGoto({z: 4}, wcsPCB_WORK);
-            }
+            await this.cnc.untilGoto({z: 4}, wcsPCB_WORK);
 
             let zpad = Config.cnc.locations.zpad;
             if (saveNewXY) {
@@ -805,7 +828,7 @@ class CNCController  extends MainSubProcess {
             await this.cnc.feedGCode(['G91', 'G0 Z4', 'G90'])
 
             let probedOffset = zpadZ - probeVal.z;
-            zheight.zpad.pcbOffsetProbed = probedOffset;
+            zheight.zpad.pcbProbeOffset = probedOffset;
             zheight.pcb = { lastZ: probeVal.z }
             Config.save();
             
@@ -931,6 +954,7 @@ class CNCController  extends MainSubProcess {
             this.millPCBInProgress = false;
             console.log('Error during milling...');
             console.log(err)
+            console.trace();
             return new Error('Error during milling.', { cause: err} );
         }
     }
@@ -988,7 +1012,8 @@ class CNCController  extends MainSubProcess {
         }
         catch (err) {
             this.drillPCBInProgress = false;
-            console.log('Error during drilling');
+            console.log('Error during drilling', err);
+            console.trace();
             return new Error('Error during drilling.', { cause: err} );
         }
     }

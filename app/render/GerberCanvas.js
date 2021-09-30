@@ -22,6 +22,9 @@ const DRAW_BLINK_WIDTH = 2;
 
 const PIXEL_MARGIN = 10;
 
+const wcsMACHINE_WORK = 0;
+const wcsPCB_WORK = 1;
+
 /**
  * A class that represents a Gerber file and is capable of rendering
  * both the the traces and the drilled holes of the PCB. It also
@@ -84,6 +87,17 @@ class GerberCanvas extends RPCClient {
            this.startBlink();
            let thiz = this;
            let sample = this.deskewData[this.deskewIndex].sample
+
+           if (this.deskewIndex === 1) {
+               // Guess that the second sample will have the same actual offset
+               // as the first sample...
+               let firstSample = this.deskewData[0].sample;
+               let firstActual = this.deskewData[0].actual;
+               let offsetX = firstActual.x - firstSample.x;
+               let offsetY = firstActual.y - firstSample.y;
+               sample = Object.assign({}, { x: sample.x + offsetX, y: sample.y + offsetY })
+           }
+
            this.getAlignmentHole(sample);
         }
         else {
@@ -96,7 +110,7 @@ class GerberCanvas extends RPCClient {
     // Sets the alignment data for the current sample hole to
     // the specified PCB coordinate.
     async getAlignmentHole(samplePoint) {
-        let pcbCoord = await this.rpCall('cnc.locatePoint', samplePoint)
+        let pcbCoord = await this.rpCall('cnc.locatePoint', samplePoint, wcsPCB_WORK)
         this.saveAlignmentHole(pcbCoord)
     }    
 
@@ -105,6 +119,7 @@ class GerberCanvas extends RPCClient {
         if (this.deskewIndex >= 0 && this.deskewIndex <= 1) {
             this.deskewData[this.deskewIndex].actual = pcbCoord;
 
+            console.log(`User found alignment hole ${this.deskewIndex+1} at `, pcbCoord)
             // Draw the newly posistioned hole...
             this.blinkOff(false);
             const ctx = this.canvas.getContext('2d')

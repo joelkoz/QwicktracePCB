@@ -797,10 +797,13 @@ class CNC extends EventEmitter {
 
                 let feedRate;
                 if (deflection > 0.9) {
-                    feedRate = 250;
+                    feedRate = 200;
+                }
+                else if (deflection > 0.85) {
+                    feedRate = 30;
                 }
                 else {
-                    feedRate = 50;
+                    feedRate = 15;
                 }
                 
                 let jogState = { axis, dir, feedRate }
@@ -869,6 +872,12 @@ class CNC extends EventEmitter {
         await this.untilData('ok', msTimeout);
     }
 
+
+    async untilIdle(msTimeout = 10000, msInterval = 1000) {
+        await untilTrue(msInterval, () => { return this.isIdle }, msTimeout);
+    }
+
+
     alreadyPositioned(pos, wcsNum) {
         let pos2;
         if (wcsNum === 0) {
@@ -886,6 +895,7 @@ class CNC extends EventEmitter {
         return true;
     }
 
+
     async untilGoto(wpos, wcsNum = 1, feedRate = null) {
         if (this.alreadyPositioned(wpos, wcsNum)) {
             console.log('Ignoring untilGoto(), already positioned at ', wpos);
@@ -893,7 +903,7 @@ class CNC extends EventEmitter {
         }
         this.goto(wpos, wcsNum, feedRate);
         await this.untilOk(10000);
-        await this.untilState(CNC.CTRL_STATE_IDLE);
+        await this.untilIdle()
     }
 
 }

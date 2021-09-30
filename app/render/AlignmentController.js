@@ -12,6 +12,11 @@ class AlignmentController extends RPCClient {
     }
 
     async startAlignment(profile, fnAlignmentComplete) {
+
+        // We are going to get an exact location via alignment,
+        // so just estimate the CNC PCB work coordinates for now...
+        await this.rpCall('cnc.estimatePCBWorkPos', profile.stock)
+
         window.uiMouseHandler = this;
         this.fnAlignmentComplete = fnAlignmentComplete;
         this.profile = profile;

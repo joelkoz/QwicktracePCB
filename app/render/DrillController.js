@@ -86,7 +86,7 @@ class DrillController extends AlignmentController {
                      { label: "Continue", next: true, btnClass: 'zProbeContinue' },
                      { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
                   ],
-                  onActivate: (wizStep) => {
+                  onActivate: async (wizStep) => {
                     function updateBtnContinue() {
                         if (window.cncZProbe) {
                            // We can not continue if ZProbe is currently "pressed"
@@ -99,6 +99,7 @@ class DrillController extends AlignmentController {
                             $('#wizardPage .zProbeContinue').css("display", "block");
                         }
                     }
+                    await thiz.rpCall('cnc.goto', window.appConfig.cnc.locations.zpad);
                     wizStep.timerId = setInterval(updateBtnContinue, 1000);
                     updateBtnContinue();
                   },
@@ -139,7 +140,7 @@ class DrillController extends AlignmentController {
         
                 { id: "removeProbe",
                   subtitle: "Ready to drill",
-                  instructions: "Remove probe from bit and the probe arm from the PCB and return them to their original positions.",
+                  instructions: "Remove probe from bit and return it to its original position.",
                   buttonDefs: [
                     { label: "Start drilling", next: true, btnClass: 'removeProbeContinue' },
                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
@@ -150,7 +151,7 @@ class DrillController extends AlignmentController {
                       if (window.cncZProbe) {
                           // We can not continue until ZProbe is currently "pressed"
                           $('#wizardPage .removeProbeContinue').show();
-                          thiz.setWizardInstructions('')
+                          thiz.setWizardInstructions('Press Continue')
                         }
                        else {
                           // Disable continue button

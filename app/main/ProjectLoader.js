@@ -9,6 +9,7 @@ const workDir = "./temp/";
 const MainSubProcess = require('./MainSubProcess.js');
 const PCBProject = require('./pcb/PCBProject.js');
 const GcodeUtils = require('./cnc/GcodeUtils.js');
+const GerberData = require('./pcb/GerberData.js');
 const GerberTransforms = require('./pcb/GerberTransforms.js');
 const MainMQ = require('./MainMQ.js');
 
