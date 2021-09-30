@@ -101,6 +101,111 @@ class SettingsController extends RPCClient {
                },
 
 
+               { id: "calibrateProbeArea",
+                 wizard: {
+                    title: "Calibrate Probe Area Offsets",
+                    finishLandingPage: "settingsPage",
+                    steps: [
+                        { id: "connectZProbe",
+                            subtitle: "Prepare to zprobe Zpad",
+                            instructions: "Load mill with a blank PCB and connect zprobe clip to whichever bit is in the mill.",
+                            buttonDefs: [
+                            { label: "Continue", next: true, btnClass: 'zProbeContinue' },
+                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                            ],
+                            onActivate: (wizStep) => {
+                                function updateBtnContinue() {
+                                    if (window.cncZProbe) {
+                                        // We can not continue if ZProbe is currently "pressed"
+                                        $('#wizardPage .zProbeContinue').css("display", "none");
+                                    }
+                                    else {
+                                        // Enable continue button
+                                        $('#wizardPage .zProbeContinue').css("display", "block");
+                                    }
+                                }
+                                wizStep.timerId = setInterval(updateBtnContinue, 1000);
+                                updateBtnContinue();
+                            },
+                            onDeactivate: (wizStep) => {
+                                clearInterval(wizStep.timerId);
+                            }
+                        },
+                
+        
+                        { id: "posZProbe",
+                            subtitle: "ZPad Probe",
+                            instructions: "Use joystick to position spindle approx 2 to 3 mm over Zpad",
+                            buttonDefs: [
+                            { label: "Continue", next: true },
+                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                            ],
+                            onActivate: async (wizStep) => {
+                                await thiz.rpCall('cnc.zPadPosition');
+                                await thiz.rpCall('cnc.jogMode', true)
+                            },
+                            onDeactivate: (wizStep) => {
+                                thiz.rpCall('cnc.jogMode', false)
+                            }                  
+                        },
+                
+                        { id: "zProbePad",
+                            subtitle: "ZPad Probe",
+                            instructions: "Searching for pad surface. Standby...",
+                            buttonDefs: [
+                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                            ],
+                            onActivate: async (wizStep) => {
+                                thiz.calZPadZ = await thiz.rpCall('cnc.zProbePad', false);
+                                ui.wizardNext();
+                            }
+                        },
+        
+        
+                        { id: "posProbeArmPCB",
+                            subtitle: "Move Probe Arm to PCB",
+                            instructions: "Position the zprobe arm on the copper board.",
+                            buttonDefs: [
+                            { label: "Continue", next: true },
+                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                            ],
+                            onActivate: async (wizStep) => {
+                                await thiz.rpCall('cnc.gotoSafeZ');
+                                await thiz.rpCall('cnc.moveXY', -9, 0)
+                            }
+                        },                
+                
+                        { id: "zProbePCB",
+                            subtitle: "PCB Probe",
+                            instructions: "Searching for PCB surface. Standby...",
+                            buttonDefs: [
+                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                            ],
+                            onActivate: async (wizStep) => {
+                                await thiz.rpCall('cnc.goto', { z: thiz.calZPadZ + 3})
+                                thiz.calPCBZ = await thiz.rpCall('cnc.zProbePCB', false);
+                                thiz.rpCall('cnc.gotoSafeZ');
+                                ui.wizardNext();
+                            }
+                        },
+              
+                        { id: "done",
+                            subtitle: "Complete",
+                            instructions: "Calibration successful",
+                            buttonDefs: [
+                            { label: "Done", fnAction: () => { thiz.finishWizard() } }                      
+                            ],
+                            onActivate: async (wizStep) => {
+                                let pcbProbeOffset = thiz.calZPadZ - thiz.calPCBZ
+                                thiz.rpCall('config.setAndSave', 'cnc.zheight.zpad.pcbProbeOffset', pcbProbeOffset)
+                            }
+                        }
+      
+                    ]
+                 }
+               },
+
+
 
                { id: "calibrateLaser",
                  wizard: {

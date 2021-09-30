@@ -761,7 +761,7 @@ class CNCController  extends MainSubProcess {
 
         if (probeVal.ok) {
             // Set the primary work coordinate Z height to the probe value
-            this.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z${zheight.zpad.pcbProbeOffset || 0}`);
+            this.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z${zheight.zpad.pcbProbeOffset || -1.5}`);
             await this.cnc.untilOk();
 
             // This delay seems to be necessary to prevent 'Unsupported Command'
