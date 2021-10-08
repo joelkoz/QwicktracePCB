@@ -1,6 +1,6 @@
 const pigpioClient = require('pigpio-client');
 const pigpio = pigpioClient.pigpio({host: '127.0.0.1', port: '8888'});
-// const pigpio = pigpioClient.pigpio({host: '192.168.0.160', port: '8888'});
+// const pigpio = pigpioClient.pigpio({host: '192.168.0.152', port: '8888'});
 
 const ready = new Promise((resolve, reject) => {
   console.log('Attempting to connect to pigpio...');
@@ -16,26 +16,30 @@ ready.then(async (info) => {
   // display information on pigpio and connection status
   console.log(JSON.stringify(info,null,2));
  
-    // control an LED on GPIO 14
-  const led = pigpio.gpio(14);
-  await led.modeSet('output');
-  console.log('LED on');
-  await led.write(1);  // turn on LED
+  const uv = pigpio.gpio(6);
+  await uv.modeSet('output');
+
+  console.log('UV Bed on');
+  await uv.write(1);  // turn on LED
+
   await wait(2000);
-  console.log('LED off');
-  await led.write(0);  // turn off
+
+  console.log('UB Bed off');
+
+  await uv.write(0);  // turn off
   await wait(2000);
  
+  // control Safelight
+  const safelight = pigpio.gpio(13);
+  await safelight.modeSet('output');
+   
+  let duty = 25;
+  console.log(`Safelight duty level ${duty}`);
+  await safelight.analogWrite(duty);
+  await wait(2000);
 
-  var duty = 255;
-  while (duty > 0) {
-    console.log(`LED duty level ${duty}`);
-    await led.analogWrite(duty);
-    duty -= 5;
-    await wait(500);
-  }
-
-  await led.write(0);
+  console.log('Safelight off')
+  await safelight.write(0);
 
   console.log('done');
   process.exit();
