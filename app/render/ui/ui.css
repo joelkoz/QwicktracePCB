@@ -121,6 +121,9 @@ body {
     inset: 0px;
  }
 
+ .popup.var-width {
+    width: fit-content;
+ }
 
  .ui320 .page {
     width: 320px;

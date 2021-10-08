@@ -2,6 +2,8 @@
 import { RPCClient } from './RPCClient.js'
 import { RenderMQ } from './RenderMQ.js'
 
+const { untilEvent } = require('promise-utils');
+
 /**
  * Class for handling the display logic for the UI, maintaining
  * state of the UI, and communicating with the main process.
@@ -226,7 +228,7 @@ class UIController extends RPCClient {
             this.showPage(btnDef.pageId, btnDef.pushOld);
         }
         else if (btnDef.emit) {
-            MainMQ.emit(btnDef.emit.evtName, btnDef.emit.data);
+            RenderMQ.emit(btnDef.emit.evtName, btnDef.emit.data);
         }
         else if (btnDef.call) {
             this.rpCall(btnDef.call.name, ...(btnDef.call.data));
@@ -234,6 +236,18 @@ class UIController extends RPCClient {
         else if (btnDef.fnAction) {
             btnDef.fnAction();
         }
+    }
+
+
+    /**
+     * Prompts the user to input a number, then returns that value
+     * @param {string} initialValue The initial value to display.
+     */
+    async getNumber(initialValue = '') {
+        this.popupMessage({ popupId: 'numberInput' });
+        $("#NumericInput").val(initialValue);
+        let finalVal = await untilEvent(RenderMQ.getInstance(), 'ui.numberInput', () => { return false; });
+        return finalVal;
     }
 
 
