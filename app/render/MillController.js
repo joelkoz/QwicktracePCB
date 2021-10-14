@@ -43,7 +43,7 @@ class MillController extends AlignmentController {
                   instructions: "Load mill with PCB stock used for milling.  Press Continue when done",
                   buttonDefs: [
                      { label: "Continue", next: true },
-                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                   onActivate: (wizStep) => {
                       if (thiz.activeProfile.state.stockIsBlank || 
@@ -63,7 +63,7 @@ class MillController extends AlignmentController {
                   instructions: "Load mill with milling bit. Connect zprobe clip to milling bit.",
                   buttonDefs: [
                      { label: "Continue", next: true, btnClass: 'zProbeContinue' },
-                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                   onActivate: (wizStep) => {
                     function updateBtnContinue() {
@@ -90,7 +90,7 @@ class MillController extends AlignmentController {
                   instructions: "Use joystick to position spindle approx 2 to 3 mm over Zpad",
                   buttonDefs: [
                      { label: "Continue", next: true },
-                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                     onActivate: async (wizStep) => {
                       if (profile.state.stockIsBlank) {
@@ -111,7 +111,7 @@ class MillController extends AlignmentController {
                   subtitle: "ZPad Probe",
                   instructions: "Searching for pad surface. Standby...",
                   buttonDefs: [
-                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                    { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                   onActivate: async (wizStep) => {
                     await thiz.rpCall('cnc.zProbePad', false);
@@ -125,7 +125,7 @@ class MillController extends AlignmentController {
                   instructions: "Position the zprobe arm on the copper board.",
                   buttonDefs: [
                      { label: "Continue", next: true },
-                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                     onActivate: async (wizStep) => {
                       if (!profile.state.stockIsBlank) {
@@ -144,7 +144,7 @@ class MillController extends AlignmentController {
                   instructions: "Use joystick to position spindle approx 2 to 3 mm over PCB.",
                   buttonDefs: [
                      { label: "Continue", next: true },
-                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                     onActivate: async (wizStep) => {
                       await thiz.rpCall('cnc.zPadPosition');
@@ -160,7 +160,7 @@ class MillController extends AlignmentController {
                   subtitle: "PCB Probe",
                   instructions: "Searching for PCB surface. Standby...",
                   buttonDefs: [
-                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                    { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                   onActivate: async (wizStep) => {
                     await thiz.rpCall('cnc.zProbePCB', false);
@@ -173,7 +173,7 @@ class MillController extends AlignmentController {
                   subtitle: "Locate Lower Left Corner",
                   instructions: "Position the laser at the lower left corner of the board then click joystick",
                   buttonDefs: [
-                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                   onActivate: async (wizStep) => {
                      profile.stock.actual = await thiz.rpCall('cnc.findPCBOrigin', profile.stock)
@@ -187,7 +187,7 @@ class MillController extends AlignmentController {
                   buttonDefs: [
                      { label: "Start", fnAction: () => { ui.wizardNext() } },
                      { label: "Skip", fnAction: () => { ui.gotoWizardPage('removeProbe') } },                  
-                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ]
                 },
         
@@ -195,7 +195,7 @@ class MillController extends AlignmentController {
                   subtitle: "Autolevel",
                   instructions: "Gathering surface data for auto leveling...",
                   buttonDefs: [
-                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                    { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                   onActivate: async (wizStep) => {
                       await thiz.rpCall('cnc.autolevelPCB', profile.stock.actual)
@@ -209,7 +209,7 @@ class MillController extends AlignmentController {
                   instructions: "Remove probe from bit and the probe arm from the PCB and return them to their original positions.",
                   buttonDefs: [
                     { label: "Start mill", next: true, btnClass: 'removeProbeContinue' },
-                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                    { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                   onActivate: (wizStep) => {
 
@@ -237,12 +237,12 @@ class MillController extends AlignmentController {
                   subtitle: "Milling",
                   instructions: "Milling PCB",
                   buttonDefs: [
-                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                    { label: "Cancel", fnAction: () => { thiz.cancelMill() } }
                   ],
                   onActivate: async (wizStep) => {
                       await thiz.rpCall('cnc.millPCB', profile)
                       await thiz.rpCall('cnc.loadStock')
-                      thiz.finishWizard();
+                      thiz.finishMill();
                   }
                 }
             ]
@@ -267,13 +267,13 @@ class MillController extends AlignmentController {
       this.updateUiProbeStatus();
     }
 
-    cancelWizard() {
+    cancelMill() {
         this.rpCall('cnc.cancelProcesses');
         window.uiController.cancelWizard();
         delete this.activeProfile;
     }
 
-    finishWizard() {
+    finishMill() {
         this.rpCall('cnc.cancelProcesses');
         window.uiController.finishProcess();
         window.uiController.finishWizard();

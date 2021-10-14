@@ -45,7 +45,7 @@ class DrillController extends AlignmentController {
                   instructions: "Load mill with PCB to drill.  Press Continue when done",
                   buttonDefs: [
                     { label: "Continue", next: true },
-                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                    { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }                      
                   ],
                   onActivate: (wizStep) => {
                       if (!ui.skipStockLoading()) {
@@ -61,7 +61,7 @@ class DrillController extends AlignmentController {
                   subtitle: "Preparing drill files...",
                   instructions: "",
                   buttonDefs: [
-                      { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                      { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }
                   ],
                   onActivate: async (wizStep) => {
                       function completeDrillAlignment(dresult) {
@@ -84,7 +84,7 @@ class DrillController extends AlignmentController {
                   instructions: "Load mill with drilling bit. Connect zprobe clip to drilling bit.",
                   buttonDefs: [
                      { label: "Continue", next: true, btnClass: 'zProbeContinue' },
-                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                     { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }
                   ],
                   onActivate: async (wizStep) => {
                     function updateBtnContinue() {
@@ -114,7 +114,7 @@ class DrillController extends AlignmentController {
                   instructions: "Use joystick to position spindle approx 2 to 3 mm over Zpad",
                   buttonDefs: [
                      { label: "Continue", next: true },
-                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                     { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }                      
                   ],
                     onActivate: async (wizStep) => {
                       await thiz.rpCall('cnc.zPadPosition');
@@ -129,7 +129,7 @@ class DrillController extends AlignmentController {
                   subtitle: "ZPad Probe",
                   instructions: "Searching for pad surface. Standby...",
                   buttonDefs: [
-                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                    { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }                      
                   ],
                   onActivate: async (wizStep) => {
                     await thiz.rpCall('cnc.zProbePad', false);
@@ -143,7 +143,7 @@ class DrillController extends AlignmentController {
                   instructions: "Remove probe from bit and return it to its original position.",
                   buttonDefs: [
                     { label: "Start drilling", next: true, btnClass: 'removeProbeContinue' },
-                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                    { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }                      
                   ],
                   onActivate: (wizStep) => {
 
@@ -174,12 +174,12 @@ class DrillController extends AlignmentController {
                   subtitle: "Drilling",
                   instructions: "Drilling PCB",
                   buttonDefs: [
-                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                    { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }
                   ],
                   onActivate: async (wizStep) => {
                       await thiz.rpCall('cnc.drillPCB', profile)
                       await thiz.rpCall('cnc.loadStock')
-                      thiz.finishWizard();
+                      thiz.finishDrill();
                   }
                 }
             ]
@@ -211,14 +211,14 @@ class DrillController extends AlignmentController {
        this.updateUiDrillStatus();
      }
  
-     cancelWizard() {
+     cancelDrill() {
          this.rpCall('cnc.cancelProcesses');
          window.uiController.cancelWizard();
          this.gerberCanvas.cancelAlignment();
          delete this.activeProfile;
      }
  
-     finishWizard() {
+     finishDrill() {
          this.rpCall('cnc.cancelProcesses');
          window.uiController.finishProcess();         
          window.uiController.finishWizard();
