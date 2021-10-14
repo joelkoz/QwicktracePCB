@@ -161,7 +161,7 @@ class GerberData extends EventEmitter {
                    break;
 
                 case "op":
-                   if (data.op === 'move') {
+                   if (data.op === 'move' || data.op === 'int') {
                        let coord = data.coord;
                        thiz.corners.push({ tool: thiz.currentTool, coord });
                        thiz.checkCoord(coord)
@@ -188,15 +188,30 @@ class GerberData extends EventEmitter {
         })
 
         let thiz = this;
+        this.currentTool = null;
+        const toolPrefix = "gbr-";
         this.bbLocal = this.boundingBoxes.copper[side];
+
         fs.createReadStream(fileName)
            .pipe(parser)
            .on('data', function(data) {
 
             let dType = data.type;
             switch (dType) {
+                case "tool":
+                   let toolCode = toolPrefix + data.code;
+                   let toolDef = data.tool;
+                   toolDef.code = toolCode;
+                   thiz.tools.set(toolCode, toolDef); 
+                   break;
+
+
                 case "set":
-                   if (data.prop === 'units') {
+                    if (data.prop === 'tool') {
+                        let toolCode = toolPrefix + data.value;
+                        thiz.currentTool = thiz.tools.get(toolCode);
+                   }
+                   else if (data.prop === 'units') {
                        thiz.units = data.value;
                    }
 
@@ -204,7 +219,7 @@ class GerberData extends EventEmitter {
                 case "op":
                    if (data.coord) {
                        let coord = data.coord;
-                       thiz.checkCoord(coord)
+                       thiz.checkCoord(coord, thiz.currentTool)
                    }
                    break;
 
@@ -309,9 +324,47 @@ class GerberData extends EventEmitter {
         });
     }
 
-    checkCoord(coord) {
+    // Current tool:
+    // See https://github.com/tracespace/tracespace/blob/main/packages/gerber-parser/API.md#tool-objects
+    // { shape: 'obround',
+    //   params: [ 1.7, 1.95 ],
+    //   hole: [],
+    //   code: 'gbr-14' }
+
+    checkCoord(coord, tool) {
         this.boundingBoxes.master.checkCoord(coord);
         this.bbLocal.checkCoord(coord);
+        if (tool) {
+
+            let boundry = {};
+
+            switch (tool.shape) {
+
+                case 'circle': {
+                    let radius = tool.params[0] / 2;
+                    boundry.x = coord.x - radius;
+                    boundry.y = coord.y - radius;
+                    this.checkCoord(boundry);
+                    boundry.x = coord.x + radius;
+                    boundry.y = coord.y + radius;
+                    this.checkCoord(boundry)
+                }
+                break;
+
+                case 'obround':
+                case 'rect': {
+                    let dw = tool.params[0] / 2;
+                    let dh = tool.params[1] / 2;
+                    boundry.x = coord.x - dw;
+                    boundry.y = coord.y - dh;
+                    this.checkCoord(boundry);
+                    boundry.x = coord.x + dw;
+                    boundry.y = coord.y + dh;
+                    this.checkCoord(boundry)
+                }
+                break;
+            }
+        }
     }
 }
 

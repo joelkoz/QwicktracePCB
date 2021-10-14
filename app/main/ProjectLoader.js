@@ -206,7 +206,7 @@ class ProjectLoader  extends MainSubProcess {
         // Do we need to center this on new stock?
         // If so, use the "deskew.offset" property
         // to center it up.
-        if (state.stockIsBlank && state.centerBoard) {
+        if (state.stockIsBlank && state.positionBoard) {
             console.log('Centering board on blank stock...')
             let stock;
             if (profile.stock.actual) {
@@ -215,7 +215,7 @@ class ProjectLoader  extends MainSubProcess {
             else {
                 stock = profile.stock;
             }
-            await gTrans.centerCopper(stock.width, stock.height);
+            await gTrans.positionCopper(state.positionBoard, stock);
         }
 
         if (state.deskew) {

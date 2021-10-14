@@ -1,6 +1,7 @@
 
 import { RPCClient } from './RPCClient.js'
 import { RenderMQ } from './RenderMQ.js'
+import { BOARD_POSITIONS } from './PositionController.js';
 
 const { untilEvent } = require('promise-utils');
 
@@ -600,12 +601,23 @@ class UIController extends RPCClient {
         }
         else if (profile.state.stockIsBlank && !profile.state.alignStock) {
             // Board is smaller than stock and we are not going to pre-align.
-            // See if user wants to center the board on the stock.
-            this.showPage('centerPage', false)
+            // See where the user wants to position the board on the stock.
+            await window.uiPos.init(profile);
+            let posCount = await window.uiPos.getValidPositionCount();
+            if (posCount >= 2) {
+                // Two or more positions are available. Have the user
+                // select board positioning...
+                this.showPage('positionPage', false)
+            }
+            else {
+                // There is only one (the natural) position available.
+                // No need to ask the user to select...
+                this.currentProfile.state.positionBoard = BOARD_POSITIONS.NATURAL;
+                this.dispatchProcess(this.currentProfile);
+            }
         }
         else {
-           // Just continue on without any explicit board centering...
-           profile.state.centerBoard = false
+           // Just continue on without any explicit board positioning...
            this.dispatchProcess(profile);
         }
     }
@@ -619,8 +631,8 @@ class UIController extends RPCClient {
     }
 
 
-    onCenterButton(centerBoard) {
-        this.currentProfile.state.centerBoard = centerBoard;
+    onPositionButton(positionNumber) {
+        this.currentProfile.state.positionBoard = positionNumber;
         this.dispatchProcess(this.currentProfile);
     }
 

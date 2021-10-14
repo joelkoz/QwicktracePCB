@@ -3,6 +3,7 @@ import { ExposeController } from './ExposeController.js'
 import { UIController } from './UIController.js'
 import { DrillController } from './DrillController.js';
 import { MillController } from './MillController.js';
+import { PositionController } from './PositionController.js';
 import { SettingsController } from './SettingsController.js';
 import { RenderMQ } from './RenderMQ.js';
 
@@ -31,6 +32,7 @@ RenderMQ.on('render.startup.initialize', (config) => {
    window.uiExpose = new ExposeController(config);
    window.uiDrill = new DrillController(config);
    window.uiMill = new MillController(config);
+   window.uiPos = new PositionController(config)
    window.uiSettings = new SettingsController(config);
    window.RenderMQ = RenderMQ;
    window.wcsMACHINE_WORK = 0;

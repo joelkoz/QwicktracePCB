@@ -3,6 +3,14 @@ const readline = require('readline');
 const { identity, rotateDEG, scale, translate, compose, applyToPoint } = require('transformation-matrix');
 const BoundingBox = require('./BoundingBox.js');
 
+const BOARD_POSITIONS = {
+    NATURAL: 0,
+    CENTER_BOTTOM: 1,
+    CENTER_ALL: 2,
+    ROTATE_UR: 3,
+    ROTATE_CENTER_RIGHT: 4,
+    ROTATE_CENTER_ALL: 5
+}
 
 class GerberTransforms {
 
@@ -90,28 +98,112 @@ class GerberTransforms {
 
 
     /**
-     * Centers the copper traces on the specified stock. Note that this
+     * Positions the copper traces on the specified stock. Note that this
      * will fail if rotate90() has been called following 
-     * 
-     * @param {*} stockWidth 
-     * @param {*} stockHeight 
      */
-    async centerCopper(stockWidth, stockHeight) {
+    async positionCopper(boardPosition, stock) {
 
         await this._checkBBs();
+        let stockWidth = stock.width;
+        let stockHeight = stock.height;
         let copper = this.bb.copper;
         let oldMarginX = copper.min.x;
         let oldMarginY = copper.min.y
         let copperSize = copper.size();
-        let newMarginX = (stockWidth - copperSize.x) / 2;
-        let newMarginY = (stockHeight - copperSize.y) / 2;
 
-        let newTransform = compose(
-            translate(-oldMarginX, -oldMarginY),
-            translate(newMarginX, newMarginY)
-         );
+        let oldMarginTop = this.bb.master.max.y - this.bb.copper.max.y;
+        const FIXED_MARGIN = 1;
 
-         this.addTransform(newTransform);
+        console.log('master bb:', this.bb.master);
+        console.log('copper bb', this.bb.copper);
+        console.log('Copper size', copperSize);
+        
+        switch (boardPosition) {
+
+           case BOARD_POSITIONS.NATURAL: {
+              // No transforms necessary...
+           }
+           break;
+
+
+           case BOARD_POSITIONS.CENTER_BOTTOM: {
+                let newMarginX = (stockWidth - copperSize.x) / 2;
+                let newTransform = compose(
+                    translate(-oldMarginX, 0),
+                    translate(newMarginX, 0)
+                );
+
+                this.addTransform(newTransform);
+            }
+            break;
+
+
+            case BOARD_POSITIONS.CENTER_ALL: {
+                let newMarginX = (stockWidth - copperSize.x) / 2;
+                let newMarginY = (stockHeight - copperSize.y) / 2;
+
+                let newTransform = compose(
+                    translate(-oldMarginX, -oldMarginY),
+                    translate(newMarginX, newMarginY)
+                );
+
+                this.addTransform(newTransform);
+            }
+            break;
+
+
+            case BOARD_POSITIONS.ROTATE_UR: {
+
+                let dx = stockWidth - copperSize.y + oldMarginTop - FIXED_MARGIN;
+                let dy = stockHeight - copperSize.x - FIXED_MARGIN*2;
+
+                let newTransform = compose(
+                    translate(-oldMarginY, -oldMarginX),
+                    translate(dx, dy),
+                );
+
+                this.addTransform(newTransform);
+
+                await this.rotate90(true);
+            }
+            break;
+
+
+            case BOARD_POSITIONS.ROTATE_CENTER_RIGHT: {
+
+                let dx = stockWidth - copperSize.y + oldMarginTop - FIXED_MARGIN;
+                let dy = (stockHeight - copperSize.x) / 2;
+
+                let newTransform = compose(
+                    translate(-oldMarginY, -oldMarginX),
+                    translate(dx, dy),
+                );
+
+                this.addTransform(newTransform);
+
+                await this.rotate90(true);
+            }
+            break;
+
+
+            case BOARD_POSITIONS.ROTATE_CENTER_ALL: {
+
+                let dx = (stockWidth - copperSize.y) / 2;
+                let dy = (stockHeight - copperSize.x) / 2;
+
+                let newTransform = compose(
+                    translate(-oldMarginY, -oldMarginX),
+                    translate(dx, dy),
+                );
+
+                this.addTransform(newTransform);
+
+                await this.rotate90(true);
+
+            }
+            break;
+
+        }
     }
 
 
