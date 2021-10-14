@@ -2,6 +2,8 @@ const MainSubProcess = require('./MainSubProcess.js')
 const GPIO = require('./GPIO.js');
 const MainMQ = require('./MainMQ.js');
 
+const SAFELIGHT_MAX_BRIGHTNESS = 25;
+
 class UVController  extends MainSubProcess {
 
     constructor(win) {
@@ -12,10 +14,16 @@ class UVController  extends MainSubProcess {
 
         let thiz = this;
         this.pigpio.whenReady(() => {
-            thiz.uv = thiz.pigpio.gpio(14);
+            thiz.uv = thiz.pigpio.gpio(6);
             thiz.uv.modeSet('output');
             console.log('UV control successfully initialized');
             thiz.uv.analogWrite(0);
+
+            thiz.safe = thiz.pigpio.gpio(13);
+            thiz.safe.modeSet('output');
+            console.log('Safelight control successfully initialized');
+            thiz.safe.analogWrite(0);
+
         });
 
         this.pigpio.once('error', (error) => {
@@ -37,6 +45,9 @@ class UVController  extends MainSubProcess {
                 thiz.cancel();
             },
             
+            async safelight(val) {
+                thiz.setSafelight(val);
+            }
 
         });
     }
@@ -79,21 +90,45 @@ class UVController  extends MainSubProcess {
         if (this.uv) {
             console.log('uv OFF');
             this.uv.analogWrite(0);
+        }
+        this.cancelSafe();
+    }
+
+
+    cancelSafe() {
+        if (this.safe) {
+            console.log('safelight OFF');
+            this.safe.analogWrite(0);
 
             if (this.timer) {
-            clearInterval(this.timer);
+               clearInterval(this.timer);
             }
             this.timer = null;
         }
     }
 
+
+    setSafelight(on) {
+        if (this.safe) {
+            if (on) {
+                console.log('safelight ON');
+                this.safe.analogWrite(SAFELIGHT_MAX_BRIGHTNESS);
+            }
+            else {
+                console.log('safelight OFF');
+                this.safe.analogWrite(0);
+            }
+        }
+    }
+
+    
     peek() {
-        if (this.uv) {
-            console.log('uv ON');
-            this.uv.analogWrite(200);
+        if (this.safe) {
+            console.log('safelight ON');
+            this.safe.analogWrite(SAFELIGHT_MAX_BRIGHTNESS);
 
             let thiz = this;
-            this.timer = setTimeout(() => { thiz.cancel(); }, 2000);
+            this.timer = setTimeout(() => { thiz.cancelSafe(); }, 2000);
         }
         else {
             console.log('ERROR - Exposure UV control unavailable for peek.');
