@@ -110,11 +110,11 @@ class UIController extends RPCClient {
         });
 
 
-        RenderMQ.on('render.ui.showPage', (pageId) => {
+        RenderMQ.on('render.ui.showPage', (data) => {
             if (data.clearPageStack) {
                 thiz.clearPageStack();
             }
-            thiz.showPage(pageId);
+            thiz.showPage(data.pageId);
         });
 
 
@@ -244,9 +244,10 @@ class UIController extends RPCClient {
      * Prompts the user to input a number, then returns that value
      * @param {string} initialValue The initial value to display.
      */
-    async getNumber(initialValue = '') {
+    async getNumber(inputLabel='', initialValue = '') {
         this.popupMessage({ popupId: 'numberInput' });
-        $("#NumericInput").val(initialValue);
+        $(".inputContainer .inputValue").val(initialValue);
+        $('.inputContainer label').text(inputLabel)
         let finalVal = await untilEvent(RenderMQ.getInstance(), 'ui.numberInput', () => { return false; });
         return finalVal;
     }
@@ -509,7 +510,13 @@ class UIController extends RPCClient {
                 let stock = profile.stock;
                 let material = thiz.profileList[stock.materialId].material;
                 if (material.actions.includes(thiz.state.action)) {
-                   let name = `${stock.width}mm x ${stock.height}mm, ${material.name} `
+                   let name;
+                   if (stock.width) {
+                       name = `${stock.width}mm x ${stock.height}mm, ${material.name} `
+                   }
+                   else {
+                        name = `Custom ${material.name} `
+                   }
                    list.push({"name": name, "value": profile.id});
                 }
             }
@@ -560,6 +567,12 @@ class UIController extends RPCClient {
             // Use user selected stock in the processing profile
             stock = this.profileList[state.stockId].stock; 
             material = this.profileList[stock.materialId].material;
+            if (!stock.width) {
+                // A custom stock setting was used...
+                stock = Object.assign({}, stock);
+                stock.width = state.customStockWidth;
+                stock.height = state.customStockHeight;
+            }
         }
         else {
             // No explicit stock was selected. Use implied values from the Gerber definitions...
@@ -602,14 +615,10 @@ class UIController extends RPCClient {
         else if (profile.state.stockIsBlank && !profile.state.alignStock) {
             // Board is smaller than stock and we are not going to pre-align.
             // See where the user wants to position the board on the stock.
+            this.showPage('positionPage', false)
             await window.uiPos.init(profile);
             let posCount = await window.uiPos.getValidPositionCount();
-            if (posCount >= 2) {
-                // Two or more positions are available. Have the user
-                // select board positioning...
-                this.showPage('positionPage', false)
-            }
-            else {
+            if (posCount < 2) {
                 // There is only one (the natural) position available.
                 // No need to ask the user to select...
                 this.currentProfile.state.positionBoard = BOARD_POSITIONS.NATURAL;
@@ -652,8 +661,12 @@ class UIController extends RPCClient {
      * Marks the active process as completed and prepares to start a new one.
      */    
     finishProcess() {
-        this.lastProfile = this.profile;
+        // Do a quasi deep copy...
+        this.lastProfile = Object.assign({}, this.profile);
+        this.lastProfile.state = Object.assign({}, this.profile.state);
+        this.lastProfile.stock = Object.assign({}, this.profile.stock);
     }
+
 
     /**
      * Returns TRUE if the profiles are such that we are now drilling holes in the

@@ -4,6 +4,7 @@ import { RPCClient } from './RPCClient.js'
 
 const PCB_BG_COLOR = '#e6d4be';
 const CANVAS_BG_COLOR = '#FFF8DC';
+const CANVAS_TRACE_COLOR = '#DEB887';
 
 const BOARD_POSITIONS = {
     NATURAL: 0,
@@ -23,7 +24,7 @@ class PositionController extends RPCClient {
 
     async init(profile) {
 
-        this.this.renderInfo = {}
+        this.renderInfo = {}
         this.currentPos = 0;
         
         let stock = $('#positionPage .canvas-area')
@@ -176,6 +177,9 @@ class PositionController extends RPCClient {
 
             case BOARD_POSITIONS.ROTATE_CENTER_RIGHT:
                 return maxMarginHeight >= 3;
+
+            case BOARD_POSITIONS.ROTATE_UR:
+                return canRotate;
         }
     }
     
@@ -244,15 +248,17 @@ class PositionController extends RPCClient {
           _reject = reject;
         });
     
+        profile.traceColor = CANVAS_TRACE_COLOR;
         let pcbSvg = await this.rpCall('files.loadSVG', profile)
         let svg = pcbSvg.svg;
         let url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
         let img = new Image();
+        let thiz = this;
         img.onload = function() {
             let canvas = document.createElement('canvas');
             
-            let pxWidth = Math.round(pcbSvg.width * this.renderInfo.ppmm);
-            let pxHeight = Math.round(pcbSvg.height * this.renderInfo.ppmm);
+            let pxWidth = Math.round(pcbSvg.width * thiz.renderInfo.ppmm);
+            let pxHeight = Math.round(pcbSvg.height * thiz.renderInfo.ppmm);
            
             canvas.width = pxWidth;
             canvas.height = pxHeight;

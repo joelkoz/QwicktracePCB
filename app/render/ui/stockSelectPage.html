@@ -44,12 +44,33 @@
     </div>
 
     <script>
+        async function onStockSelect(stockId) {
+            let stock = ui.profileList[stockId].stock; 
+            if (stock.width) {
+                // This stock already has a pre-defined width.
+                // We can move on to the next phase...
+                ui.showPage('initProcessPage')
+            }
+            else {
+                // No pre-defined width. Prompt user for it...
+                let width = await ui.getNumber('Stock width');
+                if (width > 0) {
+                    let height = await ui.getNumber('Stock height');
+                    if (height > 0) {
+                        ui.setState('customStockWidth', width);
+                        ui.setState('customStockHeight', height)
+                        ui.showPage('initProcessPage')
+                    }
+                }
+            }
+        }
+
         uiPageActivate['stockSelectPage'] = function() {
              console.log('Activate stockSelectPage');
              ui.clearState('stockId');
              ui.stockIsNew();
-             let stockList = ui.getStockList();
-             uiInitList('stockId', ui.getStockList(), null, 'initProcessPage');
+             uiInitList('stockId', ui.getStockList(), null, onStockSelect);
         };
+
     </script>
 </div>

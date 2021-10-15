@@ -6,6 +6,13 @@
             margin: 10px;
         }
 
+        .inputContainer label {
+            color: white;
+            display: block;
+            background: black;
+            margin-top: -2px;
+        }
+
         .inputContainer .inputValue {
             font-family: arial;
             font-size: 26px;
@@ -23,18 +30,25 @@
             display: grid;
             grid-template-columns: repeat(3, 45px);
             gap: 10px;
-            margin-bottom: 10px
+            margin-bottom: 0px;
+            margin-top: -5px
         }
 
         .inputContainer .keyBtn {
             width: 49px;
             height: 45px;
         }
+
+        .inputContainer .keyBtn.backspc {
+            position: relative;
+            top: -5px
+        }        
     </style>
 
     <div class="inputContainer">
-        <input type="text" id = "NumericInput" class="inputValue"/>
-        <button type="button" class="btn keyBtn">&larr;</button>
+        <label>Input</label>
+        <input type="text" class="inputValue" value=""/>
+        <button type="button" class="btn keyBtn backspc">&larr;</button>
         <div class="keypad">
             <button type="button" class="btn keyBtn">7</button>
             <button type="button" class="btn keyBtn">8</button>
@@ -57,7 +71,7 @@
             const EVT_NUMERIC_INPUT = 'ui.numberInput'
             function updateInputValue(target) {
 
-                let inputVal = $("#NumericInput");
+                let inputVal = $(".inputContainer .inputValue");
                 let btn = $(target)
                 let btnVal = btn.text();
                 if (btnVal === 'Ok') {
@@ -88,6 +102,12 @@
 
             updateInputValue(evt.target)
         });
+
+
+        function setInputLabel(val) {
+            let label = $('.inputContainer label')
+            label.text(val)
+        }
 
         uiPageActivate['numberInput'] = function(popupData) {
         };
