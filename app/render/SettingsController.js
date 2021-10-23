@@ -14,7 +14,65 @@ class SettingsController extends RPCClient {
         this.config = config;
 
         this.settingsWizards = [
-        
+                { id: "cutPCB",
+                    wizard: {
+                    title: "Cut PCB - Vertical",
+                    finishLandingPage: "settingsPage",
+                    steps: [
+                            { id: "jog",
+                                subtitle: "Jog spindle to cut line",
+                                instructions: "Use Joystick to jog the machine to bottom left of cut. Press the button to switch from " +
+                                                "Up/Down controlling the Y axis or Z axis.  Press Next to start " +
+                                                "cut.",
+                                buttonDefs: [
+                                    { label: "Toggle Laser", call: { name: 'cnc.setPointer', data: [] } },
+                                    { label: "Next", next: true },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', true)
+                                    wizStep.cncPosDisplay = uiAddPosDisplay('#wizardPage .status-area', window.wcsPCB_RELATIVE_UR)
+                                },
+                                onDeactivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', false)
+                                    uiRemovePosDisplay(wizStep.cncPosDisplay);
+                                }                                
+                            },
+
+                            { id: "cutVertical",
+                                subtitle: "Cutting",
+                                instructions: "Cutting stock vertically",
+                                buttonDefs: [
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: async (wizStep) => {
+                                    try {
+                                        await thiz.rpCall('cnc.setPointer', false)
+                                        let mpos = await thiz.rpCall('cnc.getMPos');
+                                        let cutData = {
+                                            start: { mx: mpos.x, my: mpos.y },
+                                            end: { mx: mpos.x, my: thiz.config.cnc.locations.ur.y }
+                                        }
+                                        let completed = await thiz.rpCall('cnc.multiPassCut', cutData);
+                                        if (completed) {
+                                           thiz.finishWizard();
+                                        }
+                                    }
+                                    catch (err) {
+                                        console.trace();
+                                    }
+                                },
+                                onDeactivate: (wizStep) => {
+                                    thiz.cutting = false;
+                                }                                   
+                            }
+
+                    ]
+                    }
+                },
+
+
+   
                { id: "home",
                  wizard: {
                     title: "Home mill",
@@ -68,9 +126,35 @@ class SettingsController extends RPCClient {
                     title: "ZProbe",
                     finishLandingPage: "settingsPage",
                     steps: [
+                        { id: "connectZProbe",
+                            subtitle: "ZProbe Clip",
+                            instructions: "Connect zprobe clip to whichever bit is in the mill.",
+                            buttonDefs: [
+                              { label: "Continue", next: true, btnClass: 'zProbeContinue' },
+                              { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                            ],
+                            onActivate: (wizStep) => {
+                            function updateBtnContinue() {
+                                if (window.cncZProbe) {
+                                    // We can not continue if ZProbe is currently "pressed"
+                                    $('#wizardPage .zProbeContinue').css("display", "none");
+                                }
+                                else {
+                                    // Enable continue button
+                                    $('#wizardPage .zProbeContinue').css("display", "block");
+                                }
+                            }
+                            wizStep.timerId = setInterval(updateBtnContinue, 1000);
+                            updateBtnContinue();
+                            },
+                            onDeactivate: (wizStep) => {
+                            clearInterval(wizStep.timerId);
+                            }
+                        },
+      
                         { id: "posZProbe",
                         subtitle: "Z Probe",
-                        instructions: "Use joystick to position spindle approx 2 to 3 mm over desired area and press Continue",
+                        instructions: "Use joystick to position spindle approx 2 to 3 mm over the probe strip and press Continue",
                         buttonDefs: [
                            { label: "Continue", next: true },
                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
@@ -92,9 +176,38 @@ class SettingsController extends RPCClient {
                         ],
                         onActivate: async (wizStep) => {
                            await thiz.rpCall('cnc.zProbePad', false);
-                           thiz.finishWizard();
+                           thiz.wizardNext();
                         }
-                      }
+                      },
+
+                      { id: "removeProbe",
+                        subtitle: "ZProbe Complete",
+                        instructions: "Remove probe from bit and return to the clip screw.",
+                        buttonDefs: [
+                            { label: "Done", next: true, btnClass: 'removeProbeContinue' },
+                            { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
+                        ],
+                        onActivate: (wizStep) => {
+        
+                            function updateBtnContinue() {
+                            if (window.cncZProbe) {
+                                // We can not continue if ZProbe is currently "pressed"
+                                $('#wizardPage .removeProbeContinue').show();
+                            }
+                            else {
+                                // Enable continue button
+                                $('#wizardPage .removeProbeContinue').hide();
+                            }
+                            }
+        
+                            wizStep.timerId = setInterval(updateBtnContinue, 1000);
+                            updateBtnContinue();
+                        },
+                        onDeactivate: (wizStep) => {
+                            clearInterval(wizStep.timerId);
+                        }
+        
+                        }
       
                     ]
                  }

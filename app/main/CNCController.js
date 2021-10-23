@@ -280,8 +280,8 @@ class CNCController  extends MainSubProcess {
                 return thiz.cnc.wpos;
             },
 
-            async goto(pos, wcsNum = wcsMACHINE_WORK, feedRate = null) {
-                await thiz.cnc.untilGoto(pos, wcsNum, feedRate);
+            async goto(pos, wcsNum = wcsMACHINE_WORK, feedRate = null, msTimeout = 10000) {
+                await thiz.cnc.untilGoto(pos, wcsNum, feedRate, msTimeout);
                 return thiz.cnc.mpos;
             },
 
@@ -408,7 +408,19 @@ class CNCController  extends MainSubProcess {
                 thiz.pointer.setCalibration(offset);
                 Config.save();
                 return offset;
-            }
+            },
+
+            async stopWork() {
+                this.cnc.rawWriteLn('!');
+                this.cnc.rpm = 0;
+                this.cnc.senderStop();
+                this.cnc.feederReset();
+                await this.cnc.untilSent();
+            },
+
+            async multiPassCut(cutData) {
+                return await this.multiPassCut(cutData);
+            }       
         });
 
         const server = Config.cnc.server;
@@ -598,6 +610,14 @@ class CNCController  extends MainSubProcess {
         }
 
 
+        if (this.cuttingInProgress) {
+            console.log("Canceling multi pass cut");
+            this.cuttingInProgress = false;
+            this.cnc.rpm = 0;
+            await this.killFeeder();
+        }
+
+
         if (this.jogMode) {
             this.jogMode = false;
             this.jogZ = false;
@@ -626,10 +646,15 @@ class CNCController  extends MainSubProcess {
         this.cnc.rpm = newRpm;
 
         let spindle = -1
+        let waitingOnReport = false;
 
         let rptInterval = setIntervalAsync(async () => {
-            let rpt = await this.getPinReport();
-            spindle = rpt.spindle;
+            if (!waitingOnReport) {
+               waitingOnReport = true;
+               let rpt = await this.getPinReport();
+               spindle = rpt.spindle;
+               waitingOnReport = false;
+            }
         }, 500);
 
         await untilTrue(700, () => { return spindle === newRpm || this.cnc.rpm === newRpm })
@@ -1017,6 +1042,74 @@ class CNCController  extends MainSubProcess {
             return new Error('Error during drilling.', { cause: err} );
         }
     }
+
+
+    async multiPassCut(cutData) {
+
+        try {
+            let cutConfig = Config.cnc.cut;
+
+            let halfBit = cutConfig.bitWidth / 2;
+            let cutStartPos = {};
+            let cutEndPos = {};
+            if (cutData.start.mx === cutData.end.mx) {
+               // A vertical cut...
+               cutStartPos.x = cutData.start.mx - halfBit;
+               cutEndPos.x = cutStartPos.x;
+               cutStartPos.y = cutData.start.my - halfBit;
+               cutEndPos.y = cutData.end.my + halfBit;
+            }
+            else {
+              // A horizontal cut
+              cutStartPos.y = cutData.start.my - halfBit;
+              cutEndPos.y = cutStartPos.y;
+              cutStartPos.x = cutData.start.mx + halfBit;
+              cutEndPos.x = cutData.end.mx - halfBit;
+
+            }
+            let depthPerPass = cutConfig.depth / cutConfig.passes;
+            let currentDepth = depthPerPass;
+
+            this.cuttingInProgress = true;
+            let fnRejectOnCancel = () => { return !this.cuttingInProgress; };
+
+            await this.cnc.untilGoto(cutStartPos, wcsMACHINE_WORK);
+            await this.setRpm(cutConfig.rpm);
+            await this.cnc.untilGoto({ z: cutConfig.startHeight }, wcsPCB_WORK);
+            let moveToStart = false;
+            while (this.cuttingInProgress && currentDepth >= cutConfig.depth) {
+                console.log(`Starting cut pass at depth ${currentDepth}`)
+                await this.cnc.untilGoto({ z: currentDepth }, wcsPCB_WORK, cutConfig.plungeRate);
+                await untilDelay(1000);
+                if (moveToStart) {
+                    console.log('cutting toward start pos ', cutStartPos)
+                    await this.cnc.untilGoto(cutStartPos, wcsMACHINE_WORK, cutConfig.feedRate, fnRejectOnCancel);
+                }
+                else {
+                    console.log('cutting toward end pos ', cutEndPos)
+                    await this.cnc.untilGoto(cutEndPos, wcsMACHINE_WORK, cutConfig.feedRate, fnRejectOnCancel);
+                }
+                currentDepth += depthPerPass;
+                moveToStart = !moveToStart;
+            } // while
+        }
+        catch (err) {
+            console.log('Error or cancel during cutting: ', err);
+            console.trace();
+        }
+
+        this.cnc.rpm = 0;
+
+        if (this.cuttingInProgress) {
+           this.cuttingInProgress = false;
+           this.gotoSafeZ();
+           return true;
+        }
+        else {
+           return false;
+        }
+    }
+
 
     toCNC(pcbCoord) {
         return Object.assign({}, pcbCoord);

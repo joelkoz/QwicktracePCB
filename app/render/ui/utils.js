@@ -89,6 +89,14 @@ function uiAddPosDisplay(parentDivSelector, wcsNum = wcsMACHINE_WORK) {
         if (wcsNum === wcsMACHINE_WORK) {
             p = pos.mpos;
         }
+        else if (wcsNum === wcsPCB_RELATIVE_UR) {
+            let ur = appConfig.cnc.locations.ur;
+            p = {
+                x: Math.abs(pos.mpos.x) + ur.x,
+                y: Math.abs(pos.mpos.y) + ur.y,
+                z: pos.wpos.z
+            }            
+        }
         else {
             p = pos.wpos;
         }

@@ -37,6 +37,7 @@ RenderMQ.on('render.startup.initialize', (config) => {
    window.RenderMQ = RenderMQ;
    window.wcsMACHINE_WORK = 0;
    window.wcsPCB_WORK = 1;
+   window.wcsPCB_RELATIVE_UR = 99;
    RenderMQ.emit('main.startup.initializeDone');
 });
 

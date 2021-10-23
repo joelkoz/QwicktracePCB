@@ -493,7 +493,18 @@ class CNC extends EventEmitter {
 
     set rpm(val) {
        if (val > 0) {
-           this.sendGCode(`M03 S${val}`);
+           // Slowly ramp up to the RPM so as not to overload the controller or the PSU...
+           let ramp = [];
+            if (val > 2000) {
+                ramp.push('M03 S2000')
+                ramp.push('G4 P0.5')
+                if (val > 5000) {
+                    ramp.push('M03 S5000')
+                    ramp.push('G4 P0.5')
+                }
+            }
+           ramp.push(`M03 S${val}`)
+           this.sendGCode(ramp);
        }
        else {
            this.sendGCode('M05');
@@ -896,14 +907,14 @@ class CNC extends EventEmitter {
     }
 
 
-    async untilGoto(wpos, wcsNum = 1, feedRate = null) {
+    async untilGoto(wpos, wcsNum = 1, feedRate = null, msTimeout = 10000) {
         if (this.alreadyPositioned(wpos, wcsNum)) {
             console.log('Ignoring untilGoto(), already positioned at ', wpos);
             return;
         }
         this.goto(wpos, wcsNum, feedRate);
         await this.untilOk(10000);
-        await this.untilIdle()
+        await this.untilIdle(msTimeout)
     }
 
 }
