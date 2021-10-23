@@ -1,0 +1,58 @@
+{
+  "Header":
+  {
+    "GenerationSoftware":
+    {
+      "Vendor":      "KiCad",
+      "Application": "Pcbnew",
+      "Version":     "(5.1.8-0-10_14)"
+    },
+    "CreationDate":  "2021-10-12T17:54:55-04:00"
+  },
+  "GeneralSpecs":
+  {
+    "ProjectId":
+    {
+      "Name": "Exposure-controll",
+      "GUID": "4578706f-7375-4726-952d-636f6e74726f",
+      "Revision": "rev?"
+    },
+    "Size":
+    {
+      "X": 50.050,
+      "Y": 35.050
+    },
+    "LayerNumber": 2,
+    "BoardThickness":  1.600
+  },
+  "DesignRules":
+  [
+    {
+      "Layers": "Outer",
+      "PadToPad":  0.250,
+      "PadToTrack":  0.250,
+      "TrackToTrack":  0.250,
+      "MinLineWidth":  1.250
+    }
+  ],
+  "FilesAttributes":
+  [
+    {
+      "Path":  "Exposure-controll-B_Cu.gbr",
+      "FileFunction":  "Copper,L2,Bot",
+      "FilePolarity":  "Positive"
+    },
+    {
+      "Path":  "Exposure-controll-Edge_Cuts.gbr",
+      "FileFunction":  "Profile",
+      "FilePolarity":  "Positive"
+    }
+  ],
+  "MaterialStackup":
+  [
+    {
+      "Type":  "Copper",
+      "Notes":  "Layer B.Cu"
+    }
+  ]
+}

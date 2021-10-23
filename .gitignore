@@ -122,3 +122,6 @@ temp/*
 
 *.svg
 config.json-backup
+**/fp-info-cache
+**/*-cache.lib
+pi-hat/QwicktracePro/pi-hat/kicad/PiHatPro.zip
