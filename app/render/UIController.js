@@ -662,9 +662,9 @@ class UIController extends RPCClient {
      */    
     finishProcess() {
         // Do a quasi deep copy...
-        this.lastProfile = Object.assign({}, this.profile);
-        this.lastProfile.state = Object.assign({}, this.profile.state);
-        this.lastProfile.stock = Object.assign({}, this.profile.stock);
+        this.lastProfile = Object.assign({}, this.currentProfile);
+        this.lastProfile.state = Object.assign({}, this.currentProfile.state);
+        this.lastProfile.stock = Object.assign({}, this.currentProfile.stock);
     }
 
 
