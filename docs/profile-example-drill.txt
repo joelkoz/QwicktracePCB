@@ -1,0 +1,35 @@
+{
+    material: {
+      name: 'Generic 2 sided',
+      actions: [ 'expose', 'mill', 'drill' ],
+      sides: 2,
+      thickness: 1.75
+    },
+    expose: {
+      invertImg: false,
+      invertCanvas: true,
+      mirror: false,
+      marginLeft: 0,
+      marginTop: 0
+    },
+    exposure: { time: 240, power: 0.8 },
+    mill: { marginLeft: 5, marginTop: 5 },
+    drill: { marginLeft: 3, marginTop: 3 },
+    stock: { width: 63.05, height: 49.8, materialId: 'Generic 2 sided' },
+    state: {
+      projectId: 'Test',
+      action: 'drill',
+      side: 'bottom',
+      alignStock: true,
+      stockIsBlank: false,
+      originalSize: { x: 49.8, y: 63.05 },
+      rotateBoard: true,
+      size: { x: 63.05, y: 49.8 },
+      mirror: true,
+      positionBoard: 0,
+      deskew: { rotation: -0.023185116027540253, offset: [Object] }
+    },
+    files: { gbr: './temp/bottom.gbr', drl: './temp/bottom.drl' },
+    traceColor: '#DEB887'
+  }
+  
