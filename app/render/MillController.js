@@ -242,9 +242,21 @@ class MillController extends AlignmentController {
                   onActivate: async (wizStep) => {
                       await thiz.rpCall('cnc.millPCB', profile)
                       await thiz.rpCall('cnc.loadStock')
-                      thiz.finishMill();
+                      thiz.finishMilling();
+                  }
+                },
+
+                { id: "drillNext",
+                  subtitle: "Milling Complete",
+                  instructions: "Do you want to drill PCB holes now?",
+                  buttonDefs: [
+                    { label: "Yes", fnAction: () => { thiz.finishMillWizard(true) } },
+                    { label: "No", fnAction: () => { thiz.finishMillWizard(false) } }
+                  ],
+                  onActivate: async (wizStep) => {
                   }
                 }
+
             ]
         }
         
@@ -273,10 +285,24 @@ class MillController extends AlignmentController {
         delete this.activeProfile;
     }
 
-    finishMill() {
+    finishMilling() {
         this.rpCall('cnc.cancelProcesses');
         window.uiController.finishProcess();
-        window.uiController.finishWizard();
+        window.uiController.wizardNext();
+    }
+
+
+    finishMillWizard(drillHoles) {
+        if (drillHoles) {
+            let profile = window.uiController.currentProfile;
+            profile.state.action = 'drill';
+            profile.state.alignStock = false;
+            profile.state.stockIsBlank = false;
+            window.uiDrill.startDrillWizard(profile);
+        }
+        else {
+            window.uiController.finishWizard();
+        }
     }
 
 }
