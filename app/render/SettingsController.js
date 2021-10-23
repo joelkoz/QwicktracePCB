@@ -26,7 +26,7 @@ class SettingsController extends RPCClient {
                                                 "cut.",
                                 buttonDefs: [
                                     { label: "Toggle Laser", call: { name: 'cnc.setPointer', data: [] } },
-                                    { label: "Next", next: true },
+                                    { label: "Cut", next: true },
                                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
                                 ],
                                 onActivate: (wizStep) => {
@@ -148,7 +148,7 @@ class SettingsController extends RPCClient {
                             updateBtnContinue();
                             },
                             onDeactivate: (wizStep) => {
-                            clearInterval(wizStep.timerId);
+                                clearInterval(wizStep.timerId);
                             }
                         },
       
@@ -175,6 +175,12 @@ class SettingsController extends RPCClient {
                           { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                         ],
                         onActivate: async (wizStep) => {
+                           // Save x/y pos for future use...
+                           let mpos = await thiz.rpCall('cnc.getMPos');
+                           let padPos = { x: mpos.x, y: mpos.y }
+                           thiz.rpCall('config.setAndSave', 'cnc.locations.zpad', padPos)
+
+                           // Now do the actual probe...
                            await thiz.rpCall('cnc.zProbePad', false);
                            thiz.wizardNext();
                         }
@@ -269,6 +275,13 @@ class SettingsController extends RPCClient {
                             { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                             ],
                             onActivate: async (wizStep) => {
+                                // Save x/y pos for future use...
+                                let mpos = await thiz.rpCall('cnc.getMPos');
+                                let padPos = { x: mpos.x, y: mpos.y }
+                                thiz.rpCall('config.setAndSave', 'cnc.locations.zpad', padPos)
+
+                                // Now do the actual probe...
+
                                 thiz.calZPadZ = await thiz.rpCall('cnc.zProbePad', false);
                                 ui.wizardNext();
                             }

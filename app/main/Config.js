@@ -88,8 +88,18 @@ class Config {
 
 
     async setAndSave(propertyName, propertyValue) {
-        setVal(this._config, propertyName, propertyValue);
-        await this.save();
+        if (Array.isArray(propertyName)) {
+            // Assume an array of key/value objects...
+            for (const obj of propertyName) {
+                setVal(this._config, obj.name, obj.value);
+            }
+            await this.save();
+        }
+        else {
+           // A single property name/value pair was specified...
+           setVal(this._config, propertyName, propertyValue);
+           await this.save();
+        }
     }
 
 }

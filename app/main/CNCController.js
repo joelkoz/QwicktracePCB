@@ -611,10 +611,14 @@ class CNCController  extends MainSubProcess {
 
 
         if (this.cuttingInProgress) {
-            console.log("Canceling multi pass cut");
+            console.log("Canceling multi pass cut...");
             this.cuttingInProgress = false;
+            this.cnc.rawWriteLn('!');
             this.cnc.rpm = 0;
-            await this.killFeeder();
+            await this.cnc.untilSent();
+            this.cnc.reset();
+            this.cnc.home();
+            console.log("Feeder reset complete.");
         }
 
 
