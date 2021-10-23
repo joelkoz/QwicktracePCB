@@ -11,12 +11,12 @@ nog81=true
 zwork=-0.2
 zsafe=1.7
 mill-feed=30
-mill-speed=9500
+mill-speed=8500
 offset=0.5
 
 # Drilling holes
 zdrill=-2.1
 zchange=1.0
 drill-feed=75
-drill-speed=10000
+drill-speed=8000
 onedrill=true
