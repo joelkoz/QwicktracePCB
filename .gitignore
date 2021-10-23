@@ -127,3 +127,4 @@ config.json-backup
 pi-hat/QwicktracePro/pi-hat/kicad/PiHatPro.zip
 pcb-files/**
 
+test.js
