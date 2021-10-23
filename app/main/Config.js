@@ -1,8 +1,6 @@
 const fs = require('fs');
 const fsp = require('fs').promises;
 
-const RPCServer = require('./RPCServer.js');
-
 const FILENAME="./config.json"
 
 
@@ -24,22 +22,13 @@ function setVal(object, propertyName, propertyValue) {
 }
 
 
-class Config extends RPCServer {
+class Config {
 
     constructor() {
         
         if (!Config.instance) {
-            super('config')
             Config.instance = this;
             this.load();
-
-            let thiz = this;
-            this.rpcAPI( {
-                async setAndSave(propertyName, propertyValue) {
-                    return await thiz.setAndSave(propertyName, propertyValue);
-                }
-            });
-
         }
         return Config.instance;
     }

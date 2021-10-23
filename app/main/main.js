@@ -9,6 +9,7 @@ const UVController = require('./UVController.js');
 const CNCController = require('./CNCController.js');
 const Config = require('./Config.js');
 const MainMQ = require('./MainMQ.js');
+const ConfigServer = require('./ConfigServer.js');
 
 let win = null;
 let fileLoader = null;
@@ -102,7 +103,6 @@ MainMQ.on('main.startup.initializeDone', () => {
   fileLoader = new FileLoader(win);
   profileLoader = new ProfileLoader(win);
   uiLoader = new UILoader(win);
-
 
   if (Config.app.hasPCB) {
      uvController = new UVController(win);
