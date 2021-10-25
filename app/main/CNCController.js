@@ -129,7 +129,7 @@ class CNCController  extends MainSubProcess {
         this.cnc.on('state', (state) => {
             
             if (this.lastState != state) {
-                console.log('CNC state is ', state);
+                // console.log('CNC state is ', state);
                 this.lastState = state;
             }
 
