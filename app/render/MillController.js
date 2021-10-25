@@ -298,7 +298,8 @@ class MillController extends AlignmentController {
             profile.state.action = 'drill';
             profile.state.alignStock = false;
             profile.state.stockIsBlank = false;
-            window.uiDrill.startDrillWizard(profile);
+            window.uiController.state = profile.state;
+            window.uiController.initProcessing();
         }
         else {
             window.uiController.finishWizard();

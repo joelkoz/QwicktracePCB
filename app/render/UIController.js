@@ -543,17 +543,18 @@ class UIController extends RPCClient {
     stockProcessed() {
         this.setState('alignStock', true)
         this.setState('stockIsBlank', false);
-        this.showPage('initProcessPage');
+        this.showPage('stockSelectPage');
     }
 
     /**
      * Called to indicate that new blank stock is going to be used
      * in the mill.
      */
-    stockIsNew() {
+    stockIsNew(pushOld) {
         this.lastProfile = {}
         this.setState('stockIsBlank', true);
         this.setState('alignStock', false)
+        this.showPage('stockSelectPage', pushOld);
     }
 
 
@@ -612,7 +613,7 @@ class UIController extends RPCClient {
             }
             this.popupMessage(popup)
         }
-        else if (profile.state.stockIsBlank && !profile.state.alignStock) {
+        else if (profile.state.stockIsBlank || (profile.state.alignStock && !profile.state.hasOwnProperty('positionBoard'))) {
             // Board is smaller than stock and we are not going to pre-align.
             // See where the user wants to position the board on the stock.
             this.showPage('positionPage', false)

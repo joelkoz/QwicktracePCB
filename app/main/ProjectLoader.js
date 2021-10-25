@@ -97,6 +97,7 @@ class ProjectLoader  extends MainSubProcess {
     static async prepareForWork(profile) {
         let state = profile.state;
         let projectId = state.projectId;
+        console.log('Preparing for work on project id ', projectId);
         let project = _projectCache[projectId];
 
         try {
@@ -106,8 +107,9 @@ class ProjectLoader  extends MainSubProcess {
             let rotateBoard = (originalSize.y > originalSize.x);
             const clockwise = true;
 
-            if (_currentProfile.projectId != projectId) {
+            if (_currentProfile?.state?.projectId != projectId) {
                 // Start work on a new project...
+                console.log('Emptying work dir for new project id ', projectId);
                 await fse.emptyDir(workDir);
             }
 
@@ -147,11 +149,12 @@ class ProjectLoader  extends MainSubProcess {
                let fileName = project.getSideFile(side);
                if (fileName) {
                     let gbrSource = project.dirName + "/" + fileName;
+                    console.log('Prepare for work creating base file ', gbrTarget)
                     await gTrans.transformGbr(gbrSource, gbrTarget);
-                }
-            }
-            else {
-                console.log('ProjectLoader.prepareForWork() is using existing Gerber file ', gbrTarget)
+               }
+               else {
+                   gbrTarget = undefined;
+               }
             }
 
 
@@ -159,15 +162,59 @@ class ProjectLoader  extends MainSubProcess {
             if (!fse.existsSync(drlTarget)) {
                if (project.drillFile) {
                     let drlSource = project.dirName + "/" + project.drillFile;
+                    console.log('Prepare for work creating base file ', drlTarget)
                     await gTrans.transformDrl(drlSource, drlTarget);
-                }
-            }
-            else {
-                console.log('ProjectLoader.prepareForWork() is using existing drill file ', drlTarget)
+               }
+               else {
+                   drlTarget = undefined;
+               }
             }
 
-            _currentProfile.files = { gbr: gbrTarget, drl: drlTarget }
+            _currentProfile.baseFiles = { gbr: gbrTarget, drl: drlTarget }
+
+            if (state.positionBoard) {
+                // Create intermediate gbr and drl files with board positioned at user selected
+                // spot...
+                let gbrPositioned = workDir + side + "-pos.gbr";
+                let drlPositioned = workDir + side + "-pos.drl";
+                let gTrans2 = new GerberTransforms(project);
+                let stock;
+                if (profile.stock.actual) {
+                    stock = profile.stock.actual;
+                }
+                else {
+                    stock = profile.stock;
+                }
+                await gTrans2.positionCopper(state.positionBoard, stock);
+
+                if (!fse.existsSync(gbrPositioned)) {
+                    if (gbrTarget) {
+                         console.log('Prepare for work creating work file ', gbrPositioned)
+                         await gTrans2.transformGbr(gbrTarget, gbrPositioned);
+                     }
+                 }
+
+                 if (!fse.existsSync(drlPositioned)) {
+                    if (drlTarget) {
+                         console.log('Prepare for work creating work file ', drlPositioned)
+                         await gTrans2.transformDrl(drlTarget, drlPositioned);
+                    }
+                    else {
+                        drlPositioned = undefined;
+                    }
+                 }
+                 
+                 _currentProfile.workFiles = { gbr: gbrPositioned, drl: drlPositioned }
+     
+            }
+            else {
+                console.log('PrepareForWork using base files for work files (no position specified)')
+                _currentProfile.workFiles = { gbr: gbrTarget, drl: drlTarget }
+            }
             
+            console.log('Prepare for work - base files: ', _currentProfile.baseFiles)
+            console.log('Prepare for work -  work files: ', _currentProfile.workFiles)
+
             return  _currentProfile;
 
         }
@@ -180,57 +227,54 @@ class ProjectLoader  extends MainSubProcess {
 
     static async getFinalGerber(profile) {
 
-        await ProjectLoader.prepareForWork(profile);
+        let workProfile = await ProjectLoader.prepareForWork(profile);
 
-        let state = profile.state;
+        let state = workProfile.state;
 
         // Load up the work files into a new project object to
         // capture all of the current transforms...
         let workProject = new PCBProject();
-        let gbrSource = workDir + state.side;
+        let gbrSource;
         let gType = { side: state.side };
         if (state.action === 'mill') {
-            gbrSource += '.gbr'
+            gbrSource = workProfile.workFiles.gbr;
             gType.type = 'copper'
         }
         else {
-            gbrSource += '.drl'
+            gbrSource = workProfile.workFiles.drl;
             gType.type = 'drill'
         }
         workProject.fromGerber(gbrSource, gType);
 
 
-        // Prepare for final transformations...
-        let gTrans = new GerberTransforms(workProject);
-
-        // Do we need to center this on new stock?
-        // If so, use the "deskew.offset" property
-        // to center it up.
-        if (state.stockIsBlank && state.positionBoard) {
-            console.log('Centering board on blank stock...')
-            let stock;
-            if (profile.stock.actual) {
-                stock = profile.stock.actual;
-            }
-            else {
-                stock = profile.stock;
-            }
-            await gTrans.positionCopper(state.positionBoard, stock);
-        }
+        // Determine final file to use in milling/drilling
+        let gbrFinal;
 
         if (state.deskew) {
+            // We have one last deskew transformation to do...
+            let gTrans = new GerberTransforms(workProject);
             gTrans.deskew(state.deskew);
-        }
 
-        let gbrFinal = workDir + 'final-' + state.side;
+            gbrFinal = workDir + state.side + '-deskew';
 
-        if (state.action === 'mill') {
-           gbrFinal += '.gbr';
-           await gTrans.transformGbr(gbrSource, gbrFinal);
+            if (state.action === 'mill') {
+               gbrFinal += '.gbr';
+               await gTrans.transformGbr(gbrSource, gbrFinal);
+            }
+            else {
+                gbrFinal += '.drl';
+                await gTrans.transformDrl(gbrSource, gbrFinal);  
+            }
         }
         else {
-            gbrFinal += '.drl';
-            await gTrans.transformDrl(gbrSource, gbrFinal);  
+            // No additional transformations: use the work files created by prepareForWork()...
+            if (state.action === 'mill') {
+                gbrFinal = workProfile.workFiles.gbr;
+             }
+             else {
+                 gbrFinal = workProfile.workFiles.drl;
+             }
+ 
         }
 
         return gbrFinal;
@@ -328,6 +372,7 @@ class ProjectLoader  extends MainSubProcess {
 
             if (project.projectId === _currentProfile.projectId) {
                 // Time to re-create the project work files...
+                console.log('ProjectLoader.updateFileMap() cleared current profile')
                 _currentProfile = {};
             }
         }

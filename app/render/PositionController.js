@@ -249,7 +249,7 @@ class PositionController extends RPCClient {
         });
     
         profile.traceColor = CANVAS_TRACE_COLOR;
-        let pcbSvg = await this.rpCall('files.loadSVG', profile)
+        let pcbSvg = await this.rpCall('files.loadSVG', profile, false)
         let svg = pcbSvg.svg;
         let url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
         let img = new Image();

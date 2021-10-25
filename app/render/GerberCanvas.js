@@ -2,6 +2,7 @@
 "use strict"
 import { RPCClient } from './RPCClient.js'
 import { RenderMQ } from './RenderMQ.js'
+const { untilTrue } = require('promise-utils');
 const { deskew } = require('deskew')
 
 
@@ -51,6 +52,7 @@ class GerberCanvas extends RPCClient {
     // Initializes the hole alignment process. fnAlignmentComplete
     // will be called when the alignment process has finished.
     initAlignment(fnAlignmentComplete) {
+   
         this.fnAlignmentComplete = fnAlignmentComplete;
 
         let bb = this.mmBoundingBox;
@@ -190,6 +192,15 @@ class GerberCanvas extends RPCClient {
     }
 
     /**
+     * Return TRUE if this canvas is actually visible at the moment
+     */
+    isVisible() {
+        let elCanvas = document.getElementById(CANVAS_ID);
+        return (elCanvas.offsetParent !== null)
+    }
+
+
+    /**
      * 
      * There are two coordinate systems at play:
      * The PCB and CNC work coordinates are in millimeters 
@@ -212,6 +223,13 @@ class GerberCanvas extends RPCClient {
      * in those calculations.
     */
     drawingPreCalc() {
+
+        if (!this.isVisible()) {
+            console.log('GerberCanvas drawingPreCalc() called before canvas visible. Try again in 200ms...')
+            setTimeout(() => { this.drawingPreCalc()}, 200)
+            return;
+        }
+
         this.canvas = document.getElementById(CANVAS_ID);
 
         // Set the canvas to its maximum pixel size
@@ -313,9 +331,9 @@ class GerberCanvas extends RPCClient {
             ctx.drawImage(this.saveImage, this.blinkPoint.x - halfSaveWidth, this.blinkPoint.y - halfSaveWidth, CANVAS_SAVE_WIDTH, CANVAS_SAVE_WIDTH);
             ctx.restore();
             this.blinkPoint = null;
-            if (repeatBlink) {
-                this.startBlink();
-            }
+        }
+        if (repeatBlink) {
+            this.startBlink();
         }
     }
 
@@ -357,9 +375,7 @@ class GerberCanvas extends RPCClient {
         ctx.clearRect(0,0,canvas.width, canvas.height);
 
 
-        if (this.img) {
-            ctx.drawImage(this.img, this.pxMarginWidth, this.pxMarginHeight, this.pxBoardWidth, this.pxBoardHeight);
-        }
+        ctx.drawImage(this.img, this.pxMarginWidth, this.pxMarginHeight, this.pxBoardWidth, this.pxBoardHeight);
 
         this.setTransform(ctx);
 
@@ -403,6 +419,8 @@ class GerberCanvas extends RPCClient {
         this.holeList = undefined;
         this.viewBox = undefined;
         this.profile = undefined;
+        this.canvas = undefined;
+        this.imageLoaded = false;
     }
    
 
@@ -413,6 +431,7 @@ class GerberCanvas extends RPCClient {
         this.profile = profile;
         this.svgURL = URL.createObjectURL(new Blob([renderObj.svg], { type: 'image/svg+xml' }));
         this.viewBox = renderObj.viewBox;
+        this.imageLoaded = false;
 
         let thiz = this;
         this.img = new Image();
@@ -421,6 +440,7 @@ class GerberCanvas extends RPCClient {
            // svg data has been processed
            // following setting the Image()
            // object's src property...
+           thiz.imageLoaded = true;
            thiz.drawingPreCalc();
            thiz.paint();
         }
@@ -431,17 +451,13 @@ class GerberCanvas extends RPCClient {
     }          
 
 
-    setHoles(drillObj, profile) {
+    async setHoles(drillObj, profile) {
 
         this.profile = profile;
-        if (!this.mmBoundingBox) {
-            // The GerberFile has not been loaded yet. 
-            // this.viewBox is necessary for drawingPreCalc()
-            // to run, so fake it using the drill's bounding box
-            let bb = drillObj.mmBoundingBox;
-            this.viewBox = [ bb.min.x * 1000, bb.min.y * 1000, bb.max.x * 1000, bb.max.y * 1000 ];
-            this.drawingPreCalc();
-        }
+
+        // Wait until the SVG image has been loaded, and drawingPreCalc() has completed 
+        // its full set of calculations...
+        await untilTrue(500, () => { return (this.imageLoaded && this.canvas) });
 
         this.holeList = drillObj.holes;
 

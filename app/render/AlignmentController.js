@@ -22,7 +22,7 @@ class AlignmentController extends RPCClient {
         this.profile = profile;
         Object.assign(profile, { traceColor: GerberCanvas.TRACE_COLOR });
 
-        let renderObj = await this.rpCall('files.loadSVG', profile);
+        let renderObj = await this.rpCall('files.loadSVG', profile, true);
 
         this.gerberCanvas.reset();
         this.gerberCanvas.setSVG(renderObj, profile);
@@ -35,7 +35,7 @@ class AlignmentController extends RPCClient {
 
     async loadHoles(profile) {
         let drillObj = await this.rpCall('files.loadDrillInfo', profile);
-        this.gerberCanvas.setHoles(drillObj, profile);
+        await this.gerberCanvas.setHoles(drillObj, profile);
         if (this.profile.state.alignStock) {
             this.gerberCanvas.initAlignment(this.fnAlignmentComplete);
         }

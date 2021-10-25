@@ -302,7 +302,7 @@ class CNCController  extends MainSubProcess {
                 machineLL.x = Config.cnc.locations.ur.x - stock.width;
                 machineLL.y = Config.cnc.locations.ur.y - stock.height;
 
-                console.log('Estimating PCB work origina to be a machine pos ', machineLL)
+                console.log('Estimating PCB work origin to be a machine pos ', machineLL)
 
                 let mpos = thiz.cnc.mpos;
 
@@ -998,7 +998,7 @@ class CNCController  extends MainSubProcess {
         };
 
         try {
-            console.log(`Starting drilling of ${profile.state.projectId}`, profile)
+            console.log(`Starting PCB drill of ${profile.state.projectId}`, profile)
        
             let gbrData = await ProjectLoader.getWorkAsGerberData(profile);
 
@@ -1010,6 +1010,8 @@ class CNCController  extends MainSubProcess {
             let holeNum = 0;
 
             await this.gotoSafeZ();
+            await this.cnc.untilGoto( holes[0].coord, wcsPCB_WORK );
+            await this.cnc.untilGoto({ z: drillConfig.startHeight }, wcsPCB_WORK)
 
             // Turn the drill on...
             this.cnc.rpm = drillConfig.rpm;
@@ -1021,8 +1023,8 @@ class CNCController  extends MainSubProcess {
                   MainMQ.emit('render.cnc.drillNum', holeNum);
                   
                   let hole = holes[holeNum];
+                  console.log(`Drilling hole ${holeNum} at work coord `, hole.coord)
                   await this.cnc.untilGoto( hole.coord, wcsPCB_WORK );
-                  await this.cnc.untilGoto({ z: drillConfig.startHeight }, wcsPCB_WORK)
                   await this.cnc.untilGoto({ z: drillConfig.drillDepth }, wcsPCB_WORK, drillConfig.plungeRate)
                   await this.cnc.untilGoto({ z: drillConfig.startHeight }, wcsPCB_WORK)
 

@@ -55,7 +55,7 @@ class ExposeController extends RPCClient {
 
    async prepareExposure(profile) {
       this.exposureProfile = profile;
-      let renderObj = await this.rpCall('files.loadSVG', profile);
+      let renderObj = await this.rpCall('files.loadSVG', profile, true);
       this.renderSVG(renderObj);
   }
 

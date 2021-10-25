@@ -55,6 +55,7 @@
             console.log('Activate stock page');
 
             ui.clearState('stockId');
+            ui.clearState('positionBoard');
             $('.projectName').html(ui.projectName);
 
             const divSelector = '#stockPage .button-area';
@@ -72,10 +73,10 @@
             }
 
             optionCount++;
-            uiAddButton(divSelector, 'Load blank stock', () => { ui.showPage('stockSelectPage'); });
+            uiAddButton(divSelector, 'Load blank stock', () => { ui.stockIsNew(true); });
 
             if (optionCount === 1) {
-                setTimeout(() => { ui.showPage('stockSelectPage', false); }, 10);
+                setTimeout(() => { ui.stockIsNew(false); }, 10);
             }
 
         };

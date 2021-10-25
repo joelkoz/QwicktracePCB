@@ -114,9 +114,10 @@ class GerberTransforms {
         let oldMarginTop = this.bb.master.max.y - this.bb.copper.max.y;
         const FIXED_MARGIN = 1;
 
-        console.log('master bb:', this.bb.master);
-        console.log('copper bb', this.bb.copper);
-        console.log('Copper size', copperSize);
+        // console.log('Calculating positioning transform for stock: ', stock)
+        // console.log('master bb: ', this.bb.master);
+        // console.log('copper bb: ', this.bb.copper);
+        // console.log('Copper size: ', copperSize);
         
         switch (boardPosition) {
 

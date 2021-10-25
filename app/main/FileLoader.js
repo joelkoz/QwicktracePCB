@@ -20,16 +20,18 @@ class FileLoader extends MainSubProcess {
       let thiz = this;
       this.rpcAPI( {
 
-         async loadSVG(profile) {
+         async loadSVG(profile, useWorkFiles = true) {
             let currentProfile = await ProjectLoader.prepareForWork(profile);
-            let svgObj = await thiz.loadGerberAsSvg(currentProfile.files.gbr, profile);
+            let fileSet = (useWorkFiles ? currentProfile.workFiles : currentProfile.baseFiles);
+            let svgObj = await thiz.loadGerberAsSvg(fileSet.gbr, profile);
             return svgObj;
          },
 
 
-         async loadDrillInfo(profile) {
+         async loadDrillInfo(profile, useWorkFiles = true) {
             let currentProfile = await ProjectLoader.prepareForWork(profile);
-            let drillObj = await thiz.loadDrillFile(currentProfile.files.drl, profile);
+            let fileSet = (useWorkFiles ? currentProfile.workFiles : currentProfile.baseFiles);
+            let drillObj = await thiz.loadDrillFile(fileSet.drl, profile);
             return drillObj;
          }
 
@@ -79,11 +81,11 @@ class FileLoader extends MainSubProcess {
     }
      
 
-    async loadDrillFile(fileName, profile, callbackEvt) {
+    async loadDrillFile(fileName, profile) {
          let drillData = new GerberData([fileName]);
          await untilEvent(drillData, 'ready', 8000);
          let drillLoadInfo = { "holes": drillData.holes, 
-                               "boundingBox": drillData.boundingBox, 
+                               "boundingBox": drillData.boundingBoxes.master.bb, 
                                "units": drillData.units,
                                "drillSide": profile.state.side };
          return drillLoadInfo;
