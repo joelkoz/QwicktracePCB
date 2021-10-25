@@ -19,11 +19,21 @@ class SettingsController extends RPCClient {
                     title: "Cut PCB - Vertical",
                     finishLandingPage: "settingsPage",
                     steps: [
-                            { id: "jog",
+                           { id: "cutType",
+                                subtitle: "Cut PCB Vertically",
+                                instructions: "How do you want to cut the board",
+                                buttonDefs: [
+                                    { label: "Half width", gotoStepId: 'cutHalfStart' },
+                                    { label: "Variable width", gotoStepId: 'cutVariableStart' },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ]
+                            },
+
+                            { id: "cutVariableStart",
                                 subtitle: "Jog spindle to cut line",
                                 instructions: "Use Joystick to jog the machine to bottom left of cut. Press the button to switch from " +
-                                                "Up/Down controlling the Y axis or Z axis.  Press Next to start " +
-                                                "cut.",
+                                                "Up/Down controlling the Y axis or Z axis.  Press Cut to start " +
+                                                "cutting.",
                                 buttonDefs: [
                                     { label: "Toggle Laser", call: { name: 'cnc.setPointer', data: [] } },
                                     { label: "Cut", next: true },
@@ -39,7 +49,7 @@ class SettingsController extends RPCClient {
                                 }                                
                             },
 
-                            { id: "cutVertical",
+                            { id: "cutVariable",
                                 subtitle: "Cutting",
                                 instructions: "Cutting stock vertically",
                                 buttonDefs: [
@@ -54,6 +64,7 @@ class SettingsController extends RPCClient {
                                             end: { mx: mpos.x, my: thiz.config.cnc.locations.ur.y }
                                         }
                                         let completed = await thiz.rpCall('cnc.multiPassCut', cutData);
+                                        thiz.rpCall('cnc.loadStock')
                                         if (completed) {
                                            thiz.finishWizard();
                                         }
@@ -61,11 +72,58 @@ class SettingsController extends RPCClient {
                                     catch (err) {
                                         console.trace();
                                     }
+                                }
+                            },
+
+                            { id: "cutHalfStart",
+                                subtitle: "Specify lower left of board",
+                                instructions: "Use Joystick to jog the to bottom left of board. Press the button to switch from " +
+                                                "Up/Down controlling the Y axis or Z axis.  Press Cut to start " +
+                                                "cutting.",
+                                buttonDefs: [
+                                    { label: "Toggle Laser", call: { name: 'cnc.setPointer', data: [] } },
+                                    { label: "Cut", next: true },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', true)
+                                    wizStep.cncPosDisplay = uiAddPosDisplay('#wizardPage .status-area', window.wcsPCB_RELATIVE_UR)
                                 },
                                 onDeactivate: (wizStep) => {
-                                    thiz.cutting = false;
-                                }                                   
+                                    thiz.rpCall('cnc.jogMode', false)
+                                    uiRemovePosDisplay(wizStep.cncPosDisplay);
+                                }                                
+                            },
+
+                            { id: "cutHalf",
+                                subtitle: "Cutting",
+                                instructions: "Cutting stock vertically in half",
+                                buttonDefs: [
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: async (wizStep) => {
+                                    try {
+                                        await thiz.rpCall('cnc.setPointer', false)
+                                        let mpos = await thiz.rpCall('cnc.getMPos');
+                                        let boardWidth = mpos.x - thiz.config.cnc.locations.ur.x;
+                                        let halfWidth = boardWidth / 2;
+                                        let xpos = thiz.config.cnc.locations.ur.x - halfWidth;
+                                        let cutData = {
+                                            start: { mx: xpos, my: mpos.y },
+                                            end: { mx: xpos, my: thiz.config.cnc.locations.ur.y }
+                                        }
+                                        let completed = await thiz.rpCall('cnc.multiPassCut', cutData);
+                                        thiz.rpCall('cnc.loadStock')
+                                        if (completed) {
+                                           thiz.finishWizard();
+                                        }
+                                    }
+                                    catch (err) {
+                                        console.trace();
+                                    }
+                                }
                             }
+
 
                     ]
                     }
@@ -121,9 +179,9 @@ class SettingsController extends RPCClient {
                },
 
 
-               { id: "zprobe",
+               { id: "zprobePad",
                  wizard: {
-                    title: "ZProbe",
+                    title: "ZProbe Pad",
                     finishLandingPage: "settingsPage",
                     steps: [
                         { id: "connectZProbe",
@@ -191,7 +249,7 @@ class SettingsController extends RPCClient {
                         instructions: "Remove probe from bit and return to the clip screw.",
                         buttonDefs: [
                             { label: "Done", next: true, btnClass: 'removeProbeContinue' },
-                            { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
+                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                         ],
                         onActivate: (wizStep) => {
         
@@ -219,6 +277,102 @@ class SettingsController extends RPCClient {
                  }
                },
 
+               { id: "zprobePCB",
+                 wizard: {
+                    title: "ZProbe PCB",
+                    finishLandingPage: "settingsPage",
+                    steps: [
+                        { id: "connectZProbe",
+                            subtitle: "ZProbe Clip",
+                            instructions: "Connect zprobe clip to whichever bit is in the mill and" +
+                                          "place the ZProbe arm onto the PCB.",
+                            buttonDefs: [
+                              { label: "Continue", next: true, btnClass: 'zProbeContinue' },
+                              { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                            ],
+                            onActivate: (wizStep) => {
+                            function updateBtnContinue() {
+                                if (window.cncZProbe) {
+                                    // We can not continue if ZProbe is currently "pressed"
+                                    $('#wizardPage .zProbeContinue').css("display", "none");
+                                }
+                                else {
+                                    // Enable continue button
+                                    $('#wizardPage .zProbeContinue').css("display", "block");
+                                }
+                            }
+                            wizStep.timerId = setInterval(updateBtnContinue, 1000);
+                            updateBtnContinue();
+                            },
+                            onDeactivate: (wizStep) => {
+                                clearInterval(wizStep.timerId);
+                            }
+                        },
+      
+                        { id: "posZProbe",
+                        subtitle: "Z Probe",
+                        instructions: "Use joystick to position spindle approx 2 to 3 mm over the PCB and press Continue",
+                        buttonDefs: [
+                           { label: "Continue", next: true },
+                           { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                        ],
+                        onActivate: async (wizStep) => {
+                           await thiz.rpCall('cnc.zPadPosition');
+                           await thiz.rpCall('cnc.gotoSafeZ');
+                           await thiz.rpCall('cnc.moveXY', -9, 0)
+                           await thiz.rpCall('cnc.jogMode', true)
+                        },
+                        onDeactivate: (wizStep) => {
+                            thiz.rpCall('cnc.jogMode', false)
+                        }                  
+                      },                
+              
+                      { id: "zprobe",
+                        subtitle: "Z Probe",
+                        instructions: "Searching for PCB surface. Standby...",
+                        buttonDefs: [
+                          { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                        ],
+                        onActivate: async (wizStep) => {
+                           // Now do the actual probe...
+                           await thiz.rpCall('cnc.zProbePCB');
+                           thiz.wizardNext();
+                        }
+                      },
+
+                      { id: "removeProbe",
+                        subtitle: "ZProbe Complete",
+                        instructions: "Remove probe from bit and return to the clip screw. Put the " +
+                                      "ZProbe arm back to its original spot.",
+                        buttonDefs: [
+                            { label: "Done", next: true, btnClass: 'removeProbeContinue' },
+                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                        ],
+                        onActivate: (wizStep) => {
+        
+                            function updateBtnContinue() {
+                            if (window.cncZProbe) {
+                                // We can not continue if ZProbe is currently "pressed"
+                                $('#wizardPage .removeProbeContinue').show();
+                            }
+                            else {
+                                // Enable continue button
+                                $('#wizardPage .removeProbeContinue').hide();
+                            }
+                            }
+        
+                            wizStep.timerId = setInterval(updateBtnContinue, 1000);
+                            updateBtnContinue();
+                        },
+                        onDeactivate: (wizStep) => {
+                            clearInterval(wizStep.timerId);
+                        }
+        
+                        }
+      
+                    ]
+                 }
+               },
 
                { id: "calibrateProbeArea",
                  wizard: {

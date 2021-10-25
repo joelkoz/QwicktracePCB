@@ -228,6 +228,9 @@ class UIController extends RPCClient {
         if (btnDef.pageId) {
             this.showPage(btnDef.pageId, btnDef.pushOld);
         }
+        else if (btnDef.gotoStepId) {
+            this.gotoWizardPage(btnDef.gotoStepId);
+        }
         else if (btnDef.emit) {
             RenderMQ.emit(btnDef.emit.evtName, btnDef.emit.data);
         }
