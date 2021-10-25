@@ -306,11 +306,11 @@ class ProjectLoader  extends MainSubProcess {
 
         // Strip out tool change commands, as we have already taken care of that stuff...
         if (state.action === 'mill') {
-            let ndxRemoveStart = contents.indexOf('(Retract');
-            let ndxRemoveEnd = contents.indexOf('( retract )');
-            contents = contents.substring(0, ndxRemoveStart) + 
-                       '\nM3\n' +
-                       contents.substring(ndxRemoveEnd+11)
+            let ndxRemoveStart = contents.indexOf('( Feedrate. )');
+            let ndxRemoveEnd = contents.indexOf('M3');
+            contents = contents.substring(0, ndxRemoveStart+14) + 
+                       '\n\n' +
+                       contents.substring(ndxRemoveEnd)
 
 
             // Write out file contents for testing purposes...
