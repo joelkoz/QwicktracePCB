@@ -7,13 +7,13 @@
       "Application": "Pcbnew",
       "Version":     "(5.1.8-0-10_14)"
     },
-    "CreationDate":  "2021-10-12T17:54:55-04:00"
+    "CreationDate":  "2021-10-25T10:27:17-04:00"
   },
   "GeneralSpecs":
   {
     "ProjectId":
     {
-      "Name": "Exposure-controll",
+      "Name": "Exposure-control",
       "GUID": "4578706f-7375-4726-952d-636f6e74726f",
       "Revision": "rev?"
     },
@@ -38,12 +38,12 @@
   "FilesAttributes":
   [
     {
-      "Path":  "Exposure-controll-B_Cu.gbr",
+      "Path":  "Exposure-control-B_Cu.gbr",
       "FileFunction":  "Copper,L2,Bot",
       "FilePolarity":  "Positive"
     },
     {
-      "Path":  "Exposure-controll-Edge_Cuts.gbr",
+      "Path":  "Exposure-control-Edge_Cuts.gbr",
       "FileFunction":  "Profile",
       "FilePolarity":  "Positive"
     }
