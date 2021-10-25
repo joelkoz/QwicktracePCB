@@ -9,7 +9,7 @@ nog81=true
 
 # Engraving traces
 zwork=-0.2
-zsafe=1.7
+zsafe=3.7
 mill-feed=40
 mill-speed=8500
 offset=0.5
