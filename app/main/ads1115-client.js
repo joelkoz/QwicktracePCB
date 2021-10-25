@@ -80,18 +80,13 @@ module.exports = (handle, addr = 0x48, delay = 10, shift = 0) => {
     writeHiThreshold: (threshold) => writeReg16(addr, 0b11, threshold << shift),
 
     measure: async (mux) => {
-      try {
-        mux = MUX[mux]
-        if (typeof mux === 'undefined') throw new Error('Invalid mux')
+      mux = MUX[mux]
+      if (typeof mux === 'undefined') throw new Error('Invalid mux')
 
-        const config = 0x0183 // No comparator | 1600 samples per second | single-shot mode
-        await writeConfig(config | gain | mux | START_CONVERSION)
-        await sleep(delay)
-        return await readResults()
-      }
-      catch (err) {
-         console.log('Error taking ADS1115 measurement', err)
-      }
+      const config = 0x0183 // No comparator | 1600 samples per second | single-shot mode
+      await writeConfig(config | gain | mux | START_CONVERSION)
+      await sleep(delay)
+      return await readResults()
     }
   }
 }

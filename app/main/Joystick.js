@@ -62,11 +62,23 @@ class Joystick {
        ADS1115.open(...Joystick.i2cJoystick).then((ads1115) => {
  
          ads1115.gain = 1
-       
+         let readErrorCount = 0;
+
          this.sampIntervalId = setIntervalAsync(async () => {
-            thiz.sampX = await ads1115.measure('0+GND');
-            thiz.sampY = await ads1115.measure('1+GND');
-            thiz.sampBtn = await ads1115.measure('2+GND');
+            try {
+               thiz.sampX = await ads1115.measure('0+GND');
+               thiz.sampY = await ads1115.measure('1+GND');
+               thiz.sampBtn = await ads1115.measure('2+GND');
+               readErrorCount = 0;
+            }
+            catch (err) {
+               // It is OK to get the occasional read error due to noise. Three consecutive errors,
+               // however, is a problem, and we should report it.
+               readErrorCount++;
+               if (readErrorCount > 2) {
+                  console.log('Error taking joystick sample: ', err);
+               }
+            }
 
          }, Joystick.msJOYSTICK_SAMPLE_INTERVAL);
 
