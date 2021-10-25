@@ -171,9 +171,10 @@ class MillController extends AlignmentController {
 
                 { id: "findLL",
                   subtitle: "Locate Lower Left Corner",
-                  instructions: "Position the laser at the lower left corner of the board then click joystick",
+                  instructions: "Position the mill bit at the lower left corner of the board then click ok",
                   buttonDefs: [
-                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
+                    { label: "Ok", fnAction: () => { ui.selectPCBPosition() } },
+                    { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                   onActivate: async (wizStep) => {
                      profile.stock.actual = await thiz.rpCall('cnc.findPCBOrigin', profile.stock)

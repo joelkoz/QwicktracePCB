@@ -685,6 +685,9 @@ class UIController extends RPCClient {
         return false;
     }
 
+    selectPCBPosition() {
+       RenderMQ.emit('main.cnc.uiPositionSelect')
+    }
 }
 
 export { UIController }
