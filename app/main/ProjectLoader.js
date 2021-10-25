@@ -175,16 +175,20 @@ class ProjectLoader  extends MainSubProcess {
             if (state.positionBoard) {
                 // Create intermediate gbr and drl files with board positioned at user selected
                 // spot...
-                let gbrPositioned = workDir + side + "-pos.gbr";
-                let drlPositioned = workDir + side + "-pos.drl";
                 let gTrans2 = new GerberTransforms(project);
                 let stock;
+                let suffix;
                 if (profile.stock.actual) {
                     stock = profile.stock.actual;
+                    suffix = 'stock-actual'
                 }
                 else {
                     stock = profile.stock;
+                    suffix = 'stock-profile'
                 }
+                let gbrPositioned = workDir + side + `-pos-${suffix}.gbr`;
+                let drlPositioned = workDir + side + `-pos-${suffix}.drl`;
+
                 await gTrans2.positionCopper(state.positionBoard, stock);
 
                 if (!fse.existsSync(gbrPositioned)) {
