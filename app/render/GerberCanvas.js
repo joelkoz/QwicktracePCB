@@ -85,7 +85,7 @@ class GerberCanvas extends RPCClient {
 
         let instructionsSelector = '#' + DIV_INSTRUCTIONS_ID;
         if (this.deskewIndex <= 1) {
-           $(instructionsSelector).text(`Adjust pointer to hole ${this.deskewIndex+1} and press joystick`);
+           $(instructionsSelector).text(`Adjust pointer to hole ${this.deskewIndex+1} then press Ok`);
            this.startBlink();
            let thiz = this;
            let sample = this.deskewData[this.deskewIndex].sample

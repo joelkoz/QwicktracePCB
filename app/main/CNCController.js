@@ -695,18 +695,12 @@ class CNCController  extends MainSubProcess {
 
     async locatePoint(startingPos, wcsNum = wcsMACHINE_WORK) {
 
-        // First, if the joystick button is currently down (from a previous press), wait until
-        // it has been released...
-        if (Joystick.btnVal()) {
-            await untilTrue(500, () => { return Joystick.btnVal() === false }, 5000)
-        }
-
         // Turn laser on...
         await this.setPointer(true, startingPos, wcsNum);
         this.jogMode = true;
         this.jogZ = false;
         let thiz = this;
-        await untilEvent(MainMQ.getInstance(), 'global.cnc.joystickPress', () => { return thiz.jogMode === false })
+        await untilEvent(MainMQ.getInstance(), 'main.cnc.uiPositionSelect', () => { return thiz.jogMode === false })
         this.jogMode = false;
         this.jogZ = false;
         if (this.cnc.state !== CNC.CTRL_STATE_IDLE) {
@@ -714,7 +708,9 @@ class CNCController  extends MainSubProcess {
             await this.cnc.untilState(CNC.CTRL_STATE_IDLE);
         }
         await this.setPointer(false);
-        return this.getPos(wcsNum);
+        let pos = this.getPos(wcsNum);
+        console.log('locatePoint: user selected ', pos)
+        return pos;
     }
 
 

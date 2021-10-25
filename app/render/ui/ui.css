@@ -91,6 +91,16 @@ body {
      height: 40px;
  }
 
+ .btn.uiNext {
+     position: absolute;
+     left: auto;
+     right: 15px;
+     margin-top: 3px;
+     width: 120px;
+     height: 40px;
+ }
+
+
  .page {
      display: grid;
      grid-gap: 5px;
