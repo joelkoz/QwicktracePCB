@@ -14,7 +14,12 @@ class ConfigServer extends RPCServer {
             this.rpcAPI( {
                 async setAndSave(propertyName, propertyValue) {
                     return await Config.setAndSave(propertyName, propertyValue);
+                },
+
+                async load() {
+                    return await Config.load();
                 }
+
             });
 
         }

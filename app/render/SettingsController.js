@@ -694,6 +694,33 @@ class SettingsController extends RPCClient {
                },
 
 
+               { id: "reloadConfig",
+                 wizard: {
+                    title: "Reload configuration file",
+                    cancelLandingPage: "settingsPage",
+                    steps: [
+                            { id: "reload",
+                                subtitle: "Reload config",
+                                instructions: "Reloading configuration Standby...",
+                                buttonDefs: [
+                                { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                                ],
+                                onActivate: async (wizStep) => {
+                                    await thiz.rpCall('config.load');
+                                    thiz.wizardNext()
+                                }
+                            },
+                          { id: "done",
+                            subtitle: "Configuration Reload",
+                            instructions: "Configuration load complete",
+                            buttonDefs: [
+                               { label: "Done", fnAction: () => { thiz.finishWizard() } }
+                            ],
+                        }                              
+                    ]
+                 }
+               },
+
                { id: "millReset",
                  wizard: {
                     title: "Reset mill",
