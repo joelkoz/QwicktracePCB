@@ -176,6 +176,13 @@ class CNCController  extends MainSubProcess {
             MainMQ.emit('render.cnc.pos', data);
         });
 
+
+        this.cnc.on('sender', (stateData) => {
+            // const { total, sent, received, startTime, finishTime, elapsedTime, remainingTime } = stateData;
+            MainMQ.emit('render.cnc.senderState', stateData);
+        });
+
+        
         this.zprobe.on(ZProbe.EVT_PRESSED, (state) => {
             MainMQ.emit('render.cnc.zprobe', state);
         });
@@ -202,7 +209,6 @@ class CNCController  extends MainSubProcess {
                     MainMQ.emit('render.cnc.autolevelProbeNum', probeNum);
                 }
                 else if (data.startsWith('(AL: done')) {
-                    thiz.autolevelInProgress = false;
                     console.log('Autolevel completed');
                     this.gotoSafeZ();
                     MainMQ.emit('cnc-autolevel-complete');
@@ -925,7 +931,7 @@ class CNCController  extends MainSubProcess {
         let margin = 7;
         let stockWidth = stock.width;
         let stockHeight = stock.height;
-        let probeHeight = 1;
+        let probeHeight = 1.75;
         let gridSize = 7.5;
         let gcode = `(#autolevel D${gridSize} H${probeHeight} F${probeFeedRate} M${margin} P1 X${stockWidth} Y${stockHeight})`;
 
@@ -933,7 +939,9 @@ class CNCController  extends MainSubProcess {
         console.log('Starting autolevel');
         this.cnc.sendGCode(gcode);
 
-        await untilEvent(MainMQ.getInstance(), 'cnc-autolevel-complete', () => { return this.autolevelInProgress === false })        
+        await untilEvent(MainMQ.getInstance(), 'cnc-autolevel-complete', () => { return this.autolevelInProgress === false })
+
+        this.autolevelInProgress = false;
     }
 
 
@@ -961,7 +969,7 @@ class CNCController  extends MainSubProcess {
             this.autolevelReapplyInProgress = true;
             this.cnc.sendGCode('(#autolevel_reapply)');
 
-            await untilEvent(MainMQ.getInstance(), 'cnc-autolevel-apply-complete', 30000)
+            await untilEvent(MainMQ.getInstance(), 'cnc-autolevel-apply-complete', 45000)
 
             this.cnc.senderStart();
 

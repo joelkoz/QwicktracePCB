@@ -241,9 +241,21 @@ class MillController extends AlignmentController {
                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }
                   ],
                   onActivate: async (wizStep) => {
+                      wizStep.statusListener = RenderMQ.on('render.cnc.senderState', (senderStatus) => {
+                          const { total, sent, received, startTime, finishTime, elapsedTime, remainingTime } = senderStatus;
+                          let completed = Math.round((sent / total) * 100)
+                          if (!total) {
+                            completed = 0;
+                          }
+                          let status = `Completed: ${completed}% Elapsed: ${thiz.formatDuration(elapsedTime)} Remaining: ${thiz.formatDuration(remainingTime)}`
+                          thiz.setWizardStatusText(status)
+                      });
                       await thiz.rpCall('cnc.millPCB', profile)
                       await thiz.rpCall('cnc.loadStock')
                       thiz.finishMilling();
+                  },
+                  onDeactivate: (wizStep) => {
+                      wizStep.statusListener.off();
                   }
                 },
 
@@ -254,7 +266,7 @@ class MillController extends AlignmentController {
                     { label: "Yes", fnAction: () => { thiz.finishMillWizard(true) } },
                     { label: "No", fnAction: () => { thiz.finishMillWizard(false) } }
                   ],
-                  onActivate: async (wizStep) => {
+                  onActivate: (wizStep) => {
                   }
                 }
 
@@ -264,6 +276,19 @@ class MillController extends AlignmentController {
         window.uiController.startWizard(wizard);
     }
 
+
+    formatDuration(ms) {
+      let secs = Math.round(ms / 1000);
+      let totalMins = (secs / 60);
+      let mins = (secs % 60);
+      let hours = (totalMins / 60);
+      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    }
+
+
+    setWizardStatusText(status) {
+      window.setWizardStatusText(status)
+    }
 
     updateUiProbeStatus() {
        window.setWizardStatusText(`Probing ${this.probeNum} of ${this.probeCount}`)
@@ -299,6 +324,7 @@ class MillController extends AlignmentController {
             profile.state.action = 'drill';
             profile.state.alignStock = false;
             profile.state.stockIsBlank = false;
+            profile.state.stockReuse = true;
             window.uiController.state = profile.state;
             window.uiController.initProcessing();
         }
