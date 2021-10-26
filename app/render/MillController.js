@@ -247,7 +247,7 @@ class MillController extends AlignmentController {
                           if (!total) {
                             completed = 0;
                           }
-                          let status = `Completed: ${completed}% Elapsed: ${thiz.formatDuration(elapsedTime)} Remaining: ${thiz.formatDuration(remainingTime)}`
+                          let status = `Sent: ${completed}% Elapsed: ${thiz.formatDuration(elapsedTime)} Remaining: ${thiz.formatDuration(remainingTime)}`
                           thiz.setWizardStatusText(status)
                       });
                       await thiz.rpCall('cnc.millPCB', profile)
@@ -278,11 +278,12 @@ class MillController extends AlignmentController {
 
 
     formatDuration(ms) {
-      let secs = Math.round(ms / 1000);
-      let totalMins = (secs / 60);
-      let mins = (secs % 60);
-      let hours = (totalMins / 60);
-      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+      let ttlSecs = Math.round(ms / 1000);
+      let secs = Math.round(ttlSecs % 60);
+      let ttlMins = Math.trunc(ttlSecs / 60);
+      let mins = (ttlMins % 60);
+      let hours = Math.trunc(ttlMins / 60);
+      return `${hours.toFixed(0).padStart(2, '0')}:${mins.toFixed(0).padStart(2, '0')}:${secs.toFixed(0).padStart(2, '0')}`
     }
 
 
