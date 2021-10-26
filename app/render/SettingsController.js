@@ -59,9 +59,11 @@ class SettingsController extends RPCClient {
                                     try {
                                         await thiz.rpCall('cnc.setPointer', false)
                                         let mpos = await thiz.rpCall('cnc.getMPos');
+                                        let cutConfig = thiz.config.cnc.cut;
+                                        let halfBit = cutConfig.bitWidth / 2;
                                         let cutData = {
                                             start: { mx: mpos.x, my: mpos.y },
-                                            end: { mx: mpos.x, my: thiz.config.cnc.locations.ur.y }
+                                            end: { mx: mpos.x, my: thiz.config.cnc.locations.ur.y + halfBit }
                                         }
                                         let completed = await thiz.rpCall('cnc.multiPassCut', cutData);
                                         thiz.rpCall('cnc.loadStock')
@@ -105,12 +107,14 @@ class SettingsController extends RPCClient {
                                     try {
                                         await thiz.rpCall('cnc.setPointer', false)
                                         let mpos = await thiz.rpCall('cnc.getMPos');
+                                        let cutConfig = thiz.config.cnc.cut;
+                                        let halfBit = cutConfig.bitWidth / 2;
                                         let boardWidth = mpos.x - thiz.config.cnc.locations.ur.x;
                                         let halfWidth = boardWidth / 2;
                                         let xpos = thiz.config.cnc.locations.ur.x - halfWidth;
                                         let cutData = {
                                             start: { mx: xpos, my: mpos.y },
-                                            end: { mx: xpos, my: thiz.config.cnc.locations.ur.y }
+                                            end: { mx: xpos, my: thiz.config.cnc.locations.ur.y + halfBit }
                                         }
                                         let completed = await thiz.rpCall('cnc.multiPassCut', cutData);
                                         thiz.rpCall('cnc.loadStock')

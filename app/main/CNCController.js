@@ -1074,22 +1074,21 @@ class CNCController  extends MainSubProcess {
         try {
             let cutConfig = Config.cnc.cut;
 
-            let halfBit = cutConfig.bitWidth / 2;
             let cutStartPos = {};
             let cutEndPos = {};
             if (cutData.start.mx === cutData.end.mx) {
                // A vertical cut...
                cutStartPos.x = cutData.start.mx;
                cutEndPos.x = cutStartPos.x;
-               cutStartPos.y = cutData.start.my - halfBit;
-               cutEndPos.y = cutData.end.my + halfBit;
+               cutStartPos.y = cutData.start.my;
+               cutEndPos.y = cutData.end.my;
             }
             else {
               // A horizontal cut
               cutStartPos.y = cutData.start.my;
               cutEndPos.y = cutStartPos.y;
-              cutStartPos.x = cutData.start.mx + halfBit;
-              cutEndPos.x = cutData.end.mx - halfBit;
+              cutStartPos.x = cutData.start.mx;
+              cutEndPos.x = cutData.end.mx;
 
             }
             let depthPerPass = cutConfig.depth / cutConfig.passes;
