@@ -288,7 +288,7 @@ class SettingsController extends RPCClient {
                     steps: [
                         { id: "connectZProbe",
                             subtitle: "ZProbe Clip",
-                            instructions: "Connect zprobe clip to whichever bit is in the mill and" +
+                            instructions: "Connect zprobe clip to whichever bit is in the mill and " +
                                           "place the ZProbe arm onto the PCB.",
                             buttonDefs: [
                               { label: "Continue", next: true, btnClass: 'zProbeContinue' },
