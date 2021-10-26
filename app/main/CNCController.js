@@ -364,18 +364,14 @@ class CNCController  extends MainSubProcess {
                 return thiz.findPCBOrigin(stock);
             },
 
-            async autolevelPCB(stock) {
-                await thiz.autolevelPCB(stock);
+            async autolevelPCB(profile) {
+                await thiz.autolevelPCB(profile);
                 return true;
             },
 
             async gotoSafeZ() {
                 await thiz.gotoSafeZ();
                 return thiz.cnc.mpos;
-            },
-
-            async autolevelPCB(stock) {
-                return await thiz.autolevelPCB(stock);
             },
 
             async millPCB(profile) {
@@ -920,23 +916,41 @@ class CNCController  extends MainSubProcess {
 
     }
 
+    async autolevelPCB(profile) {
+        // Future code to only autolevel where PCB is located:
+        // let gData = await ProjectLoader.getWorkAsGerberData(profile);
+        // let copperBB = gData.boundingBoxes.copper.both;
+        // let ll = copperBB.min;
+        // let copperSize = copperBB.size();
+        // let area = { x: ll.x, y: ll.y, width: copperSize.x, height: copperSize.y }
+
+        let stock;
+        if (profile.stock.actual) {
+            stock = profile.stock.actual;
+        }
+        else {
+            stock = profile.stock;
+        }
+
+        let area = { x: 0, y: 0, width: stock.width, height: stock.height }
+        return await this.autolevelPCBArea(area);
+    }
 
 
-
-    async autolevelPCB(stock) {
+    async autolevelPCBArea(area) {
 
         this.cnc.selectWCS(wcsPCB_WORK);
-        this.cnc.goto({x: 0, y: 0}, wcsPCB_WORK);
+        this.cnc.goto({x: area.x, y: area.y}, wcsPCB_WORK);
         let probeFeedRate = 50;
         let margin = 7;
-        let stockWidth = stock.width;
-        let stockHeight = stock.height;
+        let alWidth = area.width;
+        let alHeight = area.height;
         let probeHeight = 1.75;
         let gridSize = 7.5;
-        let gcode = `(#autolevel D${gridSize} H${probeHeight} F${probeFeedRate} M${margin} P1 X${stockWidth} Y${stockHeight})`;
+        let gcode = `(#autolevel D${gridSize} H${probeHeight} F${probeFeedRate} M${margin} P1 X${alWidth} Y${alHeight})`;
 
         this.autolevelInProgress = true;
-        console.log('Starting autolevel');
+        console.log('Starting autolevel of area ', area)
         this.cnc.sendGCode(gcode);
 
         await untilEvent(MainMQ.getInstance(), 'cnc-autolevel-complete', () => { return this.autolevelInProgress === false })

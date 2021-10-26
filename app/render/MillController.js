@@ -199,7 +199,7 @@ class MillController extends AlignmentController {
                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                   onActivate: async (wizStep) => {
-                      await thiz.rpCall('cnc.autolevelPCB', profile.stock.actual)
+                      await thiz.rpCall('cnc.autolevelPCB', profile)
                       ui.wizardNext();
                   }
                 },

@@ -249,12 +249,30 @@ class GerberData extends EventEmitter {
               case 'drill':
                   this.loadDrillFile(fileName);
                   break;
+
               case 'outline':
                   this.loadEdgeCuts(fileName);
                   break;
+
               case 'copper':
                   this.loadTraces(fileName, gType.side);
                   break;
+
+              default: {
+                  // TODO Fix this terrible hack! whatsThatGerber() is not
+                  // reliable with our internal file names. If we get
+                  // here, assume we are using a copper trace file, and
+                  // the name contains either 'top' or 'bottom'
+                  let side;
+                  if (fileName.indexOf('top') >= 0) {
+                      side = 'top'
+                  }
+                  else {
+                    side = 'bottom'
+                  }
+                  this.loadTraces(fileName, side);
+                  break;
+              }                  
           }
        }
        else {
