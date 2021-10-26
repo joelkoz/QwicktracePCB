@@ -492,8 +492,10 @@ class UIController extends RPCClient {
         let lastState = this.lastProfile.state;
         if (lastState) {
             let state = this.state;
-            return (state.projectId === lastState.projectId &&
-                    state.side != lastState.side);
+            if (state.projectId === lastState.projectId &&
+                state.side != lastState.side) {
+                return true;
+            }
         }
         return this.state.action === 'drill';
     }
@@ -535,6 +537,7 @@ class UIController extends RPCClient {
     stockContinue() {
         this.setState('alignStock', false)
         this.setState('stockIsBlank', false);
+        this.setState('stockReuse', true);
         this.showPage('initProcessPage');
     }
 
@@ -546,6 +549,7 @@ class UIController extends RPCClient {
     stockProcessed() {
         this.setState('alignStock', true)
         this.setState('stockIsBlank', false);
+        this.setState('stockReuse', false);
         this.showPage('stockSelectPage');
     }
 
@@ -567,7 +571,11 @@ class UIController extends RPCClient {
         let defaults = this.profileList.default;
 
         let stock, material;
-        if (state.stockId) {
+        if (state.stockReuse) {
+            stock = this.lastProfile.stock;
+            material = this.lastProfile.material;
+        }
+        else if (state.stockId) {
             // Use user selected stock in the processing profile
             stock = this.profileList[state.stockId].stock; 
             material = this.profileList[stock.materialId].material;
