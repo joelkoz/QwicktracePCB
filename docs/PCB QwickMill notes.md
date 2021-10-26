@@ -16,7 +16,7 @@ This file contains general notes I made as I was developing the mill and its sof
 * 30 degree VBit made a much smoother cut than then 5/32" end mill
 
 ### Helpful hints
-* Place a sheet of tin foil over milled PCB to be able to autolevel it
+* Place a sheet of tin foil over milled PCB to be able to zprobe or autolevel it
 * Scouring pad is great to clean up loose copper bits after milling
 
 
