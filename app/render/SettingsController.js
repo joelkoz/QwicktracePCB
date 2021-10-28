@@ -35,7 +35,20 @@ class SettingsController extends RPCClient {
                                                 "Up/Down controlling the Y axis or Z axis.  Press Cut to start " +
                                                 "cutting.",
                                 buttonDefs: [
-                                    { label: "Toggle Laser", call: { name: 'cnc.setPointer', data: [] } },
+                                    { label: "Goto", fnAction: async () => {  
+                                            let x = await ui.getNumber('Goto X');
+                                            let y = await ui.getNumber('Goto Y');
+                                            if (x || y) {
+                                                let mpos = {};
+                                                if (x) {
+                                                    mpos.x = thiz.config.cnc.locations.ur.x - x;
+                                                }
+                                                if (y) {
+                                                    mpos.y = thiz.config.cnc.locations.ur.y - y;
+                                                }
+                                                await thiz.rpCall('cnc.goto', mpos);
+                                            }
+                                       } },
                                     { label: "Cut", next: true },
                                     { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
                                 ],
@@ -321,8 +334,8 @@ class SettingsController extends RPCClient {
                            { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                         ],
                         onActivate: async (wizStep) => {
-                           await thiz.rpCall('cnc.zPadPosition');
                            await thiz.rpCall('cnc.gotoSafeZ');
+                           await thiz.rpCall('cnc.zPadPosition', false);
                            await thiz.rpCall('cnc.moveXY', -9, 0)
                            await thiz.rpCall('cnc.jogMode', true)
                         },
@@ -481,7 +494,13 @@ class SettingsController extends RPCClient {
                             ],
                             onActivate: async (wizStep) => {
                                 let pcbProbeOffset = thiz.calZPadZ - thiz.calPCBZ
-                                thiz.rpCall('config.setAndSave', 'cnc.zheight.zpad.pcbProbeOffset', pcbProbeOffset)
+                                if (pcbProbeOffset < 0) {
+                                    thiz.rpCall('config.setAndSave', 'cnc.zheight.zpad.pcbProbeOffset', pcbProbeOffset)
+                                }
+                                else {
+                                    console.log('Calibration fail: results of pcb calibrate are positive!?')
+                                    thiz.setWizardInstructions('Calibration failed. Calculated offset was positive')
+                                }
                             }
                         }
       
@@ -519,7 +538,8 @@ class SettingsController extends RPCClient {
                                { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                             ],
                             onActivate: async (wizStep) => {
-                                await thiz.rpCall('cnc.zPadPosition');
+                                await thiz.rpCall('cnc.gotoSafeZ');
+                                await thiz.rpCall('cnc.zPadPosition', false);
                                 await thiz.rpCall('cnc.moveXY', -9, 0)
                                 await thiz.rpCall('cnc.jogMode', true)
                             },
