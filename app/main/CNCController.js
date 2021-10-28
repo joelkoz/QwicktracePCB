@@ -247,8 +247,8 @@ class CNCController  extends MainSubProcess {
                 return thiz.cnc.mpos;
             },
 
-            async zPadPosition() {
-                let result = await thiz.zPadPosition();
+            async zPadPosition(adjustZ = true) {
+                let result = await thiz.zPadPosition(adjustZ);
                 return result;
             },
 
@@ -741,7 +741,7 @@ class CNCController  extends MainSubProcess {
         return stockActual;
     }
 
-    async zPadPosition() {
+    async zPadPosition(adjustZ = true) {
 
         let zheight = Config.cnc.zheight;
         let zpad = Config.cnc.locations.zpad;
@@ -751,7 +751,9 @@ class CNCController  extends MainSubProcess {
         let zpos = zheight.zpad.startZ;
 
         await this.cnc.untilGoto({ x: zpad.x, y: zpad.y }, wcsMACHINE_WORK);
-        await this.cnc.untilGoto({ z: zpos }, wcsMACHINE_WORK);
+        if (adjustZ) {
+           await this.cnc.untilGoto({ z: zpos }, wcsMACHINE_WORK);
+        }
 
         this.jogMode = true;
         this.jogZ = true;

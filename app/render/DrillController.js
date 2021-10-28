@@ -80,8 +80,9 @@ class DrillController extends AlignmentController {
 
 
                 { id: "connectZProbe",
-                  subtitle: "Prepare to zprobe Zpad",
-                  instructions: "Load mill with drilling bit. Connect zprobe clip to drilling bit.",
+                  subtitle: "Prepare to zprobe PCB",
+                  instructions: "Load mill with drilling bit. Connect zprobe clip to drilling bit and place zprobe " +
+                                "arm on PCB",
                   buttonDefs: [
                      { label: "Continue", next: true, btnClass: 'zProbeContinue' },
                      { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }
@@ -91,11 +92,9 @@ class DrillController extends AlignmentController {
                         if (window.cncZProbe) {
                            // We can not continue if ZProbe is currently "pressed"
                            $('#wizardPage .zProbeContinue').css("display", "none");
-                           thiz.setWizardInstructions(wizStep.instructions)                           
                         }
                         else {
                             // Enable continue button
-                            thiz.setWizardInstructions('')
                             $('#wizardPage .zProbeContinue').css("display", "block");
                         }
                     }
@@ -109,15 +108,18 @@ class DrillController extends AlignmentController {
                 },
         
 
-                { id: "posZProbe",
-                  subtitle: "ZPad Probe",
-                  instructions: "Use joystick to position spindle approx 2 to 3 mm over Zpad",
+                { id: "posPcb",
+                  subtitle: "PCB Probe",
+                  instructions: "Use joystick to position spindle approx 2 to 3 mm over PCB in a conductive spot. "+
+                                "Use tin foil if no connection from spindle to zprobe arm exists.",
                   buttonDefs: [
                      { label: "Continue", next: true },
                      { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }                      
                   ],
                     onActivate: async (wizStep) => {
-                      await thiz.rpCall('cnc.zPadPosition');
+                      await thiz.rpCall('cnc.gotoSafeZ');
+                      await thiz.rpCall('cnc.zPadPosition', false);
+                      await thiz.rpCall('cnc.moveXY', -9, 0)
                       await thiz.rpCall('cnc.jogMode', true)
                     },
                     onDeactivate: (wizStep) => {
@@ -125,14 +127,14 @@ class DrillController extends AlignmentController {
                     }                  
                 },                
         
-                { id: "zProbePad",
-                  subtitle: "ZPad Probe",
-                  instructions: "Searching for pad surface. Standby...",
+                { id: "zProbePcb",
+                  subtitle: "PCB Probe",
+                  instructions: "Searching for PCB surface. Standby...",
                   buttonDefs: [
                     { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }                      
                   ],
                   onActivate: async (wizStep) => {
-                    await thiz.rpCall('cnc.zProbePad', false);
+                    await thiz.rpCall('cnc.zProbePCB');
                     ui.wizardNext();
                   }
                 },
