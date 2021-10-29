@@ -119,6 +119,7 @@ pi-hat/kicad/**/*-cache.lib
 .vscode/launch.json
 config.json
 temp/*
+temp2/*
 
 *.svg
 config.json-backup
