@@ -324,6 +324,13 @@ class CNCController  extends MainSubProcess {
                 let oldMode = thiz.jogMode;
                 thiz.jogMode = modeOn;
                 thiz.jogZ = false;
+                if (oldMode && !modeOn) {
+                   // Jog mode was on, now it is off. Make sure we
+                   // are idle before we return.
+                   if (thiz.cnc.state != CNC.CTRL_STATE_IDLE) {
+                       await thiz.cnc.untilState(CNC.CTRL_STATE_IDLE)
+                   }
+                }
                 return oldMode;
             },
 
@@ -436,6 +443,10 @@ class CNCController  extends MainSubProcess {
     set jogMode(newMode) {
         if (this.__jogMode != newMode) {
            this.__jogMode = newMode;
+           if (!newMode) {
+               // Jog mode was just turned off...
+               this.cnc.jog(0, 0, false);
+           }
            MainMQ.emit('render.cnc.jog', { jogMode: this.__jogMode, jogZ: this.__jogZ })
         }
     }
