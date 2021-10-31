@@ -5,7 +5,7 @@ const { untilTrue, untilEvent, untilDelay } = require('promise-utils');
 const Config = require('./Config.js');
 const { setIntervalAsync, SetIntervalAsyncError } = require('set-interval-async/fixed')
 const { clearIntervalAsync } = require('set-interval-async');
-const Joystick = require('./Joystick');
+const JoystickController = require('./JoystickController.js');
 
 
 // An "equals" function that does a "shallow" comparison
@@ -65,23 +65,16 @@ class CNCController  extends MainSubProcess {
 
         console.log('Initializing CNC mill...');
 
-        const Joystick = require('./Joystick');
         const ZProbe = require('./cnc/ZProbe');
         CNC = require('./cnc/CNC');
         const LaserPointer = require('./cnc/LaserPointer');
-        const Kefir = require('kefir');
         
         this.cnc = new CNC();
         this.pointer = new LaserPointer();
         this.zprobe = new ZProbe();
-        Joystick.init();
 
         const thiz = this;
 
-        const msStickCheck = 100;
-        this.stick = Kefir.fromPoll(msStickCheck, Joystick.stickVal).filter(hasChanged());
-        this.stickBtn = Kefir.fromPoll(msStickCheck, Joystick.btnVal).filter(hasChanged());
-        
         this.__jogZ = false;
         this.jogMode = false;
 
@@ -89,31 +82,6 @@ class CNCController  extends MainSubProcess {
         CNC.travel.x = Math.abs(Config.cnc.locations.maxLL.x)
         CNC.travel.y = Math.abs(Config.cnc.locations.maxLL.y)
         CNC.travel.z = Math.abs(Config.cnc.zheight.maxJog)
-
-        this.stick.onValue(stick => {
-            if (thiz.jogMode) {
-                thiz.cnc.jog(stick.x, stick.y, thiz.jogZ);
-            }
-            else {
-                MainMQ.emit('global.cnc.joystick', stick);
-            }
-        });
-        
-        
-        this.stickBtn.onValue(pressed => {
-            if (thiz.stickBtnDebounceDelay) {
-                clearInterval(thiz.stickBtnDebounceDelay)
-            }
-            thiz.stickBtnDebounceDelay = setTimeout(() => {
-                thiz.stickBtnDebounceDelay = null;
-                if (pressed) {
-                     MainMQ.emit('global.cnc.joystickPress', thiz.jogMode);
-                    if (thiz.jogMode) {
-                        thiz.jogZ = !thiz.jogZ;
-                    }
-                }
-            }, 100);
-        });
 
         this.cncConnected = false;
         this.cnc.on('ready', () => {
@@ -442,9 +410,25 @@ class CNCController  extends MainSubProcess {
 
     set jogMode(newMode) {
         if (this.__jogMode != newMode) {
+           // Jog mode has changed...
            this.__jogMode = newMode;
-           if (!newMode) {
+           if (newMode) {
+               // jog mode was just turned on...
+               JoystickController.captureJoystick((evtName, data) => {
+                    if (evtName === 'stick') {
+                        this.cnc.jog(data.x, data.y, this.jogZ);
+                    }
+                    else if (evtName === 'button') {
+                        let pressed = data;
+                        if (pressed) {
+                            this.jogZ = !this.jogZ;
+                        }
+                    }
+               });
+           }
+           else {
                // Jog mode was just turned off...
+               JoystickController.captureJoystick();
                this.cnc.jog(0, 0, false);
            }
            MainMQ.emit('render.cnc.jog', { jogMode: this.__jogMode, jogZ: this.__jogZ })

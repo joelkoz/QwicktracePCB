@@ -10,6 +10,7 @@ const CNCController = require('./CNCController.js');
 const Config = require('./Config.js');
 const MainMQ = require('./MainMQ.js');
 const ConfigServer = require('./ConfigServer.js');
+const JoystickController = require('./JoystickController.js');
 
 let win = null;
 let fileLoader = null;
@@ -18,6 +19,7 @@ let projectLoader = null;
 let uiLoader = null;
 let uvController = null;
 let cncController = null;
+let joystickController = null;
 
 GPIO.setConfiguration(Config.pigpio);
 
@@ -103,6 +105,7 @@ MainMQ.on('main.startup.initializeDone', () => {
   fileLoader = new FileLoader(win);
   profileLoader = new ProfileLoader(win);
   uiLoader = new UILoader(win);
+  joystickController = new JoystickController(win)
 
   if (Config.app.hasPCB) {
      uvController = new UVController(win);
