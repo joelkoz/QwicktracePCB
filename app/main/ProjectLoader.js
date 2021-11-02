@@ -186,8 +186,8 @@ class ProjectLoader  extends MainSubProcess {
                     stock = profile.stock;
                     suffix = 'stock-profile'
                 }
-                let gbrPositioned = workDir + side + `-pos-${suffix}.gbr`;
-                let drlPositioned = workDir + side + `-pos-${suffix}.drl`;
+                let gbrPositioned = workDir + side + `-pos${state.positionBoard}-${suffix}.gbr`;
+                let drlPositioned = workDir + side + `-pos${state.positionBoard}-${suffix}.drl`;
 
                 await gTrans2.positionCopper(state.positionBoard, stock);
 
