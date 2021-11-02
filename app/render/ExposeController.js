@@ -1,5 +1,6 @@
 
 "use strict"
+import { ExposureCanvas } from './ExposureCanvas.js';
 import { RPCClient } from './RPCClient.js'
 
 /*
@@ -26,212 +27,170 @@ window.innerHeight: 2560
 
 class ExposeController extends RPCClient {
 
-   constructor(config) {
+   constructor() {
         super('expose');
 
-        this.config = config.mask;
-        this.config.height = config.window.height;
-        this.paintCtx = { url: null};
-
-        let canvas = document.getElementById('uv-mask');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        let thiz = this;
-     
-        window.addEventListener('resize', () => {
-           canvas.width = window.innerWidth;
-           canvas.height = window.innerHeight;
-           thiz.paint();
-        });
-     
-        this.resetPaintCtx();
+        this.exposureCanvas = new ExposureCanvas();
 
         window.uiDispatch.expose = (profile) => {
-         thiz.prepareExposure(profile);
+           this.startExposeWizard(profile);
         }
    }
 
 
-   async prepareExposure(profile) {
-      this.exposureProfile = profile;
-      let renderObj = await this.rpCall('files.loadSVG', profile, true);
-      this.renderSVG(renderObj);
-  }
+   startExposeWizard(profile) {
+      this.activeProfile = profile;
 
-
-  startExposure() {
-     let ui = window.uiController;
-     let exposure = this.exposureProfile.exposure;
-     this.rpCall('uv.expose', exposure);
-  }
-
-
-  cancelExposure() {
-     let ui = window.uiController;
-     this.rpCall('uv.cancel');
-     ui.showPage('exposureStartPage');
-  }
-
-
-  peek() {
-     this.rpCall('uv.peek');
-  }   
-
-   invertImage() {
-        this.paintCtx.profile.invertImg = !this.paintCtx.profile.invertImg;
-        paint();
-    }
-     
-   invertCanvas() {
-        this.paintCtx.profile.invertImg = !this.paintCtx.profile.invertImg;
-        this.paintCtx.profile.invertCanvas = !this.paintCtx.profile.invertCanvas;
-        paint();
-   }
-     
-   mirrorImage() {
-        this.paintCtx.profile.mirror = !this.paintCtx.profile.mirror;
-        paint();
-   }
-     
-
-   paint() {
-      const canvas = document.getElementById('uv-mask');
-      const ctx = canvas.getContext('2d');
-   
-      // This is a hack to force a full screen repaint...
-      canvas.width = canvas.width;
-   
-      if (this.paintCtx.profile.invertImg) {
-         ctx.filter = "invert(100%)";
-      }
-      else {
-         ctx.filter = "none";
-      }
-   
-      if (this.paintCtx.profile.invertCanvas) {
-         canvas.style.backgroundColor = 'black';
-      }
-      else {
-         canvas.style.backgroundColor = 'white';
-      }
-   
-      ctx.clearRect(0,0,canvas.width, canvas.height);
-      if (this.paintCtx.img == null) {
-         return;
-      }
-   
-      let dx = 0;
-      let dy = 0;
-      let xScale = 1;
-      let yScale = 1;
-
-      if (this.paintCtx.profile.mirror) {
-         xScale = -1;
-         dx = -(this.config.width - this.config.marginX - this.paintCtx.minX);
-      }
-      else {
-         xScale = 1;
-         dx = this.config.marginX + this.paintCtx.minX;
-      }
-
-      yScale = 1;
-      dy = this.config.height - this.config.marginY - this.paintCtx.height  - this.paintCtx.minY;
-
-      ctx.save();
-      ctx.scale(xScale,yScale);
-         // let x;
-         // if (process.platform == 'darwin') {
-         //    // Mirror image left edge calc is different on Mac OS X Chrome...
-         //    minX = this.config.marginX - this.paintCtx.width / 2
-         // }
-         // else {
-         //    minX = -minX;
-         // }
-      ctx.drawImage(this.paintCtx.img, dx, dy, this.paintCtx.width, this.paintCtx.height);
-      ctx.restore();
-   }
-
-   
-   resetPaintCtx() {
-     
-      if (this.paintCtx.url != null) {
-         URL.revokeObjectURL(this.paintCtx.url);
-      }
-   
-      this.paintCtx = {
-         img: null,
-         url: null,
-         profile: {}
-      }
-      
-   }
-
-   
-   renderSVG(renderObj) {
-     
-      this.resetPaintCtx();
-      this.paintCtx.profile = renderObj.profile;
-      this.paintCtx.url = URL.createObjectURL(new Blob([renderObj.svg], { type: 'image/svg+xml' }));
-      this.paintCtx.viewBox = renderObj.viewBox;
-   
       let thiz = this;
-      this.paintCtx.img = new Image();
-      this.paintCtx.img.onload = function() {
+      let ui = window.uiController;
+      this.exposureCanceled = false;
+      this.exposureCanvas.reset();
+      this.finalMaskProfile = Object.assign({}, profile.mask);
 
-         // The image width and height as pre-determined by pixel width as a default...
-         thiz.paintCtx.width = this.naturalWidth;
-         thiz.paintCtx.height = this.naturalHeight;
-   
-         // What are the multipliers for the view box width and height?
-         let mw = renderObj.viewBox[2] / renderObj.width;
-         let mh = renderObj.viewBox[3] / renderObj.height;
+      let wizard = {
+          title: "Expose PCB",
 
-         // Convert view box offsets to their natural numbers...
-         let minX = renderObj.viewBox[0] / mw;
-         let minY = renderObj.viewBox[1] / mh;
+          cancelLandingPage: "startPage",
+          steps: [
+               { id: "start",
+                  subtitle: "Preparing files",
+                  instructions: "Preparing files for exposure...",
+                  buttonDefs: [
+                     { label: "Cancel", fnAction: () => { thiz.cancelExposure() } }                      
+                  ],
+                  onActivate: async (wizStep) => {
+                     // Initial exposure is using "sample" trace...
+                     profile.mask.traceColor = 'white';
+                     profile.mask.bgColor = 'black'
+                     await thiz.prepareExposure();
+                     thiz.nextStep();
+                  }
+               },
 
-         if (renderObj.units) {
-            switch (renderObj.units) {
-   
-               case 'mm':
-                  console.log('SVG size specified in mm');
-                  thiz.paintCtx.width = renderObj.width * thiz.config.ppmmWidth;
-                  thiz.paintCtx.height = renderObj.height * thiz.config.ppmmHeight;
-                  thiz.paintCtx.minX = minX * thiz.config.ppmmWidth;
-                  thiz.paintCtx.minY = minY * thiz.config.ppmmHeight;
-                  break;
-   
-               case 'cm':
-                  console.log('SVG size specified in cm');
-                  thiz.paintCtx.width = renderObj.width * thiz.config.ppmmWidth * 10.0;
-                  thiz.paintCtx.height = renderObj.height * thiz.config.ppmmHeight * 10.0;
-                  thiz.paintCtx.minX = minX * thiz.config.ppmmWidth * 10.0;
-                  thiz.paintCtx.minY = minY * thiz.config.ppmmHeight * 10.0;
-                  break;
+
+               { id: "placeStock",
+                  subtitle: "Place stock on table",
+                  instructions: "Place the stock face down in the same corner as the traces. Press Next to continue",
+                  buttonDefs: [
+                     { label: "Next", next: true },
+                     { label: "Cancel", fnAction: () => { thiz.cancelExposure() } }                      
+                  ],
+                  onActivate: async (wizStep) => {
+                     await thiz.rpCall('uv.safelight', true);
+                  },
+                  onDeactivate: async (wizStep) => {
+                     await thiz.rpCall('uv.safelight', false);
+                  }
+               },
+
+               { id: "findCorner",
+                  subtitle: "Locate Board Corner",
+                  instructions: "Position the cursor at the corner of the board closest to center or screen and press ok",
+                  buttonDefs: [
+                     { label: "Ok", fnAction: () => { thiz.exposureCanvas.activateCursor(false) } },
+                     { label: "Cancel", fnAction: () => { thiz.cancelExposure() } }                      
+                  ],
+                  onActivate: async (wizStep) => {
+                     let startX, startY;
+                     if (profile.state.side === 'bottom') {
+                         // Looking for LL corner...
+                         startX = 0;
+                         startY = 0;
+                     }
+                     else {
+                        // Looking for upper right corner...
+                        startX = 0;
+                        startY = profile.stock.height;
+                     }
+
+                     let corner = { x: startX, y: startY }
+                     corner = await this.exposureCanvas.getPcbLocation(corner);
+                     if (!this.exposureCanceled) {
+                        let dx = corner.x - startX;
+                        let dy = corner.y - startY;
+                        let profile = this.activeProfile;
+                        profile.stock.actual = { width: profile.stock.width - dx, height: profile.stock.height - dy }
+                        console.log('Stock actual', profile.stock.actual);
+                        thiz.nextStep();
+                     }
+                     else {
+                        console.log('get corner was canceled');
+                     }
+                  }
+               },
+
+
+               { id: "startExposure",
+                  subtitle: "Expose board",
+                  instructions: "Place lid on exposure table and press 'Start' to start the exposure process.",
+                  buttonDefs: [
+                     { label: "Start", next: true, btnClass: 'btnStartExposure' },
+                     { label: "Cancel", fnAction: () => { thiz.cancelExposure() } }                      
+                  ],
+                  onActivate: async (wizStep) => {
+                     // Prepare for final exposure using "real" trace mask...
+                     $('#wizardPage .btnStartExposure').css("display", "none");
+                     profile.mask = this.finalMaskProfile;
+                     await thiz.prepareExposure();
+                     $('#wizardPage .btnStartExposure').css("display", "block");
+                  }
+               },
+
+               { id: "expose",
+                  subtitle: "Exposing board",
+                  instructions: "Exposing...",
+                  buttonDefs: [
+                     { label: "Cancel", fnAction: () => { thiz.cancelExposure() } }                      
+                  ],
+                  onActivate: (wizStep) => {
+                     setTimeout(() => { ui.showPage('exposurePage', false)}, 25);
+                  }
+               }
+         ]
+      }
       
-               case 'in':
-                  console.log('SVG size specified in inches');
-                  thiz.paintCtx.width = renderObj.width * thiz.config.ppinWidth;
-                  thiz.paintCtx.height = renderObj.height * thiz.config.ppinHeight;
-                  thiz.paintCtx.minX = minX * thiz.config.ppinWidth;
-                  thiz.paintCtx.minY = minY * thiz.config.ppinHeight;
-                  break;
-      
-            }
-         }
-   
-         thiz.paintCtx.invertImg = renderObj.invert;
-         thiz.paintCtx.mirror = renderObj.mirror;
-         thiz.paint();
-   
-         // A second refresh seems to be needed on Rapsberry Pi...
-         setTimeout(() => { thiz.paint(); }, 10);
-   
-      }   
-   
-      this.paintCtx.img.src = this.paintCtx.url;
+      window.uiController.startWizard(wizard);
+
    }
+
+
+   nextStep() {
+      if (!this.exposureCanceled) {
+         window.uiController.wizardNext();
+      }
+   }
+
+   async prepareExposure() {
+      this.activeProfile.traceColor = this.activeProfile.mask.traceColor;
+      let renderObj = await this.rpCall('files.loadSVG', this.activeProfile, true);
+      this.exposureCanvas.setSVG(renderObj);
+   }
+
+
+   async startExposure() {
+     let ui = window.uiController;
+     let exposure = this.activeProfile.exposure;
+     await this.rpCall('uv.expose', exposure);
+   }
+
+
+   cancelExposure() {
+     this.exposureCanceled = true;
+     this.exposureCanvas.activateCursor(false)
+     this.exposureCanvas.reset();
+     this.rpCall('uv.cancel');
+     window.uiController.cancelWizard();
+     delete this.activeProfile;     
+   }
+
+
+   finishExposure() {
+      window.uiController.finishWizard();
+   }
+
+   peek() {
+     this.rpCall('uv.peek');
+   }   
      
 }
 

@@ -570,15 +570,17 @@ class UIController extends RPCClient {
         let state = this.state;
         let defaults = this.profileList.default;
 
-        let stock, material;
+        let stock, material, mask;
         if (state.stockReuse) {
             stock = this.lastProfile.stock;
             material = this.lastProfile.material;
+            mask = this.lastProfile.mask;
         }
         else if (state.stockId) {
             // Use user selected stock in the processing profile
             stock = this.profileList[state.stockId].stock; 
             material = this.profileList[stock.materialId].material;
+            mask = this.profileList[stock.materialId].mask
             if (!stock.width) {
                 // A custom stock setting was used...
                 stock = Object.assign({}, stock);
@@ -591,10 +593,14 @@ class UIController extends RPCClient {
             let originalSize = await this.rpCall('projects.getOriginalSize', state.projectId)
             stock = { width: originalSize.x, height: originalSize.y, materialId: defaults.material.name }
             material = defaults.material;
+            mask = defaults.mask;
         }
 
         // Build the complete profile used by all processing of this action...
         let profile = Object.assign({}, defaults, { material }, { stock }, { state });
+        if (mask) {
+            profile = Object.assign(profile, { mask });
+        }
 
         // Normalize so the width of the stock is always the long side...
         let longSide = Math.max(profile.stock.width, profile.stock.height);

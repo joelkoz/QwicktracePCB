@@ -4,5 +4,11 @@
         "actions": ["expose", "drill"],
         "sides": 2,
         "thickness": 1.5
+    },
+
+    "mask": {
+        "traceColor": "black",
+        "bgColor": "white"
     }
+
 }

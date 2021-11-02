@@ -68,7 +68,7 @@ class UVController  extends MainSubProcess {
             this.timer = setInterval(() => {
                 thiz.exposure.remain--;
                 if (this.exposure.remain <= 0) {
-                    thiz.cancel();
+                    thiz.exposureComplete();
                 }
                 thiz.exposureUpdate();
             }, 1000);
@@ -80,7 +80,12 @@ class UVController  extends MainSubProcess {
         }
     }
 
+    exposureComplete() {
+        this.cancel();
+        MainMQ.emit('render.ui.exposureComplete', this.exposure)
+    }
 
+    
     exposureUpdate() {
         MainMQ.emit('render.ui.exposureUpdate', this.exposure);
     }
@@ -91,19 +96,25 @@ class UVController  extends MainSubProcess {
             console.log('uv OFF');
             this.uv.analogWrite(0);
         }
+
+        if (this.timer) {
+            clearInterval(this.timer);
+         }
+         this.timer = null;
+
         this.cancelSafe();
     }
 
 
     cancelSafe() {
+        if (this.timer) {
+            clearInterval(this.timer);
+         }
+         this.timer = null;
+
         if (this.safe) {
             console.log('safelight OFF');
             this.safe.analogWrite(0);
-
-            if (this.timer) {
-               clearInterval(this.timer);
-            }
-            this.timer = null;
         }
     }
 
