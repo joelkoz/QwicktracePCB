@@ -158,7 +158,7 @@ class UIController extends RPCClient {
 
 
     popPage() {
-        this.pageStack.pop();
+        return this.pageStack.pop();
     }
 
 
@@ -567,7 +567,7 @@ class UIController extends RPCClient {
 
     async initProcessing() {
 
-        let state = this.state;
+        let state = Object.assign({}, this.state);
         let defaults = this.profileList.default;
 
         let stock, material, mask;
