@@ -116,7 +116,7 @@ class ExposeController extends RPCClient {
                      else {
                         console.log('get corner was canceled');
                      }
-                  }
+                   }
                },
 
 

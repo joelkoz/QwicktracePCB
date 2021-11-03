@@ -122,9 +122,12 @@ class ExposureCanvas extends RPCClient {
 
         const Config = window.appConfig;
 
-        // Calculate some basic info.  
-        this.pxMaskWidth = cw;
-        this.pxMaskHeight = ch;
+        // Calculate some basic info.  Since
+        // the display is rotated, the mask's
+        // width and height are reversed from
+        // the canvas size.
+        this.pxMaskWidth = ch;
+        this.pxMaskHeight = cw;
         
         this.ppNavX = Math.round(Config.mask.ppmmWidth / 2);
         this.ppNavY = Math.round(Config.mask.ppmmHeight / 2);
@@ -158,13 +161,15 @@ class ExposureCanvas extends RPCClient {
     // Sets the transformation matrix for the UI display.
     setTransform(ctx) {
 
+        ctx.resetTransform();
+
         // Origin at UL of screen. Y axis left to right,
         // X axis up/down. Thus, when monitor is flipped and
         // rotated on the exposure table, we have origin in
         // LL with x positive to right and Y positive up.
         ctx.translate(this.canvas.width, 0)
-        ctx.rotate(180 * Math.PI / 180);
-        ctx.scale(1, -1)
+        ctx.rotate(90 * Math.PI / 180);
+        // ctx.scale(1, -1)
 
         if (this.deskew) {
             // Apply additional deskew transformation as this
@@ -178,20 +183,21 @@ class ExposureCanvas extends RPCClient {
 
    paint() {
       const canvas = this.canvas;
-      const ctx = this.getContext();
       const Config = window.appConfig;
    
       // This is a hack to force a full screen repaint...
       canvas.width = canvas.width;
-   
+
+      const ctx = this.getContext();
       ctx.clearRect(0, 0, canvas.pxMaskWidth, canvas.pxMaskHeight);
 
       if (this.pcbInfo.img == null) {
          return;
       }
-   
+
       let pc = this.pcbInfo;
       ctx.save();
+
       ctx.fillStyle = this.pcbInfo.profile.mask.bgColor;
       ctx.fillRect(pc.pxBoardOrigin.x, pc.pxBoardOrigin.y, pc.pxBoardWidth, pc.pxBoardHeight);
       ctx.drawImage(this.pcbInfo.img, pc.pxCopperOrigin.x, pc.pxCopperOrigin.y, pc.pxCopperWidth, pc.pxCopperHeight);
@@ -298,6 +304,7 @@ class ExposureCanvas extends RPCClient {
          // A second refresh seems to be needed on Rapsberry Pi...
          setTimeout(() => { thiz.paint(); }, 10);
    
+         console.log('pcbInfo: ', pcb)
       }   
    
       pcb.img.src = pcb.url;
@@ -307,7 +314,7 @@ class ExposureCanvas extends RPCClient {
 
     // Draws the location cursor at the current location. If the cursor
     // is already displayed, it is moved to the new location.
-    drawCursor(cursorOn) {
+    drawCursor(cursorOn, csrColor='white') {
 
         const ctx = this.getContext()
 
@@ -317,7 +324,7 @@ class ExposureCanvas extends RPCClient {
         if (cursorOn) {
             this.drawCursor(false);
             let canvasCoord = this.cursor.location;
-            let color = 'white';
+            let color = csrColor;
 
             // Save the area we are about to draw on
             // by drawing its contents on to the "saveImage"
@@ -335,7 +342,6 @@ class ExposureCanvas extends RPCClient {
             ctx.fillRect(canvasCoord.x-1,  canvasCoord.y-ch , 3, CURSOR_SIZE);
           
             ctx.restore();        
-    
             this.cursor.point = Object.assign({}, canvasCoord);
         }
         else {
@@ -393,6 +399,7 @@ class ExposureCanvas extends RPCClient {
         if (this.cursor.active) {
             let stick = this.joystick;
 
+            if (Math.abs(stick.x) > Math.abs(stick.y))
             {
                 let dir = Math.sign(stick.x);
                 let deflection = Math.abs(stick.x);
@@ -411,7 +418,7 @@ class ExposureCanvas extends RPCClient {
                     this.drawPending = true;;
                 }
             }
-            {
+            else {
                 let dir = Math.sign(stick.y)
                 let deflection = Math.abs(stick.y);
                 let minInterval = this.deflectionToInterval(deflection);

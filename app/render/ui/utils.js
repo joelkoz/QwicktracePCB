@@ -1,6 +1,16 @@
 
 var uiPageActivate = {};
 
+// Simulate a button click with a touch event.
+// This function should be added as an event
+// response to the 'touchstart' event on
+// buttons.
+function uiTouchToClick() {
+    ui.publish('global.ui.btnPress');
+    $(this).trigger('click');
+}
+
+
 function uiListDown(listId) {
     let selector = '#' + listId;
     let optionCount = $(selector + ' option').length;
@@ -72,6 +82,7 @@ function uiInitList(listId, valueList, fnSort, nextPageId, fnFilter) {
 function uiAddButton(divSelector, label, onClick, classDef = "btn w3") {
     let newBtn = $(`<button type="button" class="${classDef}">${label}</button>`);
     newBtn.on('click', onClick);
+    newBtn.on('touchstart', uiTouchToClick);
     $(divSelector).append(newBtn);
 }
 
