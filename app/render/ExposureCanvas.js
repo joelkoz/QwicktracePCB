@@ -77,14 +77,21 @@ class ExposureCanvas extends RPCClient {
 
 
     async getPcbLocation(mmStart = { x: 0, y: 0}) {
+        let pxStart = this.toCanvas(mmStart);
+        let pxLocation = await this.getPixelLocation(pxStart)
+        let pcbCoord = this.toPCB(pxLocation);
+        return pcbCoord;
+    }
+
+
+    async getPixelLocation(pxStart = { x: 0, y: 0}) {
         await this.rpCall('uv.safelight', true);
-        this.cursor.location = this.toCanvas(mmStart);
+        this.cursor.location = pxStart
         this.activateCursor(true);
         await untilTrue(500, () => { return (this.cursor.active === false )}, () => { return false; });
         this.activateCursor(false);
-        let pcbCoord = this.toPCB(this.cursor.location);
         await this.rpCall('uv.safelight', false);
-        return pcbCoord;
+        return this.cursor.location
     }
 
 
@@ -380,19 +387,19 @@ class ExposureCanvas extends RPCClient {
             return 9999999;
         }
         else if (deflection > 0.95) {
-            this.ppNavX = Config.mask.ppmmWidth * 2;
-            this.ppNavY = Config.mask.ppmmHeight * 2;
+            this.ppNavX = Config.mask.ppmmWidth * 5;
+            this.ppNavY = Config.mask.ppmmHeight * 5;
             return 1;
         }
-        else if (deflection > 0.40) {
-            this.ppNavX = Config.mask.ppmmWidth;
-            this.ppNavY = Config.mask.ppmmHeight;
+        else if (deflection > 0.35) {
+            this.ppNavX = Math.round(Config.mask.ppmmWidth / 2);
+            this.ppNavY = Math.round(Config.mask.ppmmHeight / 2);
             return 200;
         }
         else {
             this.ppNavX = Math.round(Config.mask.ppmmWidth / 2);
             this.ppNavY = Math.round(Config.mask.ppmmHeight / 2);
-            return 500;
+            return 600;
         }
     }
 

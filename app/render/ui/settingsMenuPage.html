@@ -1,0 +1,56 @@
+<div id="settingsMenuPage" class="page">
+    <style type="text/css"> 
+
+        #settingsMenuPage .page-body {
+            display: grid;
+            grid-template-areas:
+               'buttonArea';
+            grid-template-rows: 4fr;
+        }
+
+        #settingsMenuPage .button-area {
+            grid-area: buttonArea;
+        }
+
+        #settingsMenuPage .button-area button {
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 20px;
+            height: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           <button type="button" class="btn w1 back">&#8592;</button>
+           Utilities
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="button-area">
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['settingsMenuPage'] = function() {
+            ui.clearPageStack();
+
+            const divSelector = '#settingsMenuPage .button-area';
+            $(divSelector).empty();
+
+            uiAddButton(divSelector, 'Calibrate', () => { uiSettings.showMenu('calibrate'); });
+
+            if (uiSettings.hasCNC()) {
+                uiAddButton(divSelector, 'Milling', () => { uiSettings.showMenu('mill'); });
+            }
+
+            if (uiSettings.hasPCB()) {
+                uiAddButton(divSelector, 'Exposure', () => { uiSettings.showMenu('expose'); });
+            }
+
+        };
+
+    </script>
+</div>

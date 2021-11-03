@@ -15,6 +15,7 @@ class SettingsController extends RPCClient {
 
         this.settingsWizards = [
                 { id: "cutPCB",
+                  menuCategory: 'mill',
                     wizard: {
                     title: "Cut PCB - Vertical",
                     finishLandingPage: "settingsPage",
@@ -149,6 +150,7 @@ class SettingsController extends RPCClient {
 
    
                { id: "home",
+                 menuCategory: 'mill',
                  wizard: {
                     title: "Home mill",
                     cancelLandingPage: "settingsPage",
@@ -169,6 +171,7 @@ class SettingsController extends RPCClient {
                },
 
                { id: "jog",
+                 menuCategory: 'mill',
                  wizard: {
                     title: "Jog Spindle",
                     finishLandingPage: "settingsPage",
@@ -197,6 +200,7 @@ class SettingsController extends RPCClient {
 
 
                { id: "zprobePad",
+                 menuCategory: 'mill',
                  wizard: {
                     title: "ZProbe Pad",
                     finishLandingPage: "settingsPage",
@@ -295,6 +299,7 @@ class SettingsController extends RPCClient {
                },
 
                { id: "zprobePCB",
+                 menuCategory: 'mill',
                  wizard: {
                     title: "ZProbe PCB",
                     finishLandingPage: "settingsPage",
@@ -392,6 +397,7 @@ class SettingsController extends RPCClient {
                },
 
                { id: "calibrateProbeArea",
+                 menuCategory: 'calibrate:mill',
                  wizard: {
                     title: "Calibrate Probe Area Offsets",
                     finishLandingPage: "settingsPage",
@@ -511,6 +517,7 @@ class SettingsController extends RPCClient {
 
 
                { id: "calibrateLaser",
+                 menuCategory: 'calibrate:mill',
                  wizard: {
                     title: "Calibrate Laser Pointer",
                     finishLandingPage: "settingsPage",
@@ -685,6 +692,7 @@ class SettingsController extends RPCClient {
 
 
                { id: "testCNCPins",
+                 menuCategory: 'calibrate:mill',
                  wizard: {
                     title: "Test CNC Pins",
                     cancelLandingPage: "settingsPage",
@@ -719,6 +727,7 @@ class SettingsController extends RPCClient {
 
 
                { id: "reloadConfig",
+                 menuCategory: 'calibrate',
                  wizard: {
                     title: "Reload configuration file",
                     cancelLandingPage: "settingsPage",
@@ -746,6 +755,7 @@ class SettingsController extends RPCClient {
                },
 
                { id: "millReset",
+                 menuCategory: 'mill',
                  wizard: {
                     title: "Reset mill",
                     cancelLandingPage: "settingsPage",
@@ -763,9 +773,101 @@ class SettingsController extends RPCClient {
                             }                              
                     ]
                  }
+               },
+
+
+               { id: "calibrateExposureMask",
+                 menuCategory: 'calibrate:expose',
+                 wizard: {
+                    title: "Calibrate exposure mask",
+                    cancelLandingPage: "settingsPage",
+                    steps: [
+                            { id: "reset",
+                                subtitle: "Locate corners",
+                                instructions: "Resetting mill. Standby...",
+                                buttonDefs: [
+                                   { label: "Ok", fnAction: () => { uiExpose.exposureCanvas.activateCursor(false) } },
+                                   { label: "Cancel", fnAction: () => { thiz.cancelWizard(); uiExpose.exposureCanvas.activateCursor(false) } }
+                                ],
+                                onActivate: async (wizStep) => {
+                                     let area = thiz.config.mask.area;
+                                     thiz.resetMaskCorners();
+                                     uiExpose.exposureCanvas.reset();
+                                     try {
+                                        await thiz.getMaskCorner('pxLL', 'lower left');
+                                        await thiz.getMaskCorner('pxUL', 'upper left');
+                                        await thiz.getMaskCorner('pxUR', 'upper right');
+                                        await thiz.getMaskCorner('pxLR', 'lower right');
+                                        thiz.rpCall('config.setAndSave', 'mask.area', thiz.config.mask.area);
+                                        thiz.finishWizard();
+                                     }
+                                     catch (err) {
+                                        // Throw away any changes and reload old config...
+                                        console.log(err)
+                                        await thiz.rpCall('config.load');
+                                    }
+                                }
+                            }                              
+                    ]
+                 }
                }
 
+
         ];
+    }
+
+
+    resetMaskCorners() {
+        let canvasWidth = this.config.window.height;
+        let canvasHeight = this.config.window.width - this.config.ui.width;
+        let area = this.config.mask.area;
+
+        area.pxUL = {
+            x: 0,
+            y: canvasHeight
+        };
+        area.pxLL = {
+            x: 0,
+            y: 0
+        };
+        area.pxUR = {
+            x: canvasWidth,
+            y: canvasHeight
+        };
+        area.pxLR = {
+            x: canvasWidth,
+            y: 0
+        }
+
+    }
+
+
+    async getMaskCorner(propertyName, cornerName) {
+        let area = this.config.mask.area;
+        let pxCoords = area[propertyName];
+        this.setWizardInstructions(`Use joystick to move cursor to the ${cornerName} corner. Press OK when done.`)
+        pxCoords = await uiExpose.exposureCanvas.getPixelLocation(pxCoords);
+        if (!this.settingsWizardCanceled) {
+            area[propertyName] = pxCoords;
+        }
+        else {
+            throw new Error('Calibrate mask corners canceled by user')
+        }
+    }
+
+    hasCNC() {
+        return this.config.app.hasCNC && window.cncAvailable;
+    }
+
+
+    hasPCB() {
+        return this.config.app.hasPCB;
+    }
+
+
+    showMenu(menuCategory) {
+        this.menuCategory = menuCategory;
+        window.uiController.showPage('settingsPage')
     }
 
 
@@ -782,8 +884,20 @@ class SettingsController extends RPCClient {
     getSettingsList() {
         let list = [];
 
+        let validCategories = [ this.menuCategory ];
+        if (this.menuCategory === 'calibrate') {
+            if (this.config.app.hasCNC && window.cncAvailable) {
+                validCategories.push('calibrate:mill')
+            }
+            if (this.config.app.hasPCB) {
+                validCategories.push('calibrate:expose')
+            }
+        }
+
         this.settingsWizards.forEach(wiz => {
-            list.push({"name": wiz.wizard.title, "value": wiz.id });
+            if (validCategories.includes(wiz.menuCategory)) {
+               list.push({"name": wiz.wizard.title, "value": wiz.id });
+            }
         });
         return list;
     }
@@ -797,6 +911,7 @@ class SettingsController extends RPCClient {
     }
 
     startWizard(wizardId) {
+        this.settingsWizardCanceled = false;
         let wiz = this.getWizard(wizardId);
         if (wiz) {
             window.uiController.startWizard(wiz.wizard);
@@ -815,12 +930,17 @@ class SettingsController extends RPCClient {
     }
 
     cancelWizard() {
-        this.rpCall('cnc.cancelProcesses');
+        this.settingsWizardCanceled = true;
+        if (this.hasCNC()) { 
+           this.rpCall('cnc.cancelProcesses');
+        }
         window.uiController.cancelWizard();
     }
 
     finishWizard() {
-        this.rpCall('cnc.cancelProcesses');
+        if (this.hasCNC()) {
+           this.rpCall('cnc.cancelProcesses');
+        }
         window.uiController.finishWizard();
     }
 
