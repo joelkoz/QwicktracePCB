@@ -183,7 +183,6 @@ class ExposureCanvas extends RPCClient {
 
    paint() {
       const canvas = this.canvas;
-      const Config = window.appConfig;
    
       // This is a hack to force a full screen repaint...
       canvas.width = canvas.width;
@@ -360,7 +359,7 @@ class ExposureCanvas extends RPCClient {
         this.cursor.active = cursorOn;
         if (cursorOn) {
             if (!this.navCheckInterval) {
-                this.navCheckInterval = setInterval(() => { this.onNavigateCheck(); }, 10);
+                this.navCheckInterval = setInterval(() => { this.onNavigateCheck(); }, 100);
             }
             this.drawCursor(true)
         }
@@ -375,16 +374,24 @@ class ExposureCanvas extends RPCClient {
 
 
     deflectionToInterval(deflection) {
+        const Config = window.appConfig;
+
         if (deflection < 0.05) {
             return 9999999;
         }
         else if (deflection > 0.95) {
+            this.ppNavX = Config.mask.ppmmWidth * 2;
+            this.ppNavY = Config.mask.ppmmHeight * 2;
             return 1;
         }
         else if (deflection > 0.40) {
-            return 100;
+            this.ppNavX = Config.mask.ppmmWidth;
+            this.ppNavY = Config.mask.ppmmHeight;
+            return 200;
         }
         else {
+            this.ppNavX = Math.round(Config.mask.ppmmWidth / 2);
+            this.ppNavY = Math.round(Config.mask.ppmmHeight / 2);
             return 500;
         }
     }
