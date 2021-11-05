@@ -792,7 +792,7 @@ class SettingsController extends RPCClient {
                                 onActivate: async (wizStep) => {
                                      let area = thiz.config.mask.area;
                                      thiz.resetMaskCorners();
-                                     uiExpose.exposureCanvas.reset();
+                                     uiExpose.exposureCanvas.reset('black');
                                      try {
                                         await thiz.getMaskCorner('pxLL', 'lower left');
                                         await thiz.getMaskCorner('pxUL', 'upper left');
@@ -846,7 +846,7 @@ class SettingsController extends RPCClient {
         let area = this.config.mask.area;
         let pxCoords = area[propertyName];
         this.setWizardInstructions(`Use joystick to move cursor to the ${cornerName} corner. Press OK when done.`)
-        pxCoords = await uiExpose.exposureCanvas.getPixelLocation(pxCoords);
+        pxCoords = await uiExpose.exposureCanvas.getPixelLocation(pxCoords, 'white');
         if (!this.settingsWizardCanceled) {
             area[propertyName] = pxCoords;
         }

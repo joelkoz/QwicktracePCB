@@ -16,7 +16,7 @@ const CANVAS_TRACE_COLOR = '#DEB887';
 const CANVAS_HOLE_COLOR = 'black';
 
 
-const CURSOR_SIZE = 30
+const CURSOR_SIZE = 60
 
 /**
  * A class that represents the canvas covering the exposure mask LCD.
@@ -34,7 +34,6 @@ class ExposureCanvas extends RPCClient {
         const Config = window.appConfig;
         this.canvas = document.getElementById(CANVAS_ID);
         this.canvas.width = Config.window.width - Config.ui.width;
-        this.canvas.style.backgroundColor = 'black';
 
         if (!Config.window.debug) {
            this.canvas.height = Config.window.height;
@@ -55,7 +54,7 @@ class ExposureCanvas extends RPCClient {
            thiz.paint();
         });
 
-        this.cursor = { location: { x: 0, y: 0 }, active: false, point: null}
+        this.cursor = { location: { x: 0, y: 0 }, active: false, point: null, color: 'white'}
 
         this.throttle = { x: Date.now(), y: Date.now() }
 
@@ -76,18 +75,18 @@ class ExposureCanvas extends RPCClient {
     }
 
 
-    async getPcbLocation(mmStart = { x: 0, y: 0}) {
+    async getPcbLocation(mmStart = { x: 0, y: 0}, cursorColor = 'white') {
         let pxStart = this.toCanvas(mmStart);
-        let pxLocation = await this.getPixelLocation(pxStart)
+        let pxLocation = await this.getPixelLocation(pxStart, cursorColor)
         let pcbCoord = this.toPCB(pxLocation);
         return pcbCoord;
     }
 
 
-    async getPixelLocation(pxStart = { x: 0, y: 0}) {
+    async getPixelLocation(pxStart = { x: 0, y: 0}, cursorColor = 'white') {
         await this.rpCall('uv.safelight', true);
         this.cursor.location = pxStart
-        this.activateCursor(true);
+        this.activateCursor(true, cursorColor);
         await untilTrue(500, () => { return (this.cursor.active === false )}, () => { return false; });
         this.activateCursor(false);
         await this.rpCall('uv.safelight', false);
@@ -212,13 +211,14 @@ class ExposureCanvas extends RPCClient {
 
    
 
-   reset() {
+   reset(canvasBgColor = 'black') {
         if (this.pcbInfo.url != null) {
            URL.revokeObjectURL(this.pcbInfo.url);
         }
         this.pcbInfo = { url: null };
 
         // Reset the canvas...
+        this.canvas.style.backgroundColor = canvasBgColor;
         const ctx = this.getContext();
         ctx.clearRect(0, 0, this.pxMaskWidth, this.pxMaskHeight);
    }
@@ -362,7 +362,8 @@ class ExposureCanvas extends RPCClient {
 
 
 
-    activateCursor(cursorOn = true) {
+    activateCursor(cursorOn = true, cursorColor = 'white') {
+        this.cursor.color = cursorColor;
         this.cursor.active = cursorOn;
         if (cursorOn) {
             if (!this.navCheckInterval) {
@@ -451,7 +452,7 @@ class ExposureCanvas extends RPCClient {
                 }
             }
             if (this.drawPending) {
-                this.drawCursor(true);
+                this.drawCursor(true, this.cursor.color);
                 this.drawPending = false;
             }
         }
