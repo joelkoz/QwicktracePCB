@@ -6,13 +6,29 @@
         "debug": false,
         "frame": false
     },
-     "mask": {
-        "marginX": 64,
-        "marginY": 64,
-        "ppmmWidth": 4.2,
-        "ppmmHeight": 4.2,
-        "ppinWidth": 109,
-        "ppinHeight": 109
+    "mask": {
+        "area": {
+            "pxUL": {
+                "x": 41,
+                "y": 1410
+            },
+            "pxLL": {
+                "x": 52,
+                "y": 23
+            },
+            "pxUR": {
+                "x": 2551,
+                "y": 1402
+            },
+            "pxLR": {
+                "x": 2530,
+                "y": 23
+            }
+        },
+        "ppmmWidth": 21.15158636,
+        "ppmmHeight": 21.16402116,
+        "ppinWidth": 537.250293,
+        "ppinHeight": 537.566137464
     },
     "app": {
         "hasCNC": true,
@@ -23,7 +39,7 @@
         "bodyClass": "ui480",
         "width": 480,
         "height": 320,
-        "ignoreErrors": false
+        "ignoreErrors": true
     },
     "cnc": {
         "server": {
@@ -34,15 +50,15 @@
         },
         "locations": {
             "ur": {
-                "x": -7,
-                "y": -3
+                "x": -7.5,
+                "y": -3.5
             },
             "zpad": {
-                "x": -1.018,
-                "y": -43.093
+                "x": -0.658,
+                "y": -42.358
             },
             "maxLL": {
-                "x": -97,
+                "x": -103.5,
                 "y": -78
             },
             "load": {
@@ -51,36 +67,44 @@
             }
         },
         "zheight": {
-            "safe": -15,
-            "maxJog": -28,
+            "safe": -12,
+            "maxJog": -30,
             "zpad": {
-                "startZ": -26,
+                "startZ": -21,
                 "pcbOffset": 2,
-                "lastZ": -30.82,
-                "pcbProbeOffset": -1.5970000000000013
+                "lastZ": -24.478,
+                "pcbProbeOffset": 0.28200000000000003
             },
             "pcb": {
-                "lastZ": -29.183
+                "lastZ": -24.76
             }
         },
         "pointer": {
-            "offset": {
+            "offsetX": {
+                "x": 12.032,
+                "y": 8.634999999999998
+            },
+            "offsetOld": {
                 "x": 11.82,
                 "y": 7.645000000000003
+            },
+            "offset": {
+                "x": 0,
+                "y": 0
             }
         },
         "drill": {
             "rpm": 7000,
-            "startHeight": 1.5,
-            "drillDepthX": -2.1,
-            "drillDepth": -0.05,
-            "plungeRate": 50,
+            "startHeight": 2,
+            "drillDepth": -1.8,
+            "drillDepthX": 0.6,
+            "plungeRate": 45,
             "msStartupDelay": 2000
         },
         "cut": {
             "startHeight": 1.5,
             "bitWidth": 0.8,
-            "depth": -0.54,
+            "depth": -1.5,
             "passes": 4,
             "feedRate": 100,
             "plungeRate": 50,
