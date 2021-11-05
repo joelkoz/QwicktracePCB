@@ -798,8 +798,12 @@ class SettingsController extends RPCClient {
                                      uiExpose.exposureCanvas.reset('white');
                                      try {
                                         await thiz.getMaskCorner('pxLL', 'lower left', 'pxUR');
+                                        area.pxUL.x = area.pxLL.x;
+                                        area.pxLR.y = area.pxLL.y;
                                         await thiz.getMaskCorner('pxUL', 'upper left', 'pxLR');
+                                        area.pxUR.y = area.pxUL.y;
                                         await thiz.getMaskCorner('pxUR', 'upper right', 'pxLL');
+                                        area.pxLR.x = area.pxUR.x;
                                         await thiz.getMaskCorner('pxLR', 'lower right', 'pxUL');
                                         thiz.rpCall('config.setAndSave', 'mask.area', thiz.config.mask.area);
                                         thiz.finishWizard();

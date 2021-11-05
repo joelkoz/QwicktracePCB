@@ -394,7 +394,7 @@ class ExposureCanvas extends RPCClient {
         this.cursor.active = cursorOn;
         if (cursorOn) {
             if (!this.navCheckInterval) {
-                this.navCheckInterval = setInterval(() => { this.onNavigateCheck(); }, 100);
+                this.navCheckInterval = setInterval(() => { this.onNavigateCheck(); }, 500);
             }
             this.drawCursor(true)
         }
@@ -415,19 +415,24 @@ class ExposureCanvas extends RPCClient {
             return 9999999;
         }
         else if (deflection > 0.95) {
-            this.ppNavX = Config.mask.ppmmWidth * 5;
-            this.ppNavY = Config.mask.ppmmHeight * 5;
+            this.ppNavX = Math.round(Config.mask.ppmmWidth * 4);
+            this.ppNavY = Math.round(Config.mask.ppmmHeight * 4);
             return 1;
         }
+        else if (deflection > 0.65) {
+            this.ppNavX = Math.round(Config.mask.ppmmWidth * 2);
+            this.ppNavY = Math.round(Config.mask.ppmmHeight * 2);
+            return 1000;
+        }
         else if (deflection > 0.35) {
-            this.ppNavX = Math.round(Config.mask.ppmmWidth / 2);
-            this.ppNavY = Math.round(Config.mask.ppmmHeight / 2);
-            return 200;
+            this.ppNavX = Math.round(Config.mask.ppmmWidth);
+            this.ppNavY = Math.round(Config.mask.ppmmHeight);
+            return 1000;
         }
         else {
             this.ppNavX = Math.round(Config.mask.ppmmWidth / 2);
             this.ppNavY = Math.round(Config.mask.ppmmHeight / 2);
-            return 600;
+            return 1000;
         }
     }
 
