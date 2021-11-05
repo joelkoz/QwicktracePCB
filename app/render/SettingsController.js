@@ -792,12 +792,15 @@ class SettingsController extends RPCClient {
                                 onActivate: async (wizStep) => {
                                      let area = thiz.config.mask.area;
                                      thiz.resetMaskCorners();
-                                     uiExpose.exposureCanvas.reset('black');
+                                     // Since the "cursor box" is an inverted
+                                     // rectangle, make the canvas "white", so
+                                     // the inverted box is mostly black...
+                                     uiExpose.exposureCanvas.reset('white');
                                      try {
-                                        await thiz.getMaskCorner('pxLL', 'lower left');
-                                        await thiz.getMaskCorner('pxUL', 'upper left');
-                                        await thiz.getMaskCorner('pxUR', 'upper right');
-                                        await thiz.getMaskCorner('pxLR', 'lower right');
+                                        await thiz.getMaskCorner('pxLL', 'lower left', 'pxUR');
+                                        await thiz.getMaskCorner('pxUL', 'upper left', 'pxLR');
+                                        await thiz.getMaskCorner('pxUR', 'upper right', 'pxLL');
+                                        await thiz.getMaskCorner('pxLR', 'lower right', 'pxUL');
                                         thiz.rpCall('config.setAndSave', 'mask.area', thiz.config.mask.area);
                                         thiz.finishWizard();
                                      }
@@ -842,11 +845,12 @@ class SettingsController extends RPCClient {
     }
 
 
-    async getMaskCorner(propertyName, cornerName) {
+    async getMaskCorner(propertyName, cornerName, anchorPropertyName) {
         let area = this.config.mask.area;
         let pxCoords = area[propertyName];
+        let anchorPoint = area[anchorPropertyName]
         this.setWizardInstructions(`Use joystick to move cursor to the ${cornerName} corner. Press OK when done.`)
-        pxCoords = await uiExpose.exposureCanvas.getPixelLocation(pxCoords, 'white');
+        pxCoords = await uiExpose.exposureCanvas.getPixelLocation(pxCoords, anchorPoint);
         if (!this.settingsWizardCanceled) {
             area[propertyName] = pxCoords;
         }
@@ -934,12 +938,20 @@ class SettingsController extends RPCClient {
         if (this.hasCNC()) { 
            this.rpCall('cnc.cancelProcesses');
         }
+        if (this.hasPCB()) {
+           this.rpCall('uv.safelight', false);
+           uiExpose.exposureCanvas.reset('black');
+        }
         window.uiController.cancelWizard();
     }
 
     finishWizard() {
         if (this.hasCNC()) {
            this.rpCall('cnc.cancelProcesses');
+        }
+        if (this.hasPCB()) {
+           this.rpCall('uv.safelight', false);        
+           uiExpose.exposureCanvas.reset('black');
         }
         window.uiController.finishWizard();
     }
