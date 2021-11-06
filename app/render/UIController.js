@@ -2,8 +2,8 @@
 import { RPCClient } from './RPCClient.js'
 import { RenderMQ } from './RenderMQ.js'
 import { BOARD_POSITIONS } from './PositionController.js';
+const { untilEvent, untilTrue } = require('promise-utils');
 
-const { untilEvent } = require('promise-utils');
 
 /**
  * Class for handling the display logic for the UI, maintaining
@@ -253,6 +253,25 @@ class UIController extends RPCClient {
         $('.inputContainer label').text(inputLabel)
         let finalVal = await untilEvent(RenderMQ.getInstance(), 'ui.numberInput', () => { return false; });
         return finalVal;
+    }
+
+
+    /**
+     * Displays a direction keypad that allows the user to input movement
+     * for precision input of point location.
+     */
+     async directionInput(directionLabel ='Direction', evtName = 'render.ui.input.direction') {
+        setDirectionLabel(directionLabel);
+        setDirectionEvent(evtName);
+        this.popupMessage({ popupId: 'directionInput' });
+        let inputComplete = false;
+        let listener = RenderMQ.on(evtName, (data) => {
+            if (data.dir === 'Ok') {
+               inputComplete = true;
+            }
+        })
+        await untilTrue(500, () => { return inputComplete; });
+        listener.off();
     }
 
 

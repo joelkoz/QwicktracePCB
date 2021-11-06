@@ -1,9 +1,12 @@
 "use strict"
 const { untilDelay } = require('promise-utils');
 import { RPCClient } from './RPCClient.js'
+import { RenderMQ } from './RenderMQ.js'
 
 const wcsMACHINE_WORK = 0;
 const wcsPCB_WORK = 1;
+
+const MASK_NAV_EVENT = 'render.ui.settings.maskNav'
 
 class SettingsController extends RPCClient {
 
@@ -12,6 +15,12 @@ class SettingsController extends RPCClient {
 
         let thiz = this;
         this.config = config;
+
+        RenderMQ.on(MASK_NAV_EVENT, (data) => {
+            if (data.dir != 'Ok') {
+                uiExpose.exposureCanvas.moveCursor(data.dir, data.speed);
+            }
+        })
 
         this.settingsWizards = [
                 { id: "cutPCB",
@@ -787,6 +796,7 @@ class SettingsController extends RPCClient {
                                 instructions: "Resetting mill. Standby...",
                                 buttonDefs: [
                                    { label: "Ok", fnAction: () => { uiExpose.exposureCanvas.activateCursor(false) } },
+                                   { label: "Keypad", fnAction: () => { thiz.useKeypadForMaskCursor(); } },
                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard(); uiExpose.exposureCanvas.activateCursor(false) } }
                                 ],
                                 onActivate: async (wizStep) => {
@@ -823,6 +833,17 @@ class SettingsController extends RPCClient {
         ];
     }
 
+    async useKeypadForMaskCursor() {
+        if (!this.keypadInUse) {
+
+            this.keypadInUse = true;
+
+            const label = this.cornerName.charAt(0).toUpperCase() + this.cornerName.slice(1)
+            await window.uiController.directionInput(label, MASK_NAV_EVENT);
+
+            this.keypadInUse = false;
+        }
+    }
 
     resetMaskCorners() {
         let canvasWidth = this.config.window.height;
@@ -850,6 +871,7 @@ class SettingsController extends RPCClient {
 
 
     async getMaskCorner(propertyName, cornerName, anchorPropertyName) {
+        this.cornerName = cornerName;
         let area = this.config.mask.area;
         let pxCoords = area[propertyName];
         let anchorPoint = area[anchorPropertyName]

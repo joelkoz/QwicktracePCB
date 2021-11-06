@@ -439,12 +439,12 @@ class ExposureCanvas extends RPCClient {
 
             switch (direction) {
 
-                case "up":
+                case "down":
                   ppMoveY *= -1;
                   ppMoveX = 0;
                 break;
 
-                case "down":
+                case "up":
                   ppMoveX = 0;
                 break;
 
@@ -485,7 +485,6 @@ class ExposureCanvas extends RPCClient {
 
     onJoystick(stick) {
         this.joystick = stick;
-        this.onNavigateCheck();
     }
 
 
