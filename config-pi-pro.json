@@ -1,10 +1,21 @@
 {
+    "app": {
+        "hasCNC": true,
+        "hasPCB": true
+    },
     "window": {
         "width": 1920,
         "height": 2560,
         "fullScreen": true,
         "debug": false,
         "frame": false
+    },
+    "ui": {
+        "startPageId": "startPage",
+        "bodyClass": "ui480",
+        "width": 480,
+        "height": 320,
+        "ignoreErrors": true
     },
     "mask": {
         "area": {
@@ -29,17 +40,6 @@
         "ppmmHeight": 21.16402116,
         "ppinWidth": 537.250293,
         "ppinHeight": 537.566137464
-    },
-    "app": {
-        "hasCNC": true,
-        "hasPCB": true
-    },
-    "ui": {
-        "startPageId": "startPage",
-        "bodyClass": "ui480",
-        "width": 480,
-        "height": 320,
-        "ignoreErrors": true
     },
     "cnc": {
         "server": {
