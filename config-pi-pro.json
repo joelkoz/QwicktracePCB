@@ -9,20 +9,20 @@
     "mask": {
         "area": {
             "pxUL": {
-                "x": 41,
-                "y": 1410
+                "x": 42,
+                "y": 1421
             },
             "pxLL": {
-                "x": 52,
-                "y": 23
+                "x": 42,
+                "y": 10
             },
             "pxUR": {
-                "x": 2551,
-                "y": 1402
+                "x": 2530,
+                "y": 1421
             },
             "pxLR": {
                 "x": 2530,
-                "y": 23
+                "y": 10
             }
         },
         "ppmmWidth": 21.15158636,
@@ -112,6 +112,7 @@
         }
     },
     "joystick": {
+        "msSampleInterval": 100,
         "invertY": true,
         "invertX": true,
         "calibration": {
