@@ -1,49 +1,45 @@
 {
+    "app": {
+        "hasCNC": false,
+        "hasPCB": true
+    },
     "window": {
         "width": 1760,
         "height": 2560,
         "fullScreen": true,
         "debug": false,
         "frame": false
-     },
-     "mask": {
-        "marginX": 64,
-        "marginY": 64,
-        "ppmmWidth": 4.2,
-        "ppmmHeight": 4.2,
-        "ppinWidth": 109,
-        "ppinHeight": 109
-    },
-    "app": {
-        "hasCNC": false,
-        "hasPCB": true
     },
     "ui": {
         "startPageId": "startPage",
         "bodyClass": "ui320",
         "width": 320,
-        "height": 280
-     },
-    "joystick": {
-        "invertY": true,
-        "invertX": true,
-        "calibration": {
-            "yCal": {
-                "min": 14,
-                "max": 30370,
-                "mid": 17835,
-                "deadLo": 200,
-                "deadHi": 200
+        "height": 280,
+        "ignoreErrors": true
+    },
+    "mask": {
+        "area": {
+            "pxUL": {
+                "x": 42,
+                "y": 1421
             },
-            "xCal": {
-                "min": 16,
-                "max": 30350,
-                "mid": 17375,
-                "deadLo": 200,
-                "deadHi": 200
+            "pxLL": {
+                "x": 42,
+                "y": 10
             },
-            "btnPressThreshold": 400
-        }
+            "pxUR": {
+                "x": 2530,
+                "y": 1421
+            },
+            "pxLR": {
+                "x": 2530,
+                "y": 10
+            }
+        },
+        "ppmmWidth": 21.15158636,
+        "ppmmHeight": 21.16402116,
+        "ppinWidth": 537.250293,
+        "ppinHeight": 537.566137464
     },
     "pigpio": {
         "host": "127.0.0.1",

@@ -105,7 +105,10 @@ MainMQ.on('main.startup.initializeDone', () => {
   fileLoader = new FileLoader(win);
   profileLoader = new ProfileLoader(win);
   uiLoader = new UILoader(win);
-  joystickController = new JoystickController(win)
+  
+  if (Config.joystick) {
+     joystickController = new JoystickController(win)
+  }
 
   if (Config.app.hasPCB) {
      uvController = new UVController(win);
