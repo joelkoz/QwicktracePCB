@@ -337,8 +337,14 @@ class ExposureCanvas extends RPCClient {
     // is already displayed, it is moved to the new location.
     drawCursor(cursorOn) {
 
-        if (cursorOn) {
 
+        if (cursorOn) {
+            if (this.cursorDrawInProgress) {
+                // Ignore multiple draw attempts...
+                console.log('Ignoring re-entrant cursor draw')
+                return;
+            }
+    
             if (this.cursor.savePoint) {
                 // There is an active cursor box drawn...
                 if (this.cursor.savePoint.x === this.cursor.location.x &&
@@ -352,7 +358,7 @@ class ExposureCanvas extends RPCClient {
                 this.drawCursor(false);
             }
 
-
+            this.cursorDrawInProgress = true;
             // Calculate where to draw the "cursor box"
             let csrBox = this._getCursorBox(this.cursor.location);
 
@@ -367,11 +373,13 @@ class ExposureCanvas extends RPCClient {
             // Save this info so we can restore the cursor...
             this.cursor.savePoint = Object.assign({}, this.cursor.location);
             this.cursor.saveBox = csrBox;
+            this.cursorDrawInProgress = false;
         }
         else {
             if (this.cursor.savePoint) {
                 // Restore the original image by inverting
                 // again
+                this.cursorDrawInProgress = true;
                 let csrBox = this.cursor.saveBox;
                 let ctx = this.getContext()
                 ctx.save();
@@ -380,6 +388,7 @@ class ExposureCanvas extends RPCClient {
                 ctx.fillRect(csrBox.pxLL.x, csrBox.pxLL.y, csrBox.width, csrBox.height);
                 ctx.restore();        
                 this.cursor.savePoint = null;
+                this.cursorDrawInProgress = false;
             }
         }
     }
@@ -407,6 +416,11 @@ class ExposureCanvas extends RPCClient {
 
 
     moveCursor(direction, speed) {
+
+        if (this.cursorDrawInProgress) {
+            console.log('Ignore cursor movement during cursor rendering');
+            return;
+        }
 
         if (this.cursor.active) {
 
@@ -529,9 +543,11 @@ class ExposureCanvas extends RPCClient {
                 return 1;
 
             case 1:
+                return 750;
+
             case 2:
             case 3:
-               return 1000;
+               return 500;
 
         }
     }
