@@ -841,6 +841,9 @@ class SettingsController extends RPCClient {
             const label = this.cornerName.charAt(0).toUpperCase() + this.cornerName.slice(1)
             await window.uiController.directionInput(label, MASK_NAV_EVENT);
 
+            // Turn the cursor off, ending the input for this corner
+            uiExpose.exposureCanvas.activateCursor(false);
+
             this.keypadInUse = false;
         }
     }

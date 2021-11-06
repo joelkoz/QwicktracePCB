@@ -270,7 +270,7 @@ class UIController extends RPCClient {
                inputComplete = true;
             }
         })
-        await untilTrue(500, () => { return inputComplete; });
+        await untilTrue(500, () => { return inputComplete; }, () => { return false });
         listener.off();
     }
 
