@@ -52,7 +52,7 @@ class ExposureCanvas extends RPCClient {
 
         this.cursor = { location: { x: 0, y: 0 }, active: false, point: null, color: 'white'}
 
-        this.throttle = { x: Date.now(), y: Date.now() }
+        this.throttleJoystick = Date.now();
 
         this.drawingPreCalc();
         this.reset();
@@ -131,9 +131,6 @@ class ExposureCanvas extends RPCClient {
         this.pxMaskWidth = ch;
         this.pxMaskHeight = cw;
         
-        this.ppNavX = Math.round(Config.mask.ppmmWidth / 2);
-        this.ppNavY = Math.round(Config.mask.ppmmHeight / 2);
-
         if (Config.window.debug) {
                 // For debugging - use mouse to check coordinates...
            let thiz = this;
@@ -408,37 +405,136 @@ class ExposureCanvas extends RPCClient {
     }
 
 
-    deflectionToInterval(deflection) {
-        const Config = window.appConfig;
 
-        if (deflection < 0.05) {
-            return 9999999;
-        }
-        else if (deflection > 0.95) {
-            this.ppNavX = Math.round(Config.mask.ppmmWidth * 4);
-            this.ppNavY = Math.round(Config.mask.ppmmHeight * 4);
-            return 1;
-        }
-        else if (deflection > 0.65) {
-            this.ppNavX = Math.round(Config.mask.ppmmWidth * 2);
-            this.ppNavY = Math.round(Config.mask.ppmmHeight * 2);
-            return 1000;
-        }
-        else if (deflection > 0.35) {
-            this.ppNavX = Math.round(Config.mask.ppmmWidth);
-            this.ppNavY = Math.round(Config.mask.ppmmHeight);
-            return 1000;
-        }
-        else {
-            this.ppNavX = Math.round(Config.mask.ppmmWidth / 2);
-            this.ppNavY = Math.round(Config.mask.ppmmHeight / 2);
-            return 1000;
+    moveCursor(direction, speed) {
+
+        if (this.cursor.active) {
+
+            const Config = window.appConfig;
+
+            let multiplier;
+            switch (speed) {
+                case 4:
+                    multiplier = 4;
+                    break;
+    
+                case 3:
+                    multiplier = 2;
+                    break;
+    
+                case 2:
+                    multiplier = 1;
+                    break;
+    
+                case 1:
+                    multiplier = 0.5;
+                    break;
+        
+                default:
+                    multiplier = 0;
+            }
+
+            let ppMoveX = Math.round(Config.mask.ppmmWidth * multiplier);
+            let ppMoveY = Math.round(Config.mask.ppmmHeight * multiplier);
+
+            switch (direction) {
+
+                case "up":
+                  ppMoveY *= -1;
+                  ppMoveX = 0;
+                break;
+
+                case "down":
+                  ppMoveX = 0;
+                break;
+
+                
+                case "left":
+                  ppMoveX *= -1;
+                  ppMoveY = 0;
+                  break;
+    
+                case "right":
+                  ppMoveY = 0;
+                  break;
+            }
+
+            this.cursor.location.x = Math.round(this.cursor.location.x + ppMoveX);
+            this.cursor.location.y = Math.round(this.cursor.location.y + ppMoveY);
+
+            // Make sure we have not moved outside the mask boundries...
+            if (this.cursor.location.x < 0) {
+                this.cursor.location.x = 0;
+            }
+            else if (this.cursor.location.x > this.pxMaskWidth) {
+                this.cursor.location.x = this.pxMaskWidth;
+            }
+
+            if (this.cursor.location.y < 0) {
+                this.cursor.location.y = 0;
+            }
+            else if (this.cursor.location.y > this.pxMaskHeight) {
+                this.cursor.location.y = this.pxMaskHeight;
+            }
+
+            this.drawCursor(true, this.cursor.color);
         }
     }
 
 
+
     onJoystick(stick) {
         this.joystick = stick;
+        this.onNavigateCheck();
+    }
+
+
+    //
+    // Translate a joystick deflection to a "speed" number
+    // between 0 (no movement) and 4 (fastest movement)
+    //
+    _deflectionToSpeed(deflection) {
+        const Config = window.appConfig;
+
+        if (deflection < 0.05) {
+            return 0;
+        }
+        else if (deflection > 0.95) {
+            return 4;
+        }
+        else if (deflection > 0.65) {
+            return 3;
+        }
+        else if (deflection > 0.35) {
+            return 2;
+        }
+        else {
+            return 1;
+        }
+    }
+
+    //
+    // Returns the number of miliseconds that needs
+    // to pass before the cursor is moved again.
+    // Slower speeds require more precision 
+    // in navigation when using the joystick.
+    //
+    _getNavigationInterval(speed) {
+        const Config = window.appConfig;
+
+        switch (speed) {
+            case 0:
+               return 9999999;
+
+            case 4:
+                return 1;
+
+            case 1:
+            case 2:
+            case 3:
+               return 1000;
+
+        }
     }
 
 
@@ -446,46 +542,23 @@ class ExposureCanvas extends RPCClient {
         if (this.cursor.active) {
             let stick = this.joystick;
 
-            if (Math.abs(stick.x) > Math.abs(stick.y))
-            {
-                let dir = Math.sign(stick.x);
-                let deflection = Math.abs(stick.x);
-                let minInterval = this.deflectionToInterval(deflection);
-                let interval = Date.now() - this.throttle.x;
-                if (interval > minInterval) {
-                    let moveX = dir * this.ppNavX;
-                    this.cursor.location.x = Math.round(this.cursor.location.x + moveX);
-                    this.throttle.x = Date.now();
-                    if (this.cursor.location.x < 0) {
-                        this.cursor.location.x = 0;
-                    }
-                    else if (this.cursor.location.x > this.pxMaskWidth) {
-                        this.cursor.location.x = this.pxMaskWidth;
-                    }
-                    this.drawPending = true;;
-                }
+            let dir;
+            let deflection;
+            if (Math.abs(stick.x) > Math.abs(stick.y)) {
+                dir = (Math.sign(stick.x) > 0 ? 'right' : 'left');
+                deflection = Math.abs(stick.x);
             }
             else {
-                let dir = Math.sign(stick.y)
-                let deflection = Math.abs(stick.y);
-                let minInterval = this.deflectionToInterval(deflection);
-                let interval = Date.now() - this.throttle.y;
-                if (interval > minInterval) {
-                    let moveY = dir * this.ppNavY;
-                    this.cursor.location.y = Math.round(this.cursor.location.y + moveY);
-                    this.throttle.y = Date.now();
-                    if (this.cursor.location.y < 0) {
-                        this.cursor.location.y = 0;
-                    }
-                    else if (this.cursor.location.y > this.pxMaskHeight) {
-                        this.cursor.location.y = this.pxMaskHeight;
-                    }
-                    this.drawPending = true;
-                }
+                dir = (Math.sign(stick.y) > 0 ? 'up' : 'down');
+                deflection = Math.abs(stick.y);
             }
-            if (this.drawPending) {
-                this.drawCursor(true, this.cursor.color);
-                this.drawPending = false;
+
+            let speed = this._deflectionToSpeed(deflection);
+            let minInterval = this._getNavigationInterval(speed);
+            let interval = Date.now() - this.throttleJoystick;
+            if (interval > minInterval) {
+                this.moveCursor(dir, speed);
+                this.throttleJoystick = Date.now();
             }
         }
     }
