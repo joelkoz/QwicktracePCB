@@ -16,7 +16,12 @@ class Joystick {
          this.sampY = 13000;
          this.sampBtn = 9999;
  
-         Joystick.msJOYSTICK_SAMPLE_INTERVAL = 25;
+         if (Config.joystick.msSampleInterval) {
+            Joystick.msJOYSTICK_SAMPLE_INTERVAL = Config.joystick.msSampleInterval;
+         }
+         else {
+            Joystick.msJOYSTICK_SAMPLE_INTERVAL = 25;
+         }
  
          Joystick.i2cJoystick = [ 1, 0x48 ]
       
