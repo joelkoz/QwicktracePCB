@@ -2,16 +2,9 @@ const Kefir = require('kefir');
 const readline = require('readline');
 const Joystick = require('./app/main/Joystick');
 const GPIO = require('./app/main/GPIO');
+const Config = require('./app/main/Config')
 
-// const HOST = "127.0.0.1"
-const HOST = "192.168.0.152"
-
-const mockConfig = { pigpio: {
-                        "host": HOST,
-                        "port": 8888
-                   } };
-
-GPIO.config = mockConfig.pigpio;
+GPIO.config = Config.pigpio;
 new GPIO();
 
 function cls() {
