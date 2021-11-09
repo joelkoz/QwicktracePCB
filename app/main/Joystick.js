@@ -31,6 +31,10 @@ class Joystick {
             Joystick.btnPressThreshold = Config.joystick.calibration.btnPressThreshold;
             Joystick.invertY = Config.joystick.invertY;
             Joystick.invertX = Config.joystick.invertX;
+            if (Config.joystick.i2c) {
+               let i2c = Config.joystick.i2c;
+               Joystick.i2cJoystick = [ i2c.bus, i2c.address ]
+            }
          }
          else {
             Joystick.xCal = {
