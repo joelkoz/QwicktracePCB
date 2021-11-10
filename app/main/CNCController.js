@@ -232,8 +232,8 @@ class CNCController  extends MainSubProcess {
             },
 
 
-            async zProbeGeneric(probeSurfaceName = 'generic') {
-                let result = await thiz.genericZProbe(probeSurfaceName)
+            async zProbeGeneric(probeSurfaceName = 'generic', touchPlateHeight = 0) {
+                let result = await thiz.genericZProbe(probeSurfaceName, touchPlateHeight)
                 return result;
             },
 
@@ -397,7 +397,12 @@ class CNCController  extends MainSubProcess {
 
             async multiPassCut(cutData) {
                 return await this.multiPassCut(cutData);
-            }       
+            },
+
+            async cutRectangle(cutData) {
+                return await this.cutRectangle(cutData);
+            }
+
         });
 
         const server = Config.cnc.server;
@@ -491,6 +496,11 @@ class CNCController  extends MainSubProcess {
 
 
     async getPinReport() {
+        if (this.cnc.state === CNC.CTRL_STATE_HOME) {
+            // No reports available while homing
+            return;
+        }
+
         this.cnc.report();
 
         let rpt = { xLimit: false, yLimit: false, zLimit: false, probe: false }
@@ -610,6 +620,17 @@ class CNCController  extends MainSubProcess {
         if (this.cuttingInProgress) {
             console.log("Canceling multi pass cut...");
             this.cuttingInProgress = false;
+            this.cnc.rawWriteLn('!');
+            this.cnc.rpm = 0;
+            await this.cnc.untilSent();
+            this.cnc.reset();
+            this.cnc.home();
+            console.log("Feeder reset complete.");
+        }
+
+        if (this.rectangleInProgress) {
+            console.log("Canceling rectangle cut...");
+            this.rectangleInProgress = false;
             this.cnc.rawWriteLn('!');
             this.cnc.rpm = 0;
             await this.cnc.untilSent();
@@ -867,7 +888,7 @@ class CNCController  extends MainSubProcess {
     }
 
 
-    async genericZProbe(probeSurfaceName = 'generic') {
+    async genericZProbe(probeSurfaceName = 'generic', touchPlateHeight = 0) {
 
         this.genericZProbeInProgress = true;
 
@@ -888,7 +909,7 @@ class CNCController  extends MainSubProcess {
 
         if (probeVal.ok) {
             // Set the primary work coordinate Z height to the probe value
-            this.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z0`);
+            this.cnc.sendGCode(`G10 L20 P${wcsPCB_WORK} Z${touchPlateHeight}`);
             await this.cnc.untilOk();
 
             // This delay seems to be necessary to prevent 'Unsupported Command'
@@ -1060,7 +1081,7 @@ class CNCController  extends MainSubProcess {
         catch (err) {
             this.drillPCBInProgress = false;
             console.log('Error during drilling', err);
-            console.trace();
+            console.error(err.stack);
             return new Error('Error during drilling.', { cause: err} );
         }
     }
@@ -1116,7 +1137,7 @@ class CNCController  extends MainSubProcess {
         }
         catch (err) {
             console.log('Error or cancel during cutting: ', err);
-            console.trace();
+            console.error(err.stack);
         }
 
         this.cnc.rpm = 0;
@@ -1124,6 +1145,166 @@ class CNCController  extends MainSubProcess {
         if (this.cuttingInProgress) {
            this.cuttingInProgress = false;
            this.gotoSafeZ();
+           return true;
+        }
+        else {
+           return false;
+        }
+    }
+
+
+    async _cutRectangleLeftRight(cutData, fnRejectOnCancel) {
+
+        console.log('Cutting rectangle from left to right')
+
+        const halfBit = cutData.bitWidth / 2;
+        let cutConfig = Config.cnc.cut;
+
+        const distRight = Math.abs(this.cnc.mpos.x - cutData.ur.mx);
+        const distLeft = Math.abs(this.cnc.mpos.x - cutData.ll.mx)
+        let leftToRight = (distRight > distLeft);
+
+        let movePerPass = cutData.bitWidth * 0.80
+        const distUp = Math.abs(this.cnc.mpos.y - cutData.ur.my);
+        const distDown = Math.abs(this.cnc.mpos.y - cutData.ll.my)
+        if (distDown > distUp) {
+            // Move downwards...
+            movePerPass *= -1;
+        }
+
+        let cutY = this.cnc.mpos.y;
+        while (this.rectangleInProgress && cutY > cutData.ll.my && cutY < cutData.ur.my) {
+
+            await this.cnc.untilGoto({ y: cutY }, wcsMACHINE_WORK, cutConfig.feedRate, 30000)
+
+            if (leftToRight) {
+                await this.cnc.untilGoto({ x: cutData.ur.mx - halfBit }, wcsMACHINE_WORK, cutConfig.feedRate, fnRejectOnCancel)
+            }
+            else {
+                await this.cnc.untilGoto({ x: cutData.ll.mx + halfBit }, wcsMACHINE_WORK, cutConfig.feedRate, fnRejectOnCancel)
+            }
+
+            cutY += movePerPass;
+
+            // Make sure the next pass does not cut outside the rectangle bounds...
+            if (movePerPass < 0) {
+                // We are moving downwards...
+                if (cutY > cutData.ll.my && cutY-halfBit < cutData.ll.my) {
+                    cutY = cutData.ll.my + halfBit;
+                }
+            }
+            else {
+                // We are moving upwards...
+                if (cutY < cutData.ur.my && cutY+halfBit > cutData.ur.my) {
+                    cutY = cutData.ur.my - halfBit;
+                }
+            }
+            leftToRight = !leftToRight;
+
+        } // while
+    }
+
+
+    async _cutRectangleTopBottom(cutData, fnRejectOnCancel) {
+
+        console.log('Cutting rectangle from top to bottom')
+        const halfBit = cutData.bitWidth / 2;
+        let cutConfig = Config.cnc.cut;
+
+        const distUp = Math.abs(this.cnc.mpos.y - cutData.ur.my);
+        const distDown = Math.abs(this.cnc.mpos.y - cutData.ll.my)
+        let topToBottom = (distUp < distDown);
+
+        let movePerPass = cutData.bitWidth * 0.80
+        const distRight = Math.abs(this.cnc.mpos.x - cutData.ur.mx);
+        const distLeft = Math.abs(this.cnc.mpos.x - cutData.ll.mx)
+        if (distRight < distLeft) {
+            // Move downwards...
+            movePerPass *= -1;
+        }
+
+        let cutX = this.cnc.mpos.x;
+        while (this.rectangleInProgress && cutX > cutData.ll.mx && cutX < cutData.ur.mx) {
+
+            await this.cnc.untilGoto({ y: cutX }, wcsMACHINE_WORK, cutConfig.feedRate, 30000)
+
+            if (topToBottom) {
+                await this.cnc.untilGoto({ y: cutData.ll.my - halfBit }, wcsMACHINE_WORK, cutConfig.feedRate, fnRejectOnCancel)
+            }
+            else {
+                await this.cnc.untilGoto({ y: cutData.ur.my + halfBit }, wcsMACHINE_WORK, cutConfig.feedRate, fnRejectOnCancel)
+            }
+
+            cutX += movePerPass;
+
+            // Make sure the next pass does not cut outside the rectangle bounds...
+            if (movePerPass < 0) {
+                // We are moving left...
+                if (cutX > cutData.ll.mx && cutX-halfBit < cutData.ll.mx) {
+                    cutX = cutData.ll.mx + halfBit;
+                }
+            }
+            else {
+                // We are moving right...
+                if (cutX < cutData.ur.mx && cutX+halfBit > cutData.ur.my) {
+                    cutX = cutData.ur.mx - halfBit;
+                }
+            }
+            topToBottom = !topToBottom;
+
+        } // while
+    }
+
+
+    async cutRectangle(cutData) {
+
+        try {
+            console.log('Starting cut rectangle: ', cutData);
+
+            let cutConfig = Config.cnc.cut;
+
+            let width = Math.abs(cutData.ur.mx - cutData.ll.mx);
+            let height = Math.abs(cutData.ur.my - cutData.ll.my);
+            let depth = Math.abs(cutData.endZ - cutData.startZ)
+            let byRow = (width > height)
+            let depthPerPass = depth / cutData.passCount;
+            let currentDepth = cutData.startZ - depthPerPass;
+
+            this.rectangleInProgress = true;
+            let fnRejectOnCancel = () => { return !this.rectangleInProgress; };
+
+            await this.setRpm(cutConfig.rpm);
+            await this.cnc.untilGoto({ z: 1 }, wcsPCB_WORK);
+
+            while (this.rectangleInProgress && currentDepth >= cutData.endZ) {
+
+                console.log(`Starting cut pass at depth ${currentDepth}`)
+
+                await this.cnc.untilGoto({ z: currentDepth }, wcsPCB_WORK, cutConfig.plungeRate, 30000);
+                await untilDelay(1000);
+
+                if (byRow) {
+                    await this._cutRectangleLeftRight(cutData, fnRejectOnCancel);
+                }
+                else {
+                    await this._cutRectangleTopBottom(cutData, fnRejectOnCancel);
+                }
+
+                currentDepth -= depthPerPass;
+
+            } // while
+        }
+        catch (err) {
+            console.log('Error or cancel during rectangle cut: ', err);
+            console.error(err.stack);
+            this.rectangleInProgress = false;
+        }
+
+        this.cnc.rpm = 0;
+
+        if (this.rectangleInProgress) {
+           this.rectangleInProgress = false;
+           await this.cnc.untilGoto({ z: 1 }, wcsPCB_WORK);
            return true;
         }
         else {

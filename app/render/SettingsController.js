@@ -827,8 +827,304 @@ class SettingsController extends RPCClient {
                             }                              
                     ]
                  }
-               }
+               },
 
+
+               { id: "spoilboard",
+                 menuCategory: 'mill',
+                 wizard: {
+                    title: "Surface spoilboard",
+                    finishLandingPage: "settingsPage",
+                    steps: [
+                            { id: "spoilUR",
+                                subtitle: "Jog spindle to the Upper Right",
+                                instructions: "Use Joystick to jog the machine to Upper Right corner of the area to surface. " + 
+                                                "Press the button to switch from " +
+                                                "Up/Down controlling the Y axis or Z axis.",
+                                buttonDefs: [
+                                    { label: "Continue", next: true },
+                                    { label: "Goto", fnAction: async () => {  
+                                        let x = await ui.getNumber('Goto X');
+                                        let y = await ui.getNumber('Goto Y');
+                                        if (x || y) {
+                                            let mpos = {};
+                                            if (x) {
+                                                mpos.x = thiz.config.cnc.locations.ur.x - x;
+                                            }
+                                            if (y) {
+                                                mpos.y = thiz.config.cnc.locations.ur.y - y;
+                                            }
+                                            await thiz.rpCall('cnc.goto', mpos, wcsMACHINE_WORK, null, 30000);
+                                        }
+                                   } },
+
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: (wizStep) => {
+                                    thiz.spoilboard = { 
+                                        passNum: 0
+                                    };
+                                    thiz.rpCall('cnc.jogMode', true)
+                                    wizStep.cncPosDisplay = uiAddPosDisplay('#wizardPage .status-area', window.wcsPCB_RELATIVE_UR)
+                                },
+                                onDeactivate: async (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', false)
+                                    uiRemovePosDisplay(wizStep.cncPosDisplay);
+                                    let mpos = await thiz.rpCall('cnc.getMPos');
+                                    thiz.spoilboard.ur = Object.assign({}, mpos);
+                                }                                
+                            },
+
+
+                            { id: "spoilLL",
+                                subtitle: "Jog spindle to the Lower Left",
+                                instructions: "Use Joystick to jog the machine to Lower Left corner of the area to surface. " + 
+                                                "Press the button to switch from " +
+                                                "Up/Down controlling the Y axis or Z axis.  Press Cut to start ",
+                                buttonDefs: [
+                                    { label: "Continue", next: true },
+                                    { label: "Goto", fnAction: async () => {  
+                                        let x = await ui.getNumber('Goto X');
+                                        let y = await ui.getNumber('Goto Y');
+                                        if (x || y) {
+                                            let mpos = {};
+                                            if (x) {
+                                                mpos.x = thiz.config.cnc.locations.ur.x - x;
+                                            }
+                                            if (y) {
+                                                mpos.y = thiz.config.cnc.locations.ur.y - y;
+                                            }
+                                            await thiz.rpCall('cnc.goto', mpos, wcsMACHINE_WORK, null, 30000);
+                                        }
+                                   } },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', true)
+                                    wizStep.cncPosDisplay = uiAddPosDisplay('#wizardPage .status-area', window.wcsPCB_RELATIVE_UR)
+                                },
+                                onDeactivate: async (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', false)
+                                    uiRemovePosDisplay(wizStep.cncPosDisplay);
+                                    let mpos = await thiz.rpCall('cnc.getMPos');
+                                    thiz.spoilboard.ll = Object.assign({}, mpos);
+                                }                                
+                            },
+
+
+                            { id: "nextPass",
+                                subtitle: "Ready to surface",
+                                instructions: "Press 'Cut Surface' to make the next surfacing pass.",
+                                buttonDefs: [
+                                    { label: "Cut Surface", next: true },
+                                    { label: "Done", fnAction: () => { thiz.rpCall('cnc.gotoSafeZ'); thiz.finishWizard() } }
+                                ],
+                                onActivate: (wizStep) => {
+                                    thiz.spoilboard.passNum++;
+                                    thiz.setWizardInstructions(`Press 'Cut Surface' to cut pass #${thiz.spoilboard.passNum}.`)
+                                }
+                            },
+
+
+                            { id: "cutSurface",
+                                subtitle: "Cutting",
+                                instructions: "Surfacing spoil board",
+                                buttonDefs: [
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: async (wizStep) => {
+                                    try {
+                                        const CUT_DEPTH = 0.25;
+                                        const BIT_WIDTH = 25.4;
+                                        const halfBit = BIT_WIDTH / 2;
+                                        let cutData = {
+                                            ll: { mx: thiz.spoilboard.ll.x - halfBit, my: thiz.spoilboard.ll.y - halfBit },
+                                            ur: { mx: thiz.spoilboard.ur.x + halfBit, my: thiz.spoilboard.ur.y + halfBit },
+                                            startZ: -(thiz.spoilboard.passNum-1) * CUT_DEPTH,
+                                            endZ: -thiz.spoilboard.passNum * CUT_DEPTH,
+                                            passCount: 1,
+                                            bitWidth: BIT_WIDTH
+                                        }
+                                        let completed = await thiz.rpCall('cnc.cutRectangle', cutData);
+                                        if (completed) {
+                                            thiz.gotoWizardPage('nextPass');
+                                        }
+                                        else {
+                                            thiz.cancelWizard();
+                                        }
+                                    }
+                                    catch (err) {
+                                        console.trace();
+                                    }
+                                }
+                            }
+                    ]
+                    },
+                },
+            
+                { id: "spoilboardChannels",
+                  menuCategory: 'mill',
+                  wizard: {
+                    title: "Cut Spoilboard Alignment",
+                    finishLandingPage: "settingsPage",
+                    steps: [
+                            { id: "channelStart",
+                                subtitle: "Add Alignment Channels",
+                                instructions: "Load mill with bit to use to cut channels",
+                                buttonDefs: [
+                                    { label: "Continue", next: true },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: (wizStep) => {
+                                    thiz.rpCall('cnc.goto', { x: -50, z: -1})
+                                }
+                            },
+
+                            { id: "connectClip",
+                                subtitle: "Prepare to ZProbe",
+                                instructions: "Connect zprobe clip to mill and jog mill 2 to 3 mm above touch plate",
+                                buttonDefs: [
+                                    { label: "Continue", next: true, btnClass: 'zProbeContinue' },
+                                    { label: "Skip Z probe", gotoStepId: 'channelUR' },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                                ],
+                                onActivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', true)
+                                },
+
+                                onDeactivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', false)
+                                }
+                            },
+
+
+                            { id: "zprobe",
+                                subtitle: "Z Probe Spoilboard",
+                                instructions: "Searching for surface. Standby...",
+                                buttonDefs: [
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                                ],
+                                onActivate: async (wizStep) => {
+                                await thiz.rpCall('cnc.zProbeGeneric', 'spoil board', 1.5);
+                                thiz.wizardNext();
+                                }
+                            },
+
+                            { id: "postZProbe",
+                                subtitle: "Remove zprobe clip from bit",
+                                instructions: "",
+                                buttonDefs: [
+                                    { label: "Continue", next: true },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                                ],
+                            },
+
+
+                            { id: "channelUR",
+                                subtitle: "Position bit at upper right corner of channels",
+                                instructions: "",
+                                buttonDefs: [
+                                    { label: "Continue", next: true },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
+                                ],
+                                onActivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', true)
+                                },
+
+                                onDeactivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', false)
+                                }
+                            },
+
+                            { id: "ready",
+                                subtitle: "Ready to cut channels",
+                                instructions: "Press 'Cut channels ' to start",
+                                buttonDefs: [
+                                    { label: "Cut channels", next: true },
+                                    { label: "Cancel", fnAction: () => { thiz.finishWizard() } }
+                                ],
+                            },
+
+
+                            { id: "cutChannelX",
+                                subtitle: "Cutting",
+                                instructions: "Cutting horizontal alignment channel",
+                                buttonDefs: [
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: async (wizStep) => {
+                                    try {
+                                        const CHANNEL_WIDTH = 228;
+                                        const GUIDE_SIZE = 8;
+                                        const DEPTH = GUIDE_SIZE / 2;
+                                        const BIT_WIDTH = 3.175;
+                                        thiz.channelUR = await thiz.rpCall('cnc.getMPos');
+                                        const halfBit = BIT_WIDTH / 2;
+                                        thiz.channelUR.x += halfBit;
+                                        thiz.channelUR.y += halfBit;
+                                        let cutData = {
+                                            ll: { mx: thiz.channelUR.x - CHANNEL_WIDTH, my: thiz.channelUR.y - GUIDE_SIZE },
+                                            ur: { mx: thiz.channelUR.x, my: thiz.channelUR.y },
+                                            startZ: 0,
+                                            endZ: -DEPTH,
+                                            passCount: Math.round(DEPTH / 0.5),
+                                            bitWidth: BIT_WIDTH
+                                        }
+                                        let completed = await thiz.rpCall('cnc.cutRectangle', cutData);
+                                        if (completed) {
+                                            thiz.wizardNext();
+                                        }
+                                        else {
+                                            thiz.cancelWizard();
+                                        }
+                                    }
+                                    catch (err) {
+                                        console.trace();
+                                    }
+                                }
+                            },
+
+
+                            { id: "cutChannelY",
+                                subtitle: "Cutting",
+                                instructions: "Cutting vertical alignment channel",
+                                buttonDefs: [
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: async (wizStep) => {
+                                    try {
+                                        const CHANNEL_HEIGHT = 127;
+                                        const GUIDE_SIZE = 8;
+                                        const DEPTH = GUIDE_SIZE / 2;
+                                        let cutData = {
+                                            ur: { mx: thiz.channelUR.x, my: thiz.channelUR.y - GUIDE_SIZE },
+                                            ll: { mx: thiz.channelUR.x - GUIDE_SIZE, my: thiz.channelUR.y - CHANNEL_HEIGHT - GUIDE_SIZE },
+                                            startZ: 0,
+                                            endZ: -DEPTH,
+                                            passCount: Math.round(DEPTH / 0.5),
+                                            bitWidth: 3.175
+                                        }
+                                        let completed = await thiz.rpCall('cnc.cutRectangle', cutData);
+                                        if (completed) {
+                                            thiz.rpCall('config.setAndSave', [ { name: 'cnc.locations.ur.x', value: thiz.channelUR.x - GUIDE_SIZE },
+                                                                               { name: 'cnc.locations.ur.y', value: thiz.channelUR.y - GUIDE_SIZE }
+                                                                             ])
+                                            thiz.finishWizard();
+                                        }
+                                        else {
+                                            thiz.cancelWizard();
+                                        }
+                                    }
+                                    catch (err) {
+                                        console.trace();
+                                    }
+                                }
+                            },
+
+                        ]
+                    }
+
+                }
 
         ];
     }
