@@ -1175,7 +1175,7 @@ class CNCController  extends MainSubProcess {
         let cutY = this.cnc.mpos.y;
         while (this.rectangleInProgress && cutY > cutData.ll.my && cutY < cutData.ur.my) {
 
-            await this.cnc.untilGoto({ y: cutY }, wcsMACHINE_WORK, cutConfig.feedRate, 30000)
+            await this.cnc.untilGoto({ y: cutY }, wcsMACHINE_WORK, cutConfig.feedRate, fnRejectOnCancel)
 
             if (leftToRight) {
                 await this.cnc.untilGoto({ x: cutData.ur.mx - halfBit }, wcsMACHINE_WORK, cutConfig.feedRate, fnRejectOnCancel)
@@ -1226,7 +1226,7 @@ class CNCController  extends MainSubProcess {
         let cutX = this.cnc.mpos.x;
         while (this.rectangleInProgress && cutX > cutData.ll.mx && cutX < cutData.ur.mx) {
 
-            await this.cnc.untilGoto({ y: cutX }, wcsMACHINE_WORK, cutConfig.feedRate, 30000)
+            await this.cnc.untilGoto({ x: cutX }, wcsMACHINE_WORK, cutConfig.feedRate, fnRejectOnCancel)
 
             if (topToBottom) {
                 await this.cnc.untilGoto({ y: cutData.ll.my - halfBit }, wcsMACHINE_WORK, cutConfig.feedRate, fnRejectOnCancel)
@@ -1276,11 +1276,24 @@ class CNCController  extends MainSubProcess {
             await this.setRpm(cutConfig.rpm);
             await this.cnc.untilGoto({ z: 1 }, wcsPCB_WORK);
 
+            // Goto the nearest corner.
+            let leftDist = Math.abs(this.cnc.mpos.x - cutData.ll.mx);
+            let rightDist = Math.abs(this.cnc.mpos.x - cutData.ur.mx);
+            const halfBit = cutData.bitWidth / 2;
+            if (leftDist > rightDist) {
+               // Goto the uppper right corner...
+               await this.cnc.untilGoto({x: cutData.ur.mx-halfBit, y: cutData.ur.my-halfBit }, wcsMACHINE_WORK, null, fnRejectOnCancel);
+            }
+            else {
+                // Goto the lower left corner...
+                await this.cnc.untilGoto({x: cutData.ll.mx+halfBit, y: cutData.ll.my+halfBit }, wcsMACHINE_WORK, null, fnRejectOnCancel);
+            }
+
             while (this.rectangleInProgress && currentDepth >= cutData.endZ) {
 
                 console.log(`Starting cut pass at depth ${currentDepth}`)
 
-                await this.cnc.untilGoto({ z: currentDepth }, wcsPCB_WORK, cutConfig.plungeRate, 30000);
+                await this.cnc.untilGoto({ z: currentDepth }, wcsPCB_WORK, cutConfig.plungeRate, fnRejectOnCancel);
                 await untilDelay(1000);
 
                 if (byRow) {

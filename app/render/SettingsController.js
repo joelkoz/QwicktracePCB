@@ -1108,7 +1108,8 @@ class SettingsController extends RPCClient {
                                         if (completed) {
                                             thiz.rpCall('config.setAndSave', [ { name: 'cnc.locations.ur.x', value: thiz.channelUR.x - GUIDE_SIZE },
                                                                                { name: 'cnc.locations.ur.y', value: thiz.channelUR.y - GUIDE_SIZE }
-                                                                             ])
+                                                                             ]);
+                                            await thiz.rpCall('cnc.loadStock');
                                             thiz.finishWizard();
                                         }
                                         else {
