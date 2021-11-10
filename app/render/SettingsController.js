@@ -1126,6 +1126,153 @@ class SettingsController extends RPCClient {
                         ]
                     }
 
+                },
+
+
+                { id: "cutHoriz",
+                  menuCategory: 'mill',
+                    wizard: {
+                    title: "Cut - Horizontal",
+                    finishLandingPage: "settingsPage",
+                    steps: [
+                           { id: "cutType",
+                                subtitle: "Cut PCB Horizontal",
+                                instructions: "How do you want to cut the board",
+                                buttonDefs: [
+                                    { label: "Half height", gotoStepId: 'cutHalfStart' },
+                                    { label: "Variable height", gotoStepId: 'cutVariableStart' },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ]
+                            },
+
+                            { id: "cutVariableStart",
+                                subtitle: "Jog spindle to cut line",
+                                instructions: "Use Joystick to jog the machine to far left of cut. Press the button to switch from " +
+                                                "Up/Down controlling the Y axis or Z axis.  Press Cut to start " +
+                                                "cutting.",
+                                buttonDefs: [
+                                    { label: "Goto", fnAction: async () => {  
+                                            let x = await ui.getNumber('Goto X');
+                                            let y = await ui.getNumber('Goto Y');
+                                            if (x || y) {
+                                                let mpos = {};
+                                                if (x) {
+                                                    mpos.x = thiz.config.cnc.locations.ur.x - x;
+                                                }
+                                                if (y) {
+                                                    mpos.y = thiz.config.cnc.locations.ur.y - y;
+                                                }
+                                                await thiz.rpCall('cnc.goto', mpos);
+                                            }
+                                       } },
+                                    { label: "Cut", next: true },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', true)
+                                    wizStep.cncPosDisplay = uiAddPosDisplay('#wizardPage .status-area', window.wcsPCB_RELATIVE_UR)
+                                },
+                                onDeactivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', false)
+                                    uiRemovePosDisplay(wizStep.cncPosDisplay);
+                                }                                
+                            },
+
+                            { id: "cutVariable",
+                                subtitle: "Cutting",
+                                instructions: "Cutting stock horizontal",
+                                buttonDefs: [
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: async (wizStep) => {
+                                    try {
+                                        await thiz.rpCall('cnc.setPointer', false)
+                                        let mpos = await thiz.rpCall('cnc.getMPos');
+                                        let cutConfig = thiz.config.cnc.cut;
+                                        let halfBit = cutConfig.bitWidth / 2;
+                                        let cutData = {
+                                            start: { mx: mpos.x, my: mpos.y },
+                                            end: { mx: thiz.config.cnc.locations.ur.x - halfBit, my: mpos.y }
+                                        }
+                                        let completed = await thiz.rpCall('cnc.multiPassCut', cutData);
+                                        thiz.rpCall('cnc.loadStock')
+                                        if (completed) {
+                                           thiz.finishWizard();
+                                        }
+                                    }
+                                    catch (err) {
+                                        console.trace();
+                                    }
+                                }
+                            },
+
+                            { id: "cutHalfStart",
+                                subtitle: "Specify bottom left of board",
+                                instructions: "Use Joystick to jog the to bottom left of board. Press the button to switch from " +
+                                                "Up/Down controlling the Y axis or Z axis.  Press Cut to start " +
+                                                "cutting.",
+                                buttonDefs: [
+                                    { label: "Goto", fnAction: async () => {  
+                                        let x = await ui.getNumber('Goto X');
+                                        let y = await ui.getNumber('Goto Y');
+                                        if (x || y) {
+                                            let mpos = {};
+                                            if (x) {
+                                                mpos.x = thiz.config.cnc.locations.ur.x - x;
+                                            }
+                                            if (y) {
+                                                mpos.y = thiz.config.cnc.locations.ur.y - y;
+                                            }
+                                            await thiz.rpCall('cnc.goto', mpos);
+                                        }
+                                   } },
+                                { label: "Cut", next: true },
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', true)
+                                    wizStep.cncPosDisplay = uiAddPosDisplay('#wizardPage .status-area', window.wcsPCB_RELATIVE_UR)
+                                },
+                                onDeactivate: (wizStep) => {
+                                    thiz.rpCall('cnc.jogMode', false)
+                                    uiRemovePosDisplay(wizStep.cncPosDisplay);
+                                }                                
+                            },
+
+                            { id: "cutHalf",
+                                subtitle: "Cutting",
+                                instructions: "Cutting stock horizontally in half",
+                                buttonDefs: [
+                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }
+                                ],
+                                onActivate: async (wizStep) => {
+                                    try {
+                                        await thiz.rpCall('cnc.setPointer', false)
+                                        let mpos = await thiz.rpCall('cnc.getMPos');
+                                        let cutConfig = thiz.config.cnc.cut;
+                                        let halfBit = cutConfig.bitWidth / 2;
+                                        let boardHeight = Math.abs((mpos.y - halfBit) - thiz.config.cnc.locations.ur.y);
+                                        let halfHeight = boardHeight / 2;
+                                        let ypos = thiz.config.cnc.locations.ur.y - halfHeight;
+                                        let cutData = {
+                                            start: { mx: mpos.x, my: ypos },
+                                            end: { mx: thiz.config.cnc.locations.ur.x - halfBit, my: ypos }
+                                        }
+                                        let completed = await thiz.rpCall('cnc.multiPassCut', cutData);
+                                        thiz.rpCall('cnc.loadStock')
+                                        if (completed) {
+                                           thiz.finishWizard();
+                                        }
+                                    }
+                                    catch (err) {
+                                        console.trace();
+                                    }
+                                }
+                            }
+
+
+                    ]
+                    }
                 }
 
         ];
