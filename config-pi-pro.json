@@ -4,8 +4,6 @@
         "hasPCB": true
     },
     "window": {
-        "width": 1920,
-        "height": 2560,
         "fullScreen": true,
         "debug": false,
         "frame": false
@@ -18,6 +16,8 @@
         "ignoreErrors": true
     },
     "mask": {
+        "width": 1440,
+        "height": 2560,
         "area": {
             "pxUL": {
                 "x": 42,

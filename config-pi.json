@@ -4,8 +4,6 @@
         "hasPCB": true
     },
     "window": {
-        "width": 1760,
-        "height": 2560,
         "fullScreen": true,
         "debug": false,
         "frame": false
