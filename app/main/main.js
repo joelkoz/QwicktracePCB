@@ -27,13 +27,36 @@ GPIO.setConfiguration(Config.pigpio);
 app.commandLine.appendSwitch('touch-events');
 
 function createWindow () {
+
+
+  let width;
+  if (Config.window.width) {
+    width = Config.window.width;
+  }
+  else {
+    width = Config.ui.width;
+    if (Config.app.hasPCB) {
+      width += Config.mask.width;
+    }
+  }
+  let height;
+  if (Config.window.height) {
+    height = Config.window.height;
+  }
+  else {
+    height = Config.ui.height;
+    if (Config.app.hasPCB) {
+       height = Config.mask.height;
+    }
+  }
+
   win = new BrowserWindow({
     x: 0,
     y: 0,
-    width: Config.window.width,
-    height: Config.window.height,
-    minWidth: Config.window.width,
-    minHeight: Config.window.height,
+    width: width,
+    height: height,
+    minWidth: width,
+    minHeight: height,
     fullscreen: Config.window.fullScreen,
     show: false,
     frame: Config.window.frame,

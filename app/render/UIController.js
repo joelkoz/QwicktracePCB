@@ -133,6 +133,42 @@ class UIController extends RPCClient {
         this.state = {}
         let thiz = this;
 
+        // Set display dimensions based on configuration options...
+        let bodyClass = `ui${appConfig.ui.width}`
+        $('body').addClass(bodyClass);
+
+        let maskWidth;
+        if (appConfig.window.width) {
+           maskWidth = appConfig.window.width - appConfig.ui.width;
+        }
+        else {
+          maskWidth = 0;
+          if (appConfig.app.hasPCB) {
+            maskWidth += appConfig.mask.width;
+          }
+        }
+        let maskHeight;
+        if (appConfig.window.height) {
+          maskHeight = appConfig.window.height;
+        }
+        else {
+          maskHeight = appConfig.ui.height;
+          if (appConfig.app.hasPCB) {
+             maskHeight = appConfig.mask.height;
+          }
+        }
+        
+        $('#mask-area').css('width', `${maskWidth}px`);
+        $('#mask-area').css('height', `${maskHeight}px`);
+        $('#ui').css('left', `${maskWidth}px`);
+
+
+        // Set up global UI event responses...
+
+        $(".btn.back").on("click", () => { thiz.backPage() });
+
+        $(".btn.wizardBack").on("click", () => { thiz.cancelWizard() });
+
         // The touchscreen on the Pi will not register mouse clicks
         // like one would expect. Make all our buttons respond
         // to touchstart events as if a mouse was clicked...
@@ -140,12 +176,6 @@ class UIController extends RPCClient {
             ui.publish('global.ui.btnPress');
             $(this).trigger('click');
         });
-
-        $('body').addClass(appConfig.ui.bodyClass);
-
-        $(".btn.back").on("click", () => { thiz.backPage() });
-
-        $(".btn.wizardBack").on("click", () => { thiz.cancelWizard() });
 
         this.showPage(appConfig.ui.startPageId);
         console.log('ui started');

@@ -11,8 +11,6 @@ body {
      position:absolute;
      left: 0px;
      top: 0px;
-     width: 1440px;
-     height: 2560px;
  }
 
  #canvas {
@@ -25,7 +23,6 @@ body {
 
  #ui {
      position:absolute;
-     left: 1440px;
      top: 0px;
      background-color: blue;
      color: white;
