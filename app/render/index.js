@@ -27,6 +27,7 @@ document.addEventListener('keydown', (event) => {
  
 RenderMQ.on('render.startup.initialize', (config) => {
    window.appConfig = config;
+   window.Config = config;
    window.uiDispatch = {};
    window.uiController = new UIController(config);
    window.uiExpose = new ExposeController(config);
@@ -65,5 +66,11 @@ RenderMQ.on('render.cnc.jog', (jog) => {
    window.cncJog = jog;
 })
 
+
+RenderMQ.on('global.config.load', (config) => {
+   window.appConfig = config;
+   window.Config = config;
+   console.log('New configuration loaded: ', config)
+});
 
 RenderMQ.emit('main.startup.renderReady');

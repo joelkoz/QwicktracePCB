@@ -1,6 +1,7 @@
 
 const RPCServer = require('./RPCServer.js');
 const Config = require('./Config.js');
+const MainMQ = require('./MainMQ.js');
 
 
 class ConfigServer extends RPCServer {
@@ -17,7 +18,9 @@ class ConfigServer extends RPCServer {
                 },
 
                 async load() {
-                    return await Config.load();
+                    let result = await Config.load();
+                    MainMQ.emit('global.config.load', Config.json);
+                    return result;
                 }
 
             });
