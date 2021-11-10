@@ -254,7 +254,7 @@ class CNCController  extends MainSubProcess {
                 return thiz.cnc.wpos;
             },
 
-            async goto(pos, wcsNum = wcsMACHINE_WORK, feedRate = null, msTimeout = 10000) {
+            async goto(pos, wcsNum = wcsMACHINE_WORK, feedRate = null, msTimeout = 30000) {
                 await thiz.cnc.untilGoto(pos, wcsNum, feedRate, msTimeout);
                 return thiz.cnc.mpos;
             },
