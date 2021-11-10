@@ -4,11 +4,13 @@
         "hasPCB": false
     },
     "window": {
-        "width": 1920,
-        "height": 1000,
         "fullScreen": false,
-        "debug": true,
-        "frame": true
+        "debug": false,
+        "frame": false
+    },
+    "mask": {
+        "width": 1000,
+        "height": 1000
     },
     "ui": {
         "startPageId": "startPage",
@@ -26,6 +28,10 @@
         },
         "locations": {
             "ur": {
+                "x": -34.6,
+                "y": -7.6
+            },
+            "urComputed": {
                 "x": -33.98650000000001,
                 "y": -7.6175
             },
@@ -79,12 +85,42 @@
         },
         "cut": {
             "startHeight": 1.5,
-            "bitWidth": 0.8,
-            "depth": -1.5,
+            "bitWidth": 3.175,
+            "depth": -2.1,
+            "passes": 3,
+            "feedRate": 300,
+            "plungeRate": 75,
+            "rpm": 15000
+        },
+        "cutMDF": {
+            "startHeight": 1.5,
+            "bitWidth": 3.175,
+            "depth": -2.1,
             "passes": 4,
             "feedRate": 300,
             "plungeRate": 50,
-            "rpm": 20000
+            "rpm": 20000,
+            "depthOfCut": 0.5
+        },
+        "cutAcrylic": {
+            "startHeight": 1.5,
+            "bitWidth": 3.175,
+            "depth": -2.1,
+            "passes": 3,
+            "feedRate": 300,
+            "plungeRate": 75,
+            "rpm": 15000,
+            "depthOfCut": 0.7
+        },
+        "cutSurfaceMDF": {
+            "startHeight": 1.5,
+            "bitWidth": 25.4,
+            "depth": 0.25,
+            "passes": 1,
+            "feedRate": 200,
+            "plungeRate": 50,
+            "rpm": 20000,
+            "depthOfCut": 0.25
         }
     },
     "joystick": {
