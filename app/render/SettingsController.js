@@ -1294,8 +1294,8 @@ class SettingsController extends RPCClient {
     }
 
     resetMaskCorners() {
-        let canvasWidth = this.config.window.height;
-        let canvasHeight = this.config.window.width - this.config.ui.width;
+        let canvasWidth = window.maskHeight;
+        let canvasHeight = window.maskWidth;
         let area = this.config.mask.area;
 
         area.pxUL = {

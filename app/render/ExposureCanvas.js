@@ -33,14 +33,19 @@ class ExposureCanvas extends RPCClient {
 
         const Config = window.appConfig;
         this.canvas = document.getElementById(CANVAS_ID);
-        this.canvas.width = Config.window.width - Config.ui.width;
+        if (Config.window.width) {
+           this.canvas.width = Config.window.width - Config.ui.width;
+        }
+        else {
+            this.canvas.width = Config.mask.width;
+        }
 
-        if (!Config.window.debug) {
+        if (Config.window.height) {
            this.canvas.height = Config.window.height;
         }
         else {
            // Make the canvas smaller for debugging purposes...
-           this.canvas.height = 445;
+           this.canvas.height = Config.mask.height;
         }
 
         let thiz = this;

@@ -2,7 +2,7 @@ const MainSubProcess = require('./MainSubProcess.js')
 const GPIO = require('./GPIO.js');
 const MainMQ = require('./MainMQ.js');
 
-const SAFELIGHT_MAX_BRIGHTNESS = 75;
+const SAFELIGHT_MAX_BRIGHTNESS = 250;
 
 class UVController  extends MainSubProcess {
 

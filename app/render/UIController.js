@@ -137,7 +137,7 @@ class UIController extends RPCClient {
         let bodyClass = `ui${appConfig.ui.width}`
         $('body').addClass(bodyClass);
 
-        let maskWidth;
+        window.maskWidth = -1;
         if (appConfig.window.width) {
            maskWidth = appConfig.window.width - appConfig.ui.width;
         }
@@ -147,7 +147,7 @@ class UIController extends RPCClient {
             maskWidth += appConfig.mask.width;
           }
         }
-        let maskHeight;
+        window.maskHeight = -1;
         if (appConfig.window.height) {
           maskHeight = appConfig.window.height;
         }
