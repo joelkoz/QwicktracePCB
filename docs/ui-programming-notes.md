@@ -10,7 +10,7 @@ adds the following event naming and routing schemes:
 
 1. Using dot notation, events are usually in the format `processName.className.message`
 
-2. By using the `EventEmitter2` package, the message queues inherit all of its functionality. This includes the ability to
+2. By using the [EventEmitter2](https://github.com/EventEmitter2/EventEmitter2) package, the message queues inherit all of its functionality. This includes the ability to
 listen to wilcard event names. For example, `MainMQ.on('main.cnc.**')` will define a listener that responds to ALL messages
 targed to the CNC class, like `main.cnc.hello`.
 
