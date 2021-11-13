@@ -1,6 +1,6 @@
 # Qwicktrace Pro PCB
-Qwicktrace PCB is the software component of the QwickFab PCB open source circuit board fabrication system for desktops.
-The system dramatically reduces the time and skill required to make top quality boards single and double sided circuit 
+Qwicktrace PCB is the software component of the QwickFab PCB open source desktop circuit board fabrication system.
+The system dramatically reduces the time and skill required to make top quality single and double sided circuit 
 boards for prototyping and one off use. Using QwickFab PCB, making a PCB is as simple as uploading your Gerber files to 
 the Pro controller, selecting the process you wish to use to create the board, and then following the on-screen step
 by step instructions. 
@@ -11,10 +11,10 @@ by step instructions.
 QwickFab PCB consists of three major hardware components:
 
 1. The Qwicktrace Pro Controller is small control device with touchscreen and joystick powered by a Raspberry Pi 4 and the software
-found in this repository. It is comprised of a software stack and UI for controller the other two hardware components below. The 
+found in this repository. It is comprised of a software stack and UI for controlling the other two hardware components below. The 
 Controller can run either of the two other components individually, or together as a complete desktop PCB fabrication system.
 
-2. The Qwicktrace Exposure Table is a small device for quickly exposing photosensitive copper boards to ultraviolet light masked using a process called "Masked Stereolithography" (MSLA). The all new design of this exposure system contiains an amber LED "safe light" for illuminating the mask for end user board positioning that is invisible to the photosenstive board.
+2. The Qwicktrace Exposure Table is a small device for quickly exposing photosensitive copper boards to ultraviolet light masked using a process called "Masked Stereolithography" (MSLA). The all new design of this exposure system adds an amber LED "safe light" for illuminating the mask for end user board positioning that is invisible to the photosenstive board.
 
 3. The Qwickmill mini CNC is a small desktop CNC machine designed specifically for working with small printed circuit boards. It can
 quickly drill the holes needed by through hole components on boards processed with the Exposure table.  It can also mill an entire PCB on blank copper boards using special ingraving bits. This is handy if your board is simple enough as to not need the better resolution of the exposure table, or if you are on a budget and would prefer not to spend the extra money on photosensitive boards. 
