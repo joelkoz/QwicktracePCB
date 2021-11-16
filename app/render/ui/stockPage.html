@@ -1,0 +1,85 @@
+<div id="stockPage" class="page">
+    <style type="text/css"> 
+
+        #stockPage .page-body {
+            display: grid;
+            grid-template-areas:
+               'displayArea'
+               'buttonArea';
+            grid-template-rows: 1fr 5fr;
+        }
+
+        #stockPage .button-area {
+            grid-area: buttonArea;
+        }
+
+        #stockPage .display-area {
+            grid-area: displayArea;
+        }
+
+        #stockPage .button-area button {
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 20px;
+            height: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        #stockPage .button-area .btn {
+            width: 90%;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           <button type="button" class="btn w1 back">&#8592;</button>
+           Stock to use
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="display-area">
+            <table>
+                <tr>
+                    <th>Project:</th>
+                    <td class="projectName">project name</td>
+                </tr>
+            </table>
+         </div>        
+        <div class="button-area">
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['stockPage'] = function() {
+            console.log('Activate stock page');
+
+            ui.clearState('stockId');
+            ui.clearState('positionBoard');
+            $('.projectName').html(ui.projectName);
+
+            const divSelector = '#stockPage .button-area';
+            $(divSelector).empty();
+
+            let optionCount = 0;
+            if (ui.isOptionStockContinue()) {
+                optionCount++;
+                uiAddButton(divSelector, 'Continue with current side', () => { ui.stockContinue(); });
+            }
+
+            if (ui.isOptionStockProcessed()) {
+                optionCount++;
+                uiAddButton(divSelector, 'Use previously processed stock', () => { ui.stockProcessed(); });
+            }
+
+            optionCount++;
+            uiAddButton(divSelector, 'Load blank stock', () => { ui.stockIsNew(true); });
+
+            if (optionCount === 1) {
+                setTimeout(() => { ui.stockIsNew(false); }, 10);
+            }
+
+        };
+
+    </script>
+</div>

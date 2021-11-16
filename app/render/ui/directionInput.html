@@ -1,0 +1,142 @@
+<div id="directionInput" class="popup var-width">
+    <style type="text/css"> 
+        .directionContainer {
+            width: fit-content;
+            margin: 10px;
+        }
+
+        .directionContainer.debug {
+            border: 1px dotted grey;
+        }
+
+
+        .directionContainer label {
+            color: white;
+            display: block;
+            background: black;
+            margin-top: -2px;
+        }
+
+
+        .directionContainer .keypad {
+            background: transparent;
+            display: grid;
+            grid-template-columns: repeat(3, 55px);
+            gap: 20px;
+            margin-bottom: 0px;
+            margin-top: -5px
+        }
+
+
+        .directionContainer .btn.speed,
+        .directionContainer .dirBtn {
+            width: 59px;
+            height: 55px;
+        }
+
+
+        .directionContainer .header {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+        }
+
+        .directionContainer label {
+            display: flex;
+            align-items: center;
+        }
+
+        .directionContainer .header .btn {
+            margin-left: 10px;
+        }
+
+    </style>
+
+    <div class="directionContainer">
+        <div class="header">
+            <label>Input</label>
+            <button type="button" class="btn speed">1x</button> 
+        </div>
+        <div class="keypad">
+            <div></div>
+            <button type="button" class="btn dirBtn">&uarr;</button>
+            <div></div>
+            <button type="button" class="btn dirBtn">&larr;</button>
+            <button type="button" class="btn dirBtn">Ok</button>
+            <button type="button" class="btn dirBtn">&rarr;</button>
+            <div></div>
+            <button type="button" class="btn dirBtn">&darr;</button>
+            <div></div>
+        </div>
+    </div>
+
+    <script>
+        let speed = 1;
+
+        let _EVT_Direction_Notification = "render.ui.input.direction"
+
+        function onDirectionKey(target) {
+
+            let btn = $(target)
+            let btnVal = btn.text();
+            let dir;
+
+            if (btnVal === 'Ok') {
+                ui.onPopupButton({ emit: { evtName: _EVT_Direction_Notification, data: { dir: 'Ok' } }})
+            }
+            else {
+                let dir;
+                switch (btnVal) {
+                    case unescape('%u2190'): {
+                        dir = 'left'
+                    }
+                    break;
+
+                    case unescape('%u2191'): {
+                        dir = 'up'
+                    }
+                    break;
+
+                    case unescape('%u2192'): {
+                        dir = 'right'
+                    }
+                    break;
+
+                    case unescape('%u2193'): {
+                        dir = 'down'
+                    }
+                    break;
+                } // switch
+                ui.publish(_EVT_Direction_Notification, { dir, speed });
+            }
+        }
+
+        function setDirectionEvent(eventName) {
+            _EVT_Direction_Notification = eventName;
+            console.log('Direction input event is ', eventName);
+        }
+
+        function setDirectionLabel(val) {
+            let label = $('.directionContainer label')
+            label.text(val)
+        }
+
+        function onSpeedBtn() {
+            let btn = $('.directionContainer .btn.speed')
+            speed = (speed % 3) + 1;
+            btn.text(`${speed}x`)
+        }
+
+
+        $(".dirBtn").on('click', (evt) => {
+            onDirectionKey(evt.target)
+        });
+
+        $(".btn.speed").on('click', (evt) => {
+            onSpeedBtn();
+        });
+
+        uiPageActivate['directionInput'] = function(popupData) {
+            speed = 1;
+        };
+    </script>
+</div>

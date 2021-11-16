@@ -1,0 +1,116 @@
+<div id="numberInput" class="popup var-width">
+    <style type="text/css"> 
+
+        .inputContainer {
+            width: fit-content;
+            margin: 10px;
+        }
+
+        .inputContainer label {
+            color: white;
+            display: block;
+            background: black;
+            margin-top: -2px;
+        }
+
+        .inputContainer .inputValue {
+            font-family: arial;
+            font-size: 26px;
+            letter-spacing: 1px;
+            border: 1px solid white;
+            background: transparent;
+            width: 100px;
+            margin-bottom: 20px;
+            color: white;
+            text-align: right;
+        }
+
+        .inputContainer .keypad {
+            background: transparent;
+            display: grid;
+            grid-template-columns: repeat(3, 45px);
+            gap: 10px;
+            margin-bottom: 0px;
+            margin-top: -5px
+        }
+
+        .inputContainer .keyBtn {
+            width: 49px;
+            height: 45px;
+        }
+
+        .inputContainer .keyBtn.backspc {
+            position: relative;
+            top: -5px
+        }        
+    </style>
+
+    <div class="inputContainer">
+        <label>Input</label>
+        <input type="text" class="inputValue" value=""/>
+        <button type="button" class="btn keyBtn backspc">&larr;</button>
+        <div class="keypad">
+            <button type="button" class="btn keyBtn">7</button>
+            <button type="button" class="btn keyBtn">8</button>
+            <button type="button" class="btn keyBtn">9</button>
+            <button type="button" class="btn keyBtn">4</button>
+            <button type="button" class="btn keyBtn">5</button>
+            <button type="button" class="btn keyBtn">6</button>
+            <button type="button" class="btn keyBtn">1</button>
+            <button type="button" class="btn keyBtn">2</button>
+            <button type="button" class="btn keyBtn">3</button>
+            <button type="button" class="btn keyBtn">.</button>
+            <button type="button" class="btn keyBtn">0</button>
+            <button type="button" class="btn keyBtn">Ok</button>
+        </div>
+    </div>
+
+    <script>
+        $(".keyBtn").on('click', (evt) => {
+
+            const EVT_NUMERIC_INPUT = 'ui.numberInput'
+            function updateInputValue(target) {
+
+                let inputVal = $(".inputContainer .inputValue");
+                let btn = $(target)
+                let btnVal = btn.text();
+                if (btnVal === 'Ok') {
+                    // done
+                    let finalVal = inputVal.val();
+                    ui.onPopupButton({ emit: { evtName: EVT_NUMERIC_INPUT, data: finalVal }})
+                }
+                else if (btnVal === unescape("%u2190")) {
+                    // Backspace...
+                    let iv = inputVal.val();
+                    let ivl = iv.length;
+                    if (ivl === 0) {
+                        // It is already blank. Backspace is like a cancel...
+                        ui.onPopupButton({ emit: { evtName: EVT_NUMERIC_INPUT, data: null }})
+                    }
+                    else {
+                       inputVal.val(iv.substring(0, ivl-1))
+                    }
+                }
+                else {
+                    // One of the number keys was pressed...
+                    let newVal = inputVal.val() + btnVal;
+                    inputVal.val(newVal);
+                }
+                // Move input cursor to end of input
+                inputVal.focus().val(inputVal.val());       
+            }
+
+            updateInputValue(evt.target)
+        });
+
+
+        function setInputLabel(val) {
+            let label = $('.inputContainer label')
+            label.text(val)
+        }
+
+        uiPageActivate['numberInput'] = function(popupData) {
+        };
+
+    </script>
+</div>

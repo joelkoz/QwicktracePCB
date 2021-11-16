@@ -1,0 +1,10 @@
+{
+    "name": "promise-utils",
+    "version": "1.0.0",
+    "description": "Utility functions for using promises",
+    "main": "index.js",
+    "author": "Joel Kozikowski",
+    "license": "ISC",
+    "dependencies": {
+    }
+}

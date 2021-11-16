@@ -1,0 +1,13 @@
+{
+    "material": {
+        "name": "1 side photo positive",
+        "actions": ["expose", "drill"],
+        "sides": 1,
+        "thickness": 1.5
+    },
+
+    "mask": {
+        "traceColor": "black",
+        "bgColor": "white"
+    }
+}

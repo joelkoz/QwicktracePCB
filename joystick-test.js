@@ -1,30 +1,15 @@
-const ADS1115 = require('ads1115')
+const Kefir = require('kefir');
 const readline = require('readline');
-const fs = require('fs');
+const Joystick = require('./app/main/Joystick');
+const GPIO = require('./app/main/GPIO');
+const Config = require('./app/main/Config')
 
-const connection = [1, 0x48, 'i2c-bus']
-
-const CAL_FILE = "joystick.json";
+GPIO.config = Config.pigpio;
+new GPIO();
 
 function cls() {
-   process.stdout.write('\033[2J');
+  process.stdout.write('\033[2J');
 }
-
-var xCal = {
-  min: 99999,
-  max: -1,
-  mid: -99,
-  deadLo: 50,
-  deadHi: 50
-};
-
-var yCal = {
-  min: 99999,
-  max: -1,
-  mid: -99,
-  deadLo: 50,
-  deadHi: 50
-};
 
 
 function out(x, y, str) {
@@ -33,119 +18,117 @@ function out(x, y, str) {
  
 
 function outVal(x, y, num) {
-   let str = "    " + num.toFixed(2); 
-   out(x, y, str.slice(-7));
+   let str = "      " + num.toFixed(2); 
+   out(x, y, str.slice(-9));
 }
 
 
-function calibrate(cal, val) {
-  if (val < cal.min) {
-     cal.min = val;
+function shallowEqual(object1, object2) {
+  if (typeof object1 !== typeof object2) {
+     return false;
   }
-  if (val > cal.max) {
-     cal.max = val;
+
+  const keys1 = Object.keys(object1);
+  const keys2 = Object.keys(object2);
+
+  if (keys1.length !== keys2.length) {
+    return false;
   }
-  if (cal.mid == -99) {
-    cal.mid = val;
-  }
-}
 
-function stickVal(cal, raw) {
-
-   let mid;
-   if (raw <= cal.mid) {
-      mid = cal.mid - cal.deadLo;
-      if (raw >= mid) {
-         return 0;
-      }
-   }
-   else {
-      mid = cal.mid + cal.deadHi;
-      if (raw <= mid) {
-         return 0;
-      }
-   }
-
-   let range;
-   if (raw < cal.mid) {
-     range = mid - cal.min;
-   }
-   else {
-     range = cal.max - mid;
-   }
-
-   let val = raw - mid;
-
-   return (val / range);
-
-}
-
-
-function readJoystickCalibration() {
-    if (fs.existsSync(CAL_FILE)) {
-      let json = fs.readFileSync(CAL_FILE);
-      let joystick = JSON.parse(json);
-      xCal = joystick.xCal;
-      yCal = joystick.yCal;
+  for (let key of keys1) {
+    if (object1[key] !== object2[key]) {
+      return false;
     }
+  }
+
+  return true;
 }
 
 
-function saveJoystickCalibration() {
-    let joystick = { xCal, yCal };
-    let json = JSON.stringify(joystick);
-    fs.writeFileSync(CAL_FILE, json + '\n');
-    out(1, 7, "Calibration data saved to joystick.json");
-    setTimeout(() => { out(1, 7, " ".repeat(50))}, 4000);
-}
-
+// Start program execution...
 var appRunning = true;
 
+// Define keypresses this app understands...
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
-
 process.stdin.on('keypress', (str, key) => {
 
-  if ((key.ctrl && key.name === 'c') || (key.name === 'x') || (key.name ==='q')) {
+  if ((key.name === 'x') || (key.name ==='q')) {
     appRunning = false;
-    cls();
+    console.log('\n\n\n\n\n\n\n');
+    console.log(Joystick.instance.calibration);
     process.exit();
-  } else if (key.name === 's') {
-     // Write out joystick calibration data...
-     saveJoystickCalibration();
+  } 
+
+  if (str === ' ') {
+     console.log('');
   }
+
+  if (key.name === 'c') {
+    Joystick.calibrate();
+  }
+
 });
 
 
-ADS1115.open(...connection).then(async (ads1115) => {
-  ads1115.gain = 1
- 
-  cls();
-  out(1, 1, "X:");
-  out(1, 2, "Y:");
-  out(1, 3, "Btn:");
 
-  out(1, 5, "Press S to save calibration data, X to exit.");
+// Kefir filter function...
+function hasChanged() {
+   let last;
+   return (val) => {
+     let changed;
+     if (typeof val === 'object') {
+        changed = !shallowEqual(val, last);
+     }
+     else {
+        changed = (val != last);
+     }
+     last = val;
+     return changed;
+   }
+}
 
-  readJoystickCalibration();
+// Joystick.SamplesPerValue = 5;
+Joystick.init();
+Joystick.calibrate();
 
-  while (appRunning) {
-    let rawX = await ads1115.measure('0+GND')
-    calibrate(xCal, rawX);
+let msStickCheck = 200;
+let stick = Kefir.fromPoll(msStickCheck, Joystick.stickVal).filter(hasChanged());
+let rawStick = Kefir.fromPoll(msStickCheck, Joystick.rawVal)
+let stickBtn = Kefir.fromPoll(msStickCheck, Joystick.btnVal).filter(hasChanged());
+let rawBtn = Kefir.fromPoll(msStickCheck, Joystick.rawBtn)
 
-    let rawY = await ads1115.measure('1+GND')
-    calibrate(yCal, rawY);
+let jogZ = false;
 
-    let btn = await ads1115.measure('2+GND')
+stick.onValue(stick => {
+  outVal(4, 1, stick.x * 100);
+  outVal(4, 2, stick.y * 100);
+});
 
-    let x = stickVal(xCal, rawX);
-    let y = stickVal(yCal, rawY);
 
-    outVal(4, 1, x * 100);
-    outVal(4, 2, y * 100);
+rawStick.onValue(stick => {
+  outVal(14, 1, stick.x);
+  outVal(14, 2, stick.y);
+});
 
-    let pressed = (btn < 500);
-    out(5, 3, pressed ? "PRESSED" : "       ");
-    // out(5, 3, btn);
-  }
-})
+
+stickBtn.onValue(pressed => {
+   out(5, 3, pressed ? "PRESSED" : "       ");
+});
+
+
+rawBtn.onValue(btn => {
+  outVal(14, 3, btn);
+});
+
+
+
+
+cls();
+out(1, 1, "X:");
+out(1, 2, "Y:");
+out(1, 3, "Btn:");
+
+out(1, 5, "Press X to exit.");
+
+console.log('\n\n\n');

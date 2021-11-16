@@ -5,16 +5,21 @@
   "main": "app/main/main.js",
   "dependencies": {
     "ads1115": "^1.2.0",
+    "deskew": "file:./app/common/deskew",
+    "eventemitter2": "^6.4.4",
     "fast-xml-parser": "^3.18.0",
+    "fs-extra": "^10.0.0",
     "gerber-to-svg": "^4.2.5",
-    "i2c-bus": "^5.2.2",
     "jquery": "^3.6.0",
     "jsonwebtoken": "^8.5.1",
     "kefir": "^3.8.8",
     "pigpio-client": "^1.5.1",
+    "promise-utils": "file:./app/common/promise-utils",
     "set-interval-async": "^2.0.3",
     "socket.io-client": "^1.7.4",
-    "units-css": "^0.4.0"
+    "transformation-matrix": "^2.8.0",
+    "units-css": "^0.4.0",
+    "whats-that-gerber": "^4.2.2"
   },
   "devDependencies": {
     "electron": "^11.2.3",

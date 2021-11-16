@@ -87,21 +87,21 @@
             <div id="expProgressVal"></div>
         </div>
         <div class="button-area">
-            <button id="expBtnCancel" type="button" class="btn w3" onClick="ui.cancelExposure()">Cancel</button>
-            <button id="expBtnDone" type="button" class="btn w3" onClick="ui.showPage('filePage')">Done</button>
+            <button id="expBtnCancel" type="button" class="btn w3" onClick="uiExpose.cancelExposure()">Cancel</button>
+            <button id="expBtnDone" type="button" class="btn w3" onClick="uiExpose.finishExposure()">Done</button>
         </div>
     </div>
 
     <script>
         uiPageActivate['exposurePage'] = function() {
-            ui.startExposure();
-            $('#expFName2').html(ui.state.file.value);
+            uiExpose.startExposure();
+            $('#expFName2').html(ui.state.projectId);
 
             $('#expBtnCancel').show();
             $('#expBtnDone').hide();
         };
 
-        ui.subscribe('ui-exposure-update', (event, exposure) => {
+        ui.subscribe('render.ui.exposureUpdate', (exposure) => {
             let remainMin = Math.trunc(exposure.remain / 60);
             let remainSec = exposure.remain % 60;
             let strRemain = ('0' + remainMin).slice(-2) + ":" + ('0' + remainSec).slice(-2);

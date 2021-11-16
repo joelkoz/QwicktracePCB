@@ -1,7 +1,0 @@
-{
-    "name": "Negative top",
-    "description": "Expose normal traces",
-    "invertImg": true,
-    "invertCanvas": true,
-    "mirror": false
-}

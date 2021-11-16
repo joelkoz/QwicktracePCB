@@ -11,8 +11,6 @@ body {
      position:absolute;
      left: 0px;
      top: 0px;
-     width: 1440px;
-     height: 2560px;
  }
 
  #canvas {
@@ -25,13 +23,21 @@ body {
 
  #ui {
      position:absolute;
-     left: 1440px;
      top: 0px;
-     width: 320px;
-     height: 240px;
      background-color: blue;
      color: white;
  }
+
+ .ui320 #ui {
+    width: 320px;
+    height: 240px;
+ }
+
+ .ui480 #ui {
+    width: 480px;
+    height: 320px;
+ }
+
 
  .btn {
      height: 60px;
@@ -73,7 +79,8 @@ body {
      width: 192px;
  }
 
- .btn.back {
+ .btn.back,
+ .btn.wizardBack {
      position: absolute;
      left: 15px;
      margin-top: 3px;
@@ -81,17 +88,58 @@ body {
      height: 40px;
  }
 
+ .btn.uiNext {
+     position: absolute;
+     left: auto;
+     right: 15px;
+     margin-top: 3px;
+     width: 120px;
+     height: 40px;
+ }
+
+
  .page {
      display: grid;
      grid-gap: 5px;
-     width: 320px;
-     height: 240px;
      grid-template-areas:
      'pageHeader'
      'pageBody';
      grid-template-rows: 1fr 4fr;
      background-color: black;
      font-family: arial;
+ }
+
+ .popup {
+    font-family: arial;
+    position: absolute;
+    width: 95%;
+    background: black;
+    display: inline-block;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    border: 4px double white;
+    border-radius: 4px;
+    z-index: 10;
+    height:fit-content;
+    margin: auto;
+    inset: 0px;
+ }
+
+ .popup.var-width {
+    width: fit-content;
+ }
+
+ .ui320 .page {
+    width: 320px;
+    height: 240px;
+ }
+
+ .ui480 .page {
+    width: 480px;
+    height: 320px;
  }
 
  .page-header {
@@ -135,3 +183,14 @@ body {
  .list option:checked {
     background: #4CAF50 linear-gradient(0deg, #4CAF50 0%, #4CAF50 100%);
  }        
+
+
+.display-area th {
+    color: #4CAF50;
+    text-align: right;
+}
+
+.display-area td {
+    color: white;
+    white-space: nowrap;
+} 

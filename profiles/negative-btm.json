@@ -1,7 +1,0 @@
-{
-    "name": "Negative Back/Mirror",
-    "description": "Expose mirrored traces",
-    "invertImg": true,
-    "invertCanvas": true,
-    "mirror": true
-}

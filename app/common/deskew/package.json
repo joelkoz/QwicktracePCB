@@ -1,0 +1,11 @@
+{
+    "name": "deskew",
+    "version": "1.0.0",
+    "description": "Calculate rotation and translation from two known points and their new/actual positions",
+    "main": "index.js",
+    "author": "Joel Kozikowski",
+    "license": "ISC",
+    "dependencies": {
+      "victor": "^1.1.0"
+    }
+}

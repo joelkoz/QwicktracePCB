@@ -1,0 +1,66 @@
+
+<div id="positionPage" class="page">
+    <style type="text/css"> 
+
+        #positionPage .page-body {
+            display: grid;
+            grid-template-areas:
+               'canvasArea'
+               'textArea';
+            grid-template-rows: 1fr 75px;
+            grid-template-columns: 1fr;
+        }
+
+        #positionPage .button-area {
+            grid-area: textArea;
+            width: 100%;
+            text-align: left;
+            margin-left: 10px;
+            margin-right: 10px;
+            margin-top: auto;
+            margin-bottom: auto;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;                
+        }
+
+       #positionPage .button-area button {
+           margin-right: 10px;
+       }
+
+        #positionPage .canvas-area {
+            grid-area: canvasArea;
+            width: 100%;
+            height: 100%;
+            background-color: #2b3325;
+            display: flex;
+            justify-content: center;
+            align-items: center;            
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           <button type="button" class="btn w1 back">&#8592;</button>
+           Position Board on Stock
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="canvas-area">
+            <canvas id="stock-canvas"></canvas>
+        </div>
+        <div class="button-area">
+           <button type="button" class="btn w2" onClick="uiPos.nextPos()">Change</button>
+           <button type="button" class="btn w2" onClick="ui.onPositionButton(uiPos.currentPosition())">Continue</button>
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['positionPage'] = function() {
+             console.log('Activate positionPage');
+        };
+    </script>
+
+</div>
+

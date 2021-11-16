@@ -1,4 +1,5 @@
 const MainSubProcess = require('./MainSubProcess.js')
+const MainMQ = require('./MainMQ.js');
 const path = require('path');
 const fs = require('fs');
 
@@ -7,7 +8,7 @@ const profileDir = "./profiles/";
 class ProfileLoader extends MainSubProcess {
 
     constructor(win) {
-       super(win);
+       super(win, 'profiles');
 
        this.lastProfileSyncMs = 0;
 
@@ -31,11 +32,8 @@ class ProfileLoader extends MainSubProcess {
                      fs.readFile(profileDir + file, 'utf8', (err, json) => {
                           try {
                             let profile = JSON.parse(json);
-                            profile.fileName = path.basename(file);
-                            thiz.ipcSend('ui-profile-update', profile);
-                            if (path.basename(file) == 'default.json') {
-                                thiz.ipcSend('mask-profile-default', profile);
-                            }
+                            profile.id = path.parse(file).name;
+                            MainMQ.emit('render.ui.profileUpdate', profile);
                           }
                           catch (err) {
                             console.log(`Error loading profile ${fileName}`);

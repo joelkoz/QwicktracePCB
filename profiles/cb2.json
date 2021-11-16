@@ -1,0 +1,9 @@
+{
+    "material": {
+        "name": "2 sides blank copper",
+        "actions": ["mill", "drill"],
+        "sides": 2,
+        "thickness": 1.5
+    }
+    
+}

@@ -1,0 +1,75 @@
+<div id="stockSelectPage" class="page">
+    <style type="text/css"> 
+
+        #stockSelectPage .page-body {
+            display: grid;
+            grid-template-areas:
+               'listArea buttonsLeft';
+            grid-template-columns: 3fr 1fr;
+        }
+
+        #stockSelectPage .list-area {
+            grid-area: listArea;
+            margin-right: 5px;
+        }
+
+        #stockSelectPage .buttons-left {
+            grid-area: buttonsLeft;
+            margin: auto auto auto auto;
+        }
+
+        #stockSelectPage .buttons-left button {
+            display: block;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           <button type="button" class="btn w1 back">&#8592;</button>
+           Stock to use
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="list-area">
+            <select id="stockId" class="list" size="3">
+                <option>test</option>
+            </select>
+        </div>
+        <div class="buttons-left">
+            <button type="button" class="btn w1" onClick="uiListUp('stockId')">&#8593;</button>
+            <button type="button" class="btn w1" onClick="uiListDown('stockId')">&#8595;</button>
+        </div>
+    </div>
+
+    <script>
+        async function onStockSelect(stockId) {
+            let stock = ui.profileList[stockId].stock; 
+            if (stock.width) {
+                // This stock already has a pre-defined width.
+                // We can move on to the next phase...
+                ui.showPage('initProcessPage')
+            }
+            else {
+                // No pre-defined width. Prompt user for it...
+                let width = await ui.getNumber('Stock width');
+                if (width > 0) {
+                    let height = await ui.getNumber('Stock height');
+                    if (height > 0) {
+                        ui.setState('customStockWidth', width);
+                        ui.setState('customStockHeight', height)
+                        ui.showPage('initProcessPage')
+                    }
+                }
+            }
+        }
+
+        uiPageActivate['stockSelectPage'] = function() {
+             console.log('Activate stockSelectPage');
+             ui.clearState('stockId');
+             uiInitList('stockId', ui.getStockList(), null, onStockSelect);
+        };
+
+    </script>
+</div>

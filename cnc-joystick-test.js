@@ -1,12 +1,40 @@
 const Kefir = require('kefir');
 const readline = require('readline');
+const CNC = require('./app/main/cnc/CNC');
 const Joystick = require('./app/main/Joystick');
-const ZProbe = require('./app/main/ZProbe');
-const CNC = require('./app/main/CNC');
-const LaserPointer = require('./app/main/LaserPointer');
+const ZProbe = require('./app/main/cnc/ZProbe');
+const LaserPointer = require('./app/main/cnc/LaserPointer');
+const GPIO = require('./app/main/GPIO');
 
+// const HOST = "127.0.0.1"
+const HOST = "192.168.0.152"
 
-var pointer = new LaserPointer();
+const mockConfig = { cnc: {
+                        server: {
+                          host: HOST,
+                          port: 8000,
+                          serialPort: "/dev/ttyUSB0",
+                          baudRate: 115200
+                        }
+                    },
+                    joystick: {
+                      invertY: true,
+                      invertX: false,
+                      calibration: {
+                                      xCal:{min:174,max:26514,mid:13442,deadLo:50,deadHi:50},
+                                      yCal:{min:176,max:26515,mid:13098,deadLo:50,deadHi:50},
+                                      btnPressThreshold: 500
+                                    }
+                    },
+                     pigpio: {
+                        "host": HOST,
+                        "port": 8888
+                   } };
+
+GPIO.config = mockConfig.pigpio;
+new GPIO();
+
+var pointer = new LaserPointer(mockConfig);
 
 
 function shallowEqual(object1, object2) {
@@ -92,12 +120,12 @@ process.stdin.on('keypress', (str, key) => {
   if (key.name === 'l') {
       if (!pointer.laser) {
         // Laser is OFF, so turn it ON...
-        cnc.sendGCode(['G91', `G0 X${LaserPointer.offsetX} Y${LaserPointer.offsetY}`, 'G90']);
+        // cnc.sendGCode(['G91', `G0 X${LaserPointer.offsetX} Y${LaserPointer.offsetY}`, 'G90']);
         pointer.laser = true;
       }
       else {
         // Laser is ON, so turn it OFF...
-        cnc.sendGCode(['G91', `G0 X${-LaserPointer.offsetX} Y${-LaserPointer.offsetY}`, 'G90']);
+        // cnc.sendGCode(['G91', `G0 X${-LaserPointer.offsetX} Y${-LaserPointer.offsetY}`, 'G90']);
         pointer.laser = false;
       }
       console.log(`Laser is ${pointer.laser ? 'ON' : 'OFF'}`);
@@ -140,6 +168,8 @@ function hasChanged() {
 }
 
 
+Joystick.init(mockConfig);
+
 let msStickCheck = 100;
 let stick = Kefir.fromPoll(msStickCheck, Joystick.stickVal).filter(hasChanged());
 let stickBtn = Kefir.fromPoll(msStickCheck, Joystick.btnVal).filter(hasChanged());
@@ -147,7 +177,7 @@ let stickBtn = Kefir.fromPoll(msStickCheck, Joystick.btnVal).filter(hasChanged()
 let jogZ = false;
 
 stick.onValue(stick => {
-    cnc.jog(-stick.x, stick.y, jogZ);
+    cnc.jog(stick.x, stick.y, jogZ);
 });
 
 
@@ -176,9 +206,9 @@ cnc.on('msg', (msg) => {
 });
 
 
-let statestickY = Kefir.fromEvents(cnc, 'state').filter(hasChanged());
-statestickY.onValue(state => {
-  console.log("state: " + state);
+let cncState = Kefir.fromEvents(cnc, 'state').filter(hasChanged());
+cncState.onValue(state => {
+  console.log("cnc state: " + state);
 });
 
 cnc.on('data', (data) => {
@@ -190,11 +220,10 @@ cnc.on('pos', (pos) => {
 });
 
 
-let zprobe = new ZProbe();
+let zprobe = new ZProbe(mockConfig);
 zprobe.on(ZProbe.EVT_PRESSED, (pressed) => {
     console.log('z probe: ' + (pressed ? "ON" : "OFF"));
 });
 
-
-cnc.connect();
-
+let server = mockConfig.cnc.server;
+cnc.connect(server.host, server.port, server.serialPort, server.baudRate);

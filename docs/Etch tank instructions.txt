@@ -1,0 +1,42 @@
+Materials:
+5" x 7" x 2mm (127 mm x 177.8 mm x 2 mm) cast acrylic sheets
+
+
+Needed:
+Front and Back:
+127 mm x 153.625 mm
+
+Bottom:
+127mm x 21mm
+
+Left and Right Sides:
+21 mm x 151.625 mm
+
+
+Mill sheets as follows:
+
+TIP: Mark 21 mm from right as WorkX zero. All 21 mm cuts will then match.
+
+1. Mill 2 sheets, cutting 21 mm off long side with 3.175 bit yields:
+
+a. 2 @ 127 mm x 153.625 mm
+b. 2 @ 127 mm x 21 mm
+
+"a" is front and back.  One of "b" is "bottom". Second "b" is scrap
+
+2. Mill 1 sheet, cutting 23 mm off long side with 3.175 bit yields:
+
+a. 1 @ 127 mm x 151.625
+b. 1 @ 127 mm x 23 mm 
+
+"a" is used next. "b" is scrap
+
+TIP: Rotate 2a so 151.625 is on Y axis. Use WorkX zero from 1 to cut
+width as 21 mm
+
+3. Mill 2a by cutting off two strips, 21 mm width each with 3.175 bit yields:
+
+a. 2 @ 21 mm x 151.625
+b. 1 @ 78.65 mm x 151.625
+
+"a" is left and right. "b" is scrap

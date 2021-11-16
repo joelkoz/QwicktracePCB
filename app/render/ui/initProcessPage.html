@@ -1,0 +1,24 @@
+<div id="initProcessPage" class="page">
+    <style type="text/css"> 
+
+        #initProcessPage .page-body {
+            text-align: center;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           Prepare Gerber Files
+        </div>
+    </div>
+    <div class="page-body">
+        Preparing files, please wait...
+    </div>
+
+    <script>
+        uiPageActivate['initProcessPage'] = function() {
+             console.log('Activate initProcessPage');
+             ui.initProcessing();
+        };
+    </script>
+</div>

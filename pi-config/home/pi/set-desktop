@@ -1,0 +1,3 @@
+#!/bin/bash
+sudo cp /etc/xdg/lxsession/LXDE-pi/autostart-desktop /etc/xdg/lxsession/LXDE-pi/autostart
+

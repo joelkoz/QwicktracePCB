@@ -1,7 +1,9 @@
-const ADS1115 = require('ads1115')
+//const ADS1115 = require('ads1115')
+const ADS1115 = require('./ads1115-client.js')
 const fs = require('fs');
 const { setIntervalAsync } = require('set-interval-async/fixed')
 const { clearIntervalAsync } = require('set-interval-async')
+const Config = require('./Config.js');
 
 class Joystick {
 
@@ -14,52 +16,85 @@ class Joystick {
          this.sampY = 13000;
          this.sampBtn = 9999;
  
-         Joystick.msJOYSTICK_SAMPLE_INTERVAL = 100;
+         if (Config.joystick.msSampleInterval) {
+            Joystick.msJOYSTICK_SAMPLE_INTERVAL = Config.joystick.msSampleInterval;
+         }
+         else {
+            Joystick.msJOYSTICK_SAMPLE_INTERVAL = 25;
+         }
  
-         Joystick.i2cJoystick = [1, 0x48, 'i2c-bus']
+         Joystick.i2cJoystick = [ 1, 0x48 ]
       
-         Joystick.CAL_FILE = "joystick.json";
-      
-         Joystick.xCal = {
-            min: 99999,
-            max: -1,
-            mid: -99,
-            deadLo: 50,
-            deadHi: 50
-         };
-          
-         Joystick.yCal = {
-            min: 99999,
-            max: -1,
-            mid: -99,
-            deadLo: 50,
-            deadHi: 50
-         };
-      
+         if (Config.joystick) {
+            Joystick.xCal = Config.joystick.calibration.xCal;
+            Joystick.yCal = Config.joystick.calibration.yCal;
+            Joystick.btnPressThreshold = Config.joystick.calibration.btnPressThreshold;
+            Joystick.invertY = Config.joystick.invertY;
+            Joystick.invertX = Config.joystick.invertX;
+            if (Config.joystick.i2c) {
+               let i2c = Config.joystick.i2c;
+               Joystick.i2cJoystick = [ i2c.bus, i2c.address ]
+            }
+         }
+         else {
+            Joystick.xCal = {
+               min: 99999,
+               max: -1,
+               mid: -99,
+               deadLo: 50,
+               deadHi: 50
+            };
+            
+            Joystick.yCal = {
+               min: 99999,
+               max: -1,
+               mid: -99,
+               deadLo: 50,
+               deadHi: 50
+            };
+            Joystick.btnPressThreshold = 500;
+         }
          this.start();
-       }
- 
+      }
+
        return Joystick.instance;
     }
  
+    static init() {
+       if (!Joystick.instance) {
+          new Joystick();
+       }
+    }
  
     start() {
        let thiz = this;
        ADS1115.open(...Joystick.i2cJoystick).then((ads1115) => {
  
          ads1115.gain = 1
-       
-         Joystick.readJoystickCalibration();
-       
+         let readErrorCount = 0;
+
          this.sampIntervalId = setIntervalAsync(async () => {
-            thiz.sampX = await ads1115.measure('0+GND');
-            thiz.sampY = await ads1115.measure('1+GND');
-            thiz.sampBtn = await ads1115.measure('2+GND');
- 
+            try {
+               thiz.sampX = await ads1115.measure('0+GND');
+               thiz.sampY = await ads1115.measure('1+GND');
+               thiz.sampBtn = await ads1115.measure('2+GND');
+               readErrorCount = 0;
+            }
+            catch (err) {
+               // It is OK to get the occasional read error due to noise. Three consecutive errors,
+               // however, is a problem, and we should report it.
+               readErrorCount++;
+               if (readErrorCount > 2) {
+                  console.log('Error taking joystick sample: ', err);
+               }
+            }
+
          }, Joystick.msJOYSTICK_SAMPLE_INTERVAL);
-         
+
          Joystick.ready = true;
- 
+         
+       }).catch((err) => {
+          console.log(`ERROR initializing Joystick: ${JSON.stringify(err)}`);
        });
     }
  
@@ -67,12 +102,13 @@ class Joystick {
     stop() {
       clearIntervalAsync(this.sampIntervalId);
     }
- 
- 
+
+    
     static xVal() {
       if (Joystick.ready) {
          let thiz = Joystick.instance;
-         return thiz.stickVal(Joystick.xCal, thiz.sampX);
+         let val = thiz.stickVal(Joystick.xCal, thiz.sampX);
+         return (Joystick.invertX ? -val : val);         
       }
       else {
         return 0;
@@ -83,7 +119,8 @@ class Joystick {
     static yVal() {
       if (Joystick.ready) {
          let thiz = Joystick.instance;
-         return thiz.stickVal(Joystick.yCal, thiz.sampY);
+         let val = thiz.stickVal(Joystick.yCal, thiz.sampY);
+         return (Joystick.invertY ? -val : val);
       }
       else {
         return 0;
@@ -96,7 +133,24 @@ class Joystick {
     }
  
 
-    static btnVal() {
+    static rawVal() {
+      if (Joystick.instance.calibration) {
+         Joystick.instance.calibrate();
+      }
+      return { x: Joystick.instance.sampX, y: Joystick.instance.sampY };
+   }
+
+   static rawBtn() {
+      return Joystick.instance.sampBtn;
+   }
+
+
+   static calibrate() {
+      Joystick.instance.calibration = { x: { min: 999999, max: 0, mid: -99 }, y: { min: 999999, max: 0, mid: -99  }, btn: { min: 999999, max: 0, mid: -99  } }
+   }
+
+
+   static btnVal() {
       if (Joystick.ready) {
          let thiz = Joystick.instance;
          return (thiz.sampBtn < Joystick.btnPressThreshold);
@@ -107,7 +161,15 @@ class Joystick {
     }
  
  
-    calibrate(cal, val) {
+    calibrate() {
+        if (this.calibration) {
+           this._saveCalibrationSample(this.calibration.x, this.sampX);
+           this._saveCalibrationSample(this.calibration.y, this.sampY);
+           this._saveCalibrationSample(this.calibration.btn, this.sampBtn);
+        }
+    }
+
+    _saveCalibrationSample(cal, val) {
        if (val < cal.min) {
           cal.min = val;
        }
@@ -149,27 +211,7 @@ class Joystick {
         return (val / range);
      
     }
-     
-     
-    static readJoystickCalibration() {
-         if (fs.existsSync(Joystick.CAL_FILE)) {
-           let json = fs.readFileSync(Joystick.CAL_FILE);
-           let joystick = JSON.parse(json);
-           Joystick.xCal = joystick.xCal;
-           Joystick.yCal = joystick.yCal;
-         }
-    }
- 
-    
-    static writeJoystickCalibration() {
-       let joystick = { xCal: Joystick.xCal, yCal: Joystick.yCal };
-       let json = JSON.stringify(joystick);
-       fs.writeFileSync(Joystick.CAL_FILE, json + '\n');
-    }
  
  }
- 
-Joystick.btnPressThreshold = 500;
 
-let singleton = new Joystick();
 module.exports = Joystick;

@@ -1,0 +1,43 @@
+<div id="startPage" class="page">
+    <style type="text/css"> 
+
+        #startPage .page-body {
+            display: grid;
+            grid-template-areas:
+               'buttonArea';
+            grid-template-rows: 4fr;
+        }
+
+        #startPage .button-area {
+            grid-area: buttonArea;
+        }
+
+        #startPage .button-area button {
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 20px;
+            height: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+    </style>
+    <div class="page-header">
+        <div class="header-area">
+           QwickFab PCB
+        </div>
+    </div>
+    <div class="page-body">
+        <div class="button-area">
+            <button type="button" class="btn w3" onClick="ui.showPage('projectPage')">Make PCB</button>
+            <button type="button" class="btn w3" onClick="ui.showPage('settingsMenuPage')">Utilities</button>
+        </div>
+    </div>
+
+    <script>
+        uiPageActivate['startPage'] = function() {
+            ui.clearPageStack();
+        };
+
+    </script>
+</div>
