@@ -1,0 +1,2 @@
+#!/bin/bash
+sudo cp /etc/xdg/lxsession/LXDE-pi/autostart-app /etc/xdg/lxsession/LXDE-pi/autostart
