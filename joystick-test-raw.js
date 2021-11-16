@@ -3,7 +3,7 @@ const readline = require('readline');
 const fs = require('fs');
 const GPIO = require('./app/main/GPIO');
 
-const connection = [1, 0x48, ]
+const connection = [11, 0x48, ]
 
 const CAL_FILE = "joystick.json";
 
