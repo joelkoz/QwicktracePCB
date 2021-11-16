@@ -8,7 +8,7 @@ by step instructions.
 
 
 # Overview
-QwickFab PCB consists of three major hardware components:
+QwickFab PCB consists of three major hardware components and one optional one:
 
 1. The Qwicktrace Pro Controller is small control device with touchscreen and joystick powered by a Raspberry Pi 4 and the software
 found in this repository. It is comprised of a software stack and UI for controlling the other two hardware components below. The 
@@ -20,7 +20,17 @@ Controller can run either of the two other components individually, or together 
 quickly drill the holes needed by through hole components on boards processed with the Exposure table.  It can also mill an entire PCB on blank copper boards using special ingraving bits. This is handy if your board is simple enough as to not need the better resolution of the exposure table, or if you are on a budget and would prefer not to spend the extra money on photosensitive boards. 
 Finally, the Qwickmill can be used to cut board stock down to smaller sizes.
 
+4. The QwickEtch Etching tank is a small container that can be used to quickly etch boards exposed with the Exposure table using
+a minimal mount of equipment. While any type of container can be used, the QwickEtch tank has an air pump powered agitator in
+in, removing the need for you to manually rock the etching tank.
+
+
 The software on the Pro Controller (source code found on this repo) handles the more challenging aspects of making a PCB, such as aligning the drilling with the traces made on the exposure table, or positioning the opposite side of a board on a double sided PCB.
+
+While the above hardware components make for a convenient set of tools, many Makers already have existing equipment they'd like
+to use in place of a QwickFab component. You are free to mix and match any or all of the components that you wish.  You could
+in theory build NONE of the hardware components and simply run the Qwicktrace software on an old laptop or pre-existing 
+Raspberry Pi build.  The Qwickmill is built upon the open source standard Grbl controller. If you already own a CNC machines that uses Grbl, you can use that instead. It is easy to create a cable that connects from the Pro Controller to any CNC machine, such a 3018 or 1610. If you are on a budget, you can sometimes source a kit for one of these machines for less money than the individual parts for building the Qwickmill.
 
 
 
@@ -45,5 +55,3 @@ Electron framework.  This UI is layered on top of a software stack comprised of 
 4. [EventEmitter2](https://github.com/EventEmitter2/EventEmitter2) Advanced event handling for NodeJS
 
 For additional technical information on the Qwicktrace software architecture, see the `docs` directory
-
-
