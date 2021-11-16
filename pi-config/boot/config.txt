@@ -42,6 +42,8 @@ dtparam=spi=on
 # Enable audio (loads snd_bcm2835)
 dtparam=audio=off
 
+# Disable Bluetooth
+dtoverlay=disable-bt
 
 [pi4]
 # Enable DRM VC4 V3D driver on top of the dispmanx display stack
