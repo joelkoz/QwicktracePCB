@@ -1,3 +1,6 @@
+![Qwicktrace Logo](qwick-splash-pro.png)
+
+
 # Qwicktrace Pro PCB
 Qwicktrace PCB is the software component of the QwickFab PCB open source desktop circuit board fabrication system.
 The system dramatically reduces the time and skill required to make top quality single and double sided circuit 
@@ -8,7 +11,8 @@ by step instructions.
 
 
 # Overview
-QwickFab PCB consists of three major hardware components and one optional one:
+The QwickFab desktop fabrication system consists of three major hardware components and one optional one:
+![Qwicktrace components](QwickFab-components.png)
 
 1. The Qwicktrace Pro Controller is small control device with touchscreen and joystick powered by a Raspberry Pi 4 and the software
 found in this repository. It is comprised of a software stack and UI for controlling the other two hardware components below. The 
@@ -33,7 +37,7 @@ in theory build NONE of the hardware components and simply run the Qwicktrace so
 Raspberry Pi build.  The Qwickmill is built upon the open source standard Grbl controller. If you already own a CNC machines that uses Grbl, you can use that instead. It is easy to create a cable that connects from the Pro Controller to any CNC machine, such a 3018 or 1610. If you are on a budget, you can sometimes source a kit for one of these machines for less money than the individual parts for building the Qwickmill.
 
 
-# Sofftware features
+# Software features
 
 * Creates PCB trace masks directly from Gerber files in SVG for MSLA exposure and/or in g-code for isolation milling
 * Software deskewing of traces and drill holes makes combining MSLA, milling, and/or double sided boards quick and easy.
@@ -44,7 +48,8 @@ Raspberry Pi build.  The Qwickmill is built upon the open source standard Grbl c
 * Turns Raspberry Pi into a remote access server and controller for Grbl CNC machines
 
 
-# DIY construction of a Qwickfab system
+# DIY construction of a QwickFab system
+![Qwicktrace components](QwickFab-components-actual.png)
 
 The Qwickfab Pro system is made from parts printed with your 3D printer as well as easy to obtain off the shelf parts. The
 STL files for this project can be found here in this repo in the `stl-files` directory. A complete bill of materials can be
