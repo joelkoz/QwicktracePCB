@@ -33,6 +33,16 @@ in theory build NONE of the hardware components and simply run the Qwicktrace so
 Raspberry Pi build.  The Qwickmill is built upon the open source standard Grbl controller. If you already own a CNC machines that uses Grbl, you can use that instead. It is easy to create a cable that connects from the Pro Controller to any CNC machine, such a 3018 or 1610. If you are on a budget, you can sometimes source a kit for one of these machines for less money than the individual parts for building the Qwickmill.
 
 
+# Sofftware features
+
+* Creates PCB trace masks directly from Gerber files in SVG for MSLA exposure and/or in g-code for isolation milling
+* Software deskewing of traces and drill holes makes combining MSLA, milling, and/or double sided boards quick and easy.
+* Software autoleveling ensures isolation milling traces are cut to perfect depth
+* Drill/mill features works with any Grbl compatible CNC controller
+* UI designed for small 3.5" touchscreen
+* Supports joystick input via ADS115 for easy jogging of CNC machine and alignment of drill holes
+* Turns Raspberry Pi into a remote access server and controller for Grbl CNC machines
+
 
 # DIY construction of a Qwickfab system
 
