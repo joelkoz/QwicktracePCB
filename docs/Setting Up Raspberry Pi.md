@@ -25,8 +25,8 @@ network={
 
 7. Change the password using the `passwd` command.
 
-8. Install the software for whichever screen you are using. For the new "Qwicktrace Pro" controller, following
-the directions found in the `U6111-UC640.pdf` file in the docs directory of this repo.
+8. Install the software for whichever screen you are using. For the new "Qwicktrace Pro" controller, follow
+the directions found in the `U6111-UC640.pdf` file in the `docs` directory of this repo.
 
 8. Update all software using these commands:
 ```
@@ -83,6 +83,15 @@ add additional allowed IP addresses to the `ExecStart` command above:
 ExecStart=/usr/bin/pigpiod -n 127.0.0.1 -n 192.168.0.152 -p 8888
 ```
 
+15. Disable Bluetooth realted services:
+sudo systemctl disable hciuart.service
+sudo systemctl disable bluetooth.service
+
+15. Disable other unneeded services
+sudo systemctl disable cups.service cups.socket cups.path
+sudo systemctl disable cups-browsed.service
+
+
 15. Reboot the Pi:
 ```
 sudo reboot
@@ -113,12 +122,74 @@ Find the [Seat*] section, uncomment the "#server-command=" line, and make it:
 xserver-command=X -nocursor
 ```
 
+20. Install the splashscreen services
+```
+sudo cp /home/pi/QwicktracePCB/pi-config/etc/systemd/system/* /etc/systemd/system
+sudo systemctl enable splashscreen.service
+```
+
+
+20. Install CNC control services (if using QwickMill or other CNC machine):
+The following steps come from the official [CNCjs Pi install pages](https://cnc.js.org/docs/rpi-setup-guide/).
+```
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt-get dist-upgrade -y
+sudo apt-get install -y build-essential git
+sudo apt-get install htop iotop nmon lsof screen -y
+
+sudo npm install -g cncjs@latest --unsafe-perm
+sudo npm install -g pm2
+pm2 startup
+sudo env PATH=$PATH:/usr/bin /usr/local/bin/pm2 startup systemd -u pi --hp /home/pi
+pm2 start $(which cncjs) -- --port 8000
+pm2 save
+pm2 list
+```
+
+Installing Autoleveling plugin for CNCjs:
+```
+cd /usr/local
+sudo mkdir cncjs-kt-ext
+sudo chown pi cncjs-kt-ext/
+git clone https://github.com/joelkoz/cncjs-kt-ext.git
+cd cncjs-kt-ext
+npm install
+nano pm2.config.js
+```
+
+Contents of pm2.config.js:
+```
+module.exports = {
+  apps : [
+      {
+        name: "autolevel",
+        script: ".",
+        args: "--port /dev/ttyUSB0"
+      }
+  ]
+}
+```
+
+Final commands to autoload Autolevel plugin:
+```
+pm2 start pm2.config.js
+pm2 save
+```
+
+
+Command to show the splashscreen again, since loading CNCjs utility takes about 20+ seconds...
+```
+sudo systemctl enable splashscreen2.service
+```
+
+
 20. Start the desktop system and make sure everything is working:
 ```
 sudo service display-manager start
 ```
 
-21. If all is well, re-enable "Boot to desktop" using raspi-config:
+21. If all is well, re-enable "Boot to desktop, auto logged in as 'pi'" using raspi-config:
 ```
 sudo raspi-config
 ```
