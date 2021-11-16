@@ -44,7 +44,7 @@ Raspberry Pi build.  The Qwickmill is built upon the open source standard Grbl c
 * Software autoleveling ensures isolation milling traces are cut to perfect depth
 * Drill/mill features works with any Grbl compatible CNC controller
 * UI designed for small 3.5" touchscreen
-* Supports joystick input via ADS115 for easy jogging of CNC machine and alignment of drill holes
+* Supports joystick input via ADS1115 for easy jogging of CNC machine and alignment of drill holes
 * Turns Raspberry Pi into a remote access server and controller for Grbl CNC machines
 
 
