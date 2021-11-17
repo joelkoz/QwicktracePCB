@@ -112,7 +112,11 @@
         }
     },
     "joystick": {
-        "msSampleInterval": 100,
+        "msSampleInterval": 25,
+        "i2c": {
+            "bus": 1,
+            "address": 72
+        },
         "invertY": true,
         "invertX": true,
         "calibration": {
