@@ -47,6 +47,8 @@ Raspberry Pi build.  The Qwickmill is built upon the open source standard Grbl c
 * Supports joystick input via ADS1115 for easy jogging of CNC machine and alignment of drill holes
 * Turns Raspberry Pi into a remote access server and controller for Grbl CNC machines
 
+![Select process](docs/images/select_process.png)
+![Position board](docs/images/position_board.png)
 
 # DIY construction of a QwickFab system
 ![Qwicktrace components](QwickFab-components-actual.png)
