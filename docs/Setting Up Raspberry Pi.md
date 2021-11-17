@@ -130,7 +130,8 @@ sudo systemctl enable splashscreen.service
 
 
 20. Install CNC control services (if using QwickMill or other CNC machine):
-The following steps come from the official [CNCjs Pi install pages](https://cnc.js.org/docs/rpi-setup-guide/).
+The following steps come from the official [CNCjs Pi install pages](https://cnc.js.org/docs/rpi-setup-guide/). Note
+that to avoid problems with `serialport` library, cncjs is **NOT** installed as `root` with `sudo`
 ```
 sudo apt-get update
 sudo apt-get upgrade -y
@@ -138,7 +139,7 @@ sudo apt-get dist-upgrade -y
 sudo apt-get install -y build-essential git
 sudo apt-get install htop iotop nmon lsof screen -y
 
-sudo npm install -g cncjs@latest --unsafe-perm
+npm install -g cncjs@latest
 sudo npm install -g pm2
 pm2 startup
 sudo env PATH=$PATH:/usr/bin /usr/local/bin/pm2 startup systemd -u pi --hp /home/pi
