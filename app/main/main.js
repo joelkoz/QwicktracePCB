@@ -11,6 +11,7 @@ const Config = require('./Config.js');
 const MainMQ = require('./MainMQ.js');
 const ConfigServer = require('./ConfigServer.js');
 const JoystickController = require('./JoystickController.js');
+const WebServer = require('./web/WebServer.js');
 
 let win = null;
 let fileLoader = null;
@@ -140,5 +141,7 @@ MainMQ.on('main.startup.initializeDone', () => {
   if (Config.app.hasCNC) {
      cncController = new CNCController(win)
   }
+
+  WebServer.start();
 
 });    
