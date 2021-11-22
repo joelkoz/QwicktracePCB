@@ -12,6 +12,9 @@ const GcodeUtils = require('./cnc/GcodeUtils.js');
 const GerberData = require('./pcb/GerberData.js');
 const GerberTransforms = require('./pcb/GerberTransforms.js');
 const MainMQ = require('./MainMQ.js');
+const AdmZip = require("adm-zip");
+const whatsThatGerber = require('whats-that-gerber')
+const gerbValid = require('whats-that-gerber').validate;
 
 // _projectCache is an object that maps a projectId to one or 
 // more PCBProject() objects.
@@ -33,12 +36,10 @@ class ProjectLoader  extends MainSubProcess {
 
       this.lastFileSyncMs = 0;
 
-       // Do a file list refresh now...
-      this.refreshFileList();
+       // Load pre-existing project dirs now...
+      this.loadProjectDirs();
 
-       // And every 5 seconds after this...
-      let thiz = this;
-      setInterval(() => { thiz.refreshFileList(); }, 5000);
+      ProjectLoader.instance = this;
 
       this.rpcAPI( {
         async prepareForWork(profile) {
@@ -97,7 +98,7 @@ class ProjectLoader  extends MainSubProcess {
     static async prepareForWork(profile) {
         let state = profile.state;
         let projectId = state.projectId;
-        console.log('Preparing for work on project id ', projectId);
+        console.log(`Preparing for work on project id [${projectId}]`);
         let project = _projectCache[projectId];
 
         try {
@@ -333,34 +334,14 @@ class ProjectLoader  extends MainSubProcess {
         return gData;
     }
 
-
-    
-    checkProjectFile(gbrJobFileName) {
-        let project = new PCBProject(gbrJobFileName);
-        let projId = project.projectId;
-        if (projId) {
-            // See if we have this project in the cache already...
-            let existingProject = this.projectCache[projId];
-            if (existingProject) {
-                // This is a pre-existing project. Just
-                // update the gbrjob data...
-                let newGbrjob = project.gbrjob;
-                existingProject.gbrjob = newGbrjob;
-                project = existingProject;
-            }
-            else {
-                // A new project altogether
-                this.projectCache[projId] = project;
-            }
-
-            this.updateFileMap(project);
-        }
-    }
-
+   
 
     // Add all of the files in the project to the file
     // translation table...
     updateFileMap(project, drillWasUpdated) {
+        let projectId = project.projectId;
+        this.projectCache[projectId] = project;
+        
         let thiz = this;
         let modified = false;
         project.fileList.forEach(file => {
@@ -421,37 +402,101 @@ class ProjectLoader  extends MainSubProcess {
         }
     }
 
-    refreshFileList() {
-      let thiz = this;
-      fse.readdir(dropDir, (err, files) => {
-          let msLastSync = this.lastFileSyncMs;
-          let jobList = [];
-          let gbrList = [];
-          files.forEach(file => {
-            let fileName = dropDir + file;
-            let fstat = fse.statSync(fileName, false);
-            if (fstat.mtimeMs > msLastSync) {
-                let ext = path.extname(fileName);
-                if (ext === '.gbrjob') {
-                    jobList.push(fileName);
+
+    static _getFileName(projectId, gerberType) {
+        if (gerberType && gerbValid(gerberType)) {
+            if (gerberType.type === 'copper') {
+                if (gerberType.side === 'top') {
+                    return `${projectId}.GTL`
                 }
-                else {
-                    gbrList.push(fileName);
+                else if (gerberType.side === 'bottom') {
+                    return `${projectId}.GBL`
                 }
             }
-          });
+            else if (gerberType.type === 'drill') {
+                return `${projectId}.DRL`
+            }
+            else if (gerberType.type === 'outline') {
+                return `${projectId}.GKO`
+            }
+        }
+        return null;
+    }
 
-          jobList.forEach(file => {
-             thiz.checkProjectFile(file);
-          });
 
-          gbrList.forEach(file => {
-            thiz.checkGerberFile(file);
-          });
+    static async handleFileUpload(fileUploadObject) {
+        console.log('Project file uploaded:', JSON.stringify(fileUploadObject, null, 2))
 
-          this.lastFileSyncMs = Date.now();
-      });  
-    }     
+        try {
+            let tempFileName = fileUploadObject.filepath;
+            let projectFileName = fileUploadObject.originalFilename;
+
+            let projectPath = path.parse(projectFileName);
+            let projectId = projectPath.name;
+            let pcbProject = new PCBProject();
+
+            let zip = new AdmZip(tempFileName);
+            let zipEntries = zip.getEntries(); // an array of ZipEntry records
+            
+            let gerberFileList = zipEntries.map((zipEntry) => { return zipEntry.name });
+            let gerberInfo = whatsThatGerber(gerberFileList);
+
+            let projectDir = path.join(dropDir, projectId);
+            await fse.emptyDir(projectDir);
+
+            zipEntries.forEach(function (zipEntry) {
+                let gerberType = gerberInfo[zipEntry.name];
+                let targetName = ProjectLoader._getFileName(projectId, gerberType);
+                if (targetName) {
+                    let targetPath = path.join(projectDir, '/', targetName);
+                    console.log('Saving zipped file', zipEntry.entryName, 'as', targetPath);
+                    fse.writeFileSync(targetPath, zipEntry.getData().toString('utf8'), 'utf8');
+                    pcbProject.fromGerber(targetPath, gerberType);
+                }
+                else {
+                    console.log('Ignoring zipped file ', zipEntry.entryName)
+                }
+            });
+
+            await pcbProject.saveCache(path.join(projectDir, '/', 'qwick.json'));
+
+            ProjectLoader.instance.updateFileMap(pcbProject);
+
+            return { status: 200, json: { gbrjob: pcbProject.gbrjob } }
+        }
+        catch (err) {
+            console.log('Error extracting uploaded .zip file ', err)
+            return { status: 500, json: { error: err }}
+        }
+    }
+
+
+
+    async loadProjectDirs() {
+        try {
+            let files = await fse.readdir(dropDir, { withFileTypes: true });
+            let thiz = this;
+            files.forEach(file => {
+                if (file.isDirectory()) {
+                    let projectId = file.name;
+                    let cacheFile = path.join(dropDir, projectId, '/qwick.json')
+                    try {
+                        console.log('Loading project cache from', cacheFile);
+                        let pcbProject = new PCBProject(cacheFile);
+                        this.updateFileMap(pcbProject);
+                    }
+                    catch (err) {
+                        console.log('Can not read project cache for project', projectId, err);
+                    }
+                }
+              });
+          }
+        catch (err) {
+            console.log('Error loading project dirs', err)
+        }
+    }
+ 
+
 }
 
 ProjectLoader.workDir = workDir;

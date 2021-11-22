@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 
 const whatsThatGerber = require('whats-that-gerber')
@@ -7,9 +7,9 @@ const GerberData = require('./GerberData.js');
 
 class PCBProject {
 
-    constructor(gbrjobFileName) {
-        if (gbrjobFileName) {
-            this.loadProject(gbrjobFileName);
+    constructor(projectFileName) {
+        if (projectFileName) {
+            this.loadCache(projectFileName);
         }
         else {
             this.gbrjob = {};
@@ -197,13 +197,32 @@ class PCBProject {
 
     /**
      * Loads a Gerber project file into this project object
-     * @param {string} gbrjobFileName The name of the gbrjob file to load
+     * @param {string} projectFileName The name of the gbrjob file to load
      */
-    loadProject(gbrjobFileName) {
-        let jStr = fs.readFileSync(gbrjobFileName, 'utf8');
-        this.gbrjob = JSON.parse(jStr);
-        this.dirName = path.dirname(gbrjobFileName);
+    loadCache(projectFileName) {
+        let jStr = fs.readFileSync(projectFileName, 'utf8');
+        let projectData = JSON.parse(jStr);
+        this.gbrjob = projectData.gbrjob;
+        this.drillFile = projectData.drillFile;
+        this.boundingBoxes = projectData.boundingBoxes;
+        this.dirName = path.dirname(projectFileName);
     }
+
+
+    /**
+     * Saves this project file so it can be reloaded later...
+     */
+    async saveCache(projectFileName) {
+        console.log('Saving project cache file', projectFileName);
+        await this.getSize();
+        let projectData = { gbrjob: this.gbrjob };
+        await this.getGerberData();
+        projectData.boundingBoxes = this._gerberData.boundingBoxes;
+        projectData.drillFile = this.drillFile;
+        let jStr = JSON.stringify(projectData, null, 2);
+        await fs.writeFile(projectFileName, jStr, 'utf8');
+    }
+
 
     /**
      * Creates a mock gerber job structure (or adds to the existing one)

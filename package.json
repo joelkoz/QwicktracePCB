@@ -4,10 +4,12 @@
   "description": "Control LCD and UI for Qwicktrace PCB Exposure table",
   "main": "app/main/main.js",
   "dependencies": {
+    "adm-zip": "^0.5.9",
     "ads1115": "^1.2.0",
     "deskew": "file:./app/common/deskew",
     "eventemitter2": "^6.4.4",
     "fast-xml-parser": "^3.18.0",
+    "formidable": "^2.0.1",
     "fs-extra": "^10.0.0",
     "gerber-to-svg": "^4.2.5",
     "jquery": "^3.6.0",

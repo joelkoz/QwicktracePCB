@@ -1,0 +1,31 @@
+<html>
+    <style>
+        body {
+            width: 480px;
+            font-family: arial;
+            font-size: 12pt;
+        }
+
+        div {
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        .uploadArea {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+    <body>
+        <div class="header"><image src='logo.png'/></div>
+        <div class="instructions">
+            Upload a single <code>.zip</code> file containing your Gerber files. The project
+            name is assumed to be the name of your <code>.zip</code> file.
+        </div>
+        <div class="formArea">
+            <form action="/api/upload" enctype="multipart/form-data" method="post">
+                <div class="uploadArea">Project .zip file: <input type="file" name="multipleFiles" multiple="multiple" /></div>
+                <input type="submit" value="Upload" />
+            </form>
+        </div>
+    </body>
+</html>
