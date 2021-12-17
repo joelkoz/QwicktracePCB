@@ -7,7 +7,7 @@
       "Application": "Pcbnew",
       "Version":     "(5.1.8-0-10_14)"
     },
-    "CreationDate":  "2021-09-21T14:49:06-04:00"
+    "CreationDate":  "2021-12-17T17:13:00-05:00"
   },
   "GeneralSpecs":
   {
@@ -22,7 +22,7 @@
       "X": 49.800,
       "Y": 63.050
     },
-    "LayerNumber": 2,
+    "LayerNumber": 4,
     "BoardThickness":  1.600
   },
   "DesignRules":
@@ -51,7 +51,7 @@
     },
     {
       "Path":  "PiHatPro-B_Cu.gbr",
-      "FileFunction":  "Copper,L2,Bot",
+      "FileFunction":  "Copper,L4,Bot",
       "FilePolarity":  "Positive"
     },
     {
