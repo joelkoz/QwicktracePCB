@@ -1,12 +1,12 @@
 %TF.GenerationSoftware,KiCad,Pcbnew,(5.1.8-0-10_14)*%
-%TF.CreationDate,2021-12-17T17:13:00-05:00*%
+%TF.CreationDate,2022-01-02T21:41:26-05:00*%
 %TF.ProjectId,PiHatPro,50694861-7450-4726-9f2e-6b696361645f,rev?*%
 %TF.SameCoordinates,PX9b0780PY44cb540*%
 %TF.FileFunction,Copper,L1,Top*%
 %TF.FilePolarity,Positive*%
 %FSLAX46Y46*%
 G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
-G04 Created by KiCad (PCBNEW (5.1.8-0-10_14)) date 2021-12-17 17:13:00*
+G04 Created by KiCad (PCBNEW (5.1.8-0-10_14)) date 2022-01-02 21:41:26*
 %MOMM*%
 %LPD*%
 G01*
@@ -477,8 +477,6 @@ D21*
 %TO.N,+5V*%
 X43300000Y51100000D02*
 X43400000Y51200000D01*
-X28600000Y46200000D02*
-X30300000Y46200000D01*
 %TO.N,Net-(D1-Pad2)*%
 X18500000Y46200000D02*
 X18500000Y46300000D01*

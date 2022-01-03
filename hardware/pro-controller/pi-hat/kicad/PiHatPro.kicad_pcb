@@ -3,7 +3,7 @@
   (general
     (thickness 1.6)
     (drawings 5)
-    (tracks 120)
+    (tracks 121)
     (zones 0)
     (modules 11)
     (nets 41)
@@ -68,7 +68,7 @@
     (grid_origin 10.16 72.136)
     (visible_elements FFFEF97F)
     (pcbplotparams
-      (layerselection 0x010f0_fffffff9)
+      (layerselection 0x01020_fffffff9)
       (usegerberextensions false)
       (usegerberattributes true)
       (usegerberadvancedattributes true)
@@ -817,7 +817,7 @@
     )
   )
 
-  (gr_text "Rev 3.1" (at 15.36 71.136) (layer F.SilkS)
+  (gr_text "Rev 3.2" (at 15.36 71.136) (layer F.SilkS)
     (effects (font (size 1 1) (thickness 0.15)))
   )
   (gr_line (start 10.16 72.136) (end 10.16 9.136) (layer Edge.Cuts) (width 0.05) (tstamp 60A31E03))
@@ -888,7 +888,6 @@
   (segment (start 53.41 21.136) (end 53.66 20.886) (width 1.25) (layer In1.Cu) (net 2))
   (segment (start 53.41 23.386) (end 53.41 21.136) (width 1.25) (layer In1.Cu) (net 2))
   (segment (start 53.46 21.036) (end 53.56 20.936) (width 1.5) (layer F.Cu) (net 2))
-  (segment (start 38.76 25.936) (end 40.46 25.936) (width 1.5) (layer F.Cu) (net 2))
   (segment (start 48.16 18.236) (end 52.76 18.236) (width 1.5) (layer B.Cu) (net 2))
   (segment (start 53.46 18.936) (end 53.46 21.036) (width 1.5) (layer B.Cu) (net 2))
   (segment (start 52.76 18.236) (end 53.46 18.936) (width 1.5) (layer B.Cu) (net 2))
@@ -903,6 +902,8 @@
   (segment (start 34.26 25.936) (end 38.56 25.936) (width 1.5) (layer B.Cu) (net 2))
   (segment (start 30.26 29.936) (end 34.26 25.936) (width 1.5) (layer B.Cu) (net 2))
   (segment (start 16.46 29.936) (end 30.26 29.936) (width 1.5) (layer B.Cu) (net 2))
+  (segment (start 39.06 25.936) (end 38.96 26.036) (width 1.5) (layer B.Cu) (net 2))
+  (segment (start 40.46 25.936) (end 39.06 25.936) (width 1.5) (layer B.Cu) (net 2))
   (segment (start 28.66 25.936) (end 28.66 25.836) (width 1.5) (layer F.Cu) (net 16))
   (segment (start 25.16 22.336) (end 21.86 22.336) (width 1.5) (layer B.Cu) (net 16))
   (segment (start 28.66 25.836) (end 25.16 22.336) (width 1.5) (layer B.Cu) (net 16))
