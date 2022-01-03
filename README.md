@@ -54,8 +54,10 @@ Raspberry Pi build.  The Qwickmill is built upon the open source standard Grbl c
 ![Qwicktrace components](QwickFab-components-actual.png)
 
 The Qwickfab Pro system is made from parts printed with your 3D printer as well as easy to obtain off the shelf parts. The
-STL files for this project can be found here in this repo in the `stl-files` directory. A complete bill of materials can be
-found in the `docs` directory, along with build instructions and other technical documentation.
+STL files for this project can be found here in this repo in the `hardware/*/stl` directories. A complete bill of materials can be
+found in the `docs` directory.
+
+Build instructions with project discussion is located on the project's [Hackaday Project Page](https://hackaday.io/project/182645-qwickfab-pcb)
 
 To install the software on the Raspberry Pi, see the file `Setting up Raspberry Pi`, also in `docs`
 
