@@ -83,14 +83,17 @@ add additional allowed IP addresses to the `ExecStart` command above:
 ExecStart=/usr/bin/pigpiod -n 127.0.0.1 -n 192.168.0.152 -p 8888
 ```
 
-15. Disable Bluetooth realted services:
+15. Disable Bluetooth related services:
+```
 sudo systemctl disable hciuart.service
 sudo systemctl disable bluetooth.service
+```
 
 15. Disable other unneeded services
+```
 sudo systemctl disable cups.service cups.socket cups.path
 sudo systemctl disable cups-browsed.service
-
+```
 
 15. Reboot the Pi:
 ```
