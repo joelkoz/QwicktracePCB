@@ -58,7 +58,8 @@ accepts the messages, makes the local method call, and returns the value via a s
 
 
 ## Anatomy of an `app/render/ui` .html file:
-a. contains a single parent element that is <div id="nameOfFile" class="page">
+a. contains a single `<div>` parent element with the form of `<div id="nameOfFile" class="page">`
+
 b. Usual format is:
 ```
    <div id="nameOfFile class="page">
