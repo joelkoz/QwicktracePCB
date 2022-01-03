@@ -154,17 +154,6 @@ Wire Wire Line
 Wire Wire Line
 	2400 1400 2400 1550
 NoConn ~ 1500 1300
-$Comp
-L Transistor_BJT:BD139 Q1
-U 1 1 6046CF81
-P 1750 2725
-F 0 "Q1" H 1942 2771 50  0000 L CNN
-F 1 "BD139" H 1942 2680 50  0000 L CNN
-F 2 "Package_TO_SOT_THT:TO-126-3_Vertical" H 1950 2650 50  0001 L CIN
-F 3 "http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/DATASHEET/CD00001225.pdf" H 1750 2725 50  0001 L CNN
-	1    1750 2725
-	1    0    0    -1  
-$EndComp
 Text GLabel 1850 2525 1    50   Input ~ 0
 SafelightGnd
 NoConn ~ 8450 4175
@@ -359,6 +348,17 @@ F 1 "Fan" H 4380 1601 50  0000 L CNN
 F 2 "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical" H 4300 1700 50  0001 C CNN
 F 3 "~" H 4300 1700 50  0001 C CNN
 	1    4300 1700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Transistor_FET:IRLIZ44N Q1
+U 1 1 61D25C96
+P 1750 2725
+F 0 "Q1" H 1954 2771 50  0000 L CNN
+F 1 "IRFZ44N" H 1954 2680 50  0000 L CNN
+F 2 "Package_TO_SOT_THT:TO-220F-3_Vertical" H 2000 2650 50  0001 L CIN
+F 3 "http://www.irf.com/product-info/datasheets/data/irliz44n.pdf" H 1750 2725 50  0001 L CNN
+	1    1750 2725
 	1    0    0    -1  
 $EndComp
 $EndSCHEMATC
