@@ -800,18 +800,18 @@ class SettingsController extends RPCClient {
                                    { label: "Cancel", fnAction: () => { thiz.cancelWizard(); uiExpose.exposureCanvas.activateCursor(false) } }
                                 ],
                                 onActivate: async (wizStep) => {
+                                     let canvasWidth = window.maskHeight;
+                                     let canvasHeight = window.maskWidth;                                    
                                      let area = thiz.config.mask.area;
                                      thiz.resetMaskCorners();
-                                     // Since the "cursor box" is an inverted
-                                     // rectangle, make the canvas "white", so
-                                     // the inverted box is mostly black...
-                                     uiExpose.exposureCanvas.reset('white');
                                      try {
                                         await thiz.getMaskCorner('pxLL', 'lower left', 'pxUR');
                                         area.pxUL.x = area.pxLL.x;
+                                        area.pxUL.y = canvasHeight - area.pxLL.y;
                                         area.pxLR.y = area.pxLL.y;
                                         await thiz.getMaskCorner('pxUL', 'upper left', 'pxLR');
                                         area.pxUR.y = area.pxUL.y;
+                                        area.pxUR.x = canvasWidth - area.pxUL.x;
                                         await thiz.getMaskCorner('pxUR', 'upper right', 'pxLL');
                                         area.pxLR.x = area.pxUR.x;
                                         await thiz.getMaskCorner('pxLR', 'lower right', 'pxUL');
@@ -1324,7 +1324,7 @@ class SettingsController extends RPCClient {
         let pxCoords = area[propertyName];
         let anchorPoint = area[anchorPropertyName]
         this.setWizardInstructions(`Use joystick to move cursor to the ${cornerName} corner. Press OK when done.`)
-        pxCoords = await uiExpose.exposureCanvas.getPixelLocation(pxCoords, anchorPoint);
+        pxCoords = await uiExpose.exposureCanvas.getPixelLocation(pxCoords);
         if (!this.settingsWizardCanceled) {
             area[propertyName] = pxCoords;
         }

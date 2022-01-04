@@ -16,7 +16,9 @@ const CANVAS_TRACE_COLOR = '#DEB887';
 const CANVAS_HOLE_COLOR = 'black';
 
 
-const CURSOR_SIZE = 60
+const CURSOR_SIZE = 120
+
+const CURSOR_NAV_INTERVAL = 500
 
 /**
  * A class that represents the canvas covering the exposure mask LCD.
@@ -48,6 +50,10 @@ class ExposureCanvas extends RPCClient {
            this.canvas.height = Config.mask.height;
         }
 
+        this.saveImage = document.createElement('canvas');
+        this.saveImage.width = CURSOR_SIZE;
+        this.saveImage.height = CURSOR_SIZE;
+
         let thiz = this;
 
         window.addEventListener('resize', () => {
@@ -57,7 +63,7 @@ class ExposureCanvas extends RPCClient {
 
         this.cursor = { location: { x: 0, y: 0 }, active: false, point: null, color: 'white'}
 
-        this.throttleJoystick = Date.now();
+        this.throttle = { x: Date.now(), y: Date.now() }
 
         this.drawingPreCalc();
         this.reset();
@@ -76,18 +82,18 @@ class ExposureCanvas extends RPCClient {
     }
 
 
-    async getPcbLocation(mmStart = { x: 0, y: 0}, anchorPoint = { x: 0, y: 0 }) {
+    async getPcbLocation(mmStart = { x: 0, y: 0}, cursorColor = 'white') {
         let pxStart = this.toCanvas(mmStart);
-        let pxLocation = await this.getPixelLocation(pxStart, anchorPoint)
+        let pxLocation = await this.getPixelLocation(pxStart, cursorColor)
         let pcbCoord = this.toPCB(pxLocation);
         return pcbCoord;
     }
 
 
-    async getPixelLocation(pxStart = { x: 0, y: 0}, anchorPoint = { x: 0, y: 0 }) {
+    async getPixelLocation(pxStart = { x: 0, y: 0}, cursorColor = 'white') {
         await this.rpCall('uv.safelight', true);
         this.cursor.location = pxStart
-        this.activateCursor(true, anchorPoint);
+        this.activateCursor(true, cursorColor);
         await untilTrue(500, () => { return (this.cursor.active === false )}, () => { return false; });
         this.activateCursor(false);
         await this.rpCall('uv.safelight', false);
@@ -136,6 +142,9 @@ class ExposureCanvas extends RPCClient {
         this.pxMaskWidth = ch;
         this.pxMaskHeight = cw;
         
+        this.ppNavX = Math.round(Config.mask.ppmmWidth / 2);
+        this.ppNavY = Math.round(Config.mask.ppmmHeight / 2);
+
         if (Config.window.debug) {
                 // For debugging - use mouse to check coordinates...
            let thiz = this;
@@ -192,8 +201,7 @@ class ExposureCanvas extends RPCClient {
       canvas.width = canvas.width;
 
       const ctx = this.getContext();
-      ctx.fillStyle = this.canvasBtColor;
-      ctx.fillRect(0, 0, canvas.pxMaskWidth, canvas.pxMaskHeight);
+      ctx.clearRect(0, 0, canvas.pxMaskWidth, canvas.pxMaskHeight);
 
       if (this.pcbInfo.img == null) {
          return;
@@ -217,11 +225,9 @@ class ExposureCanvas extends RPCClient {
         this.pcbInfo = { url: null };
 
         // Reset the canvas...
-        // this.canvas.style.backgroundColor = canvasBgColor;
-        this.canvasBgColor = canvasBgColor;
+        this.canvas.style.backgroundColor = canvasBgColor;
         const ctx = this.getContext();
-        ctx.fillStyle = this.canvasBgColor;
-        ctx.fillRect(0, 0, this.pxMaskWidth, this.pxMaskHeight);
+        ctx.clearRect(0, 0, this.pxMaskWidth, this.pxMaskHeight);
    }
 
    
@@ -318,101 +324,64 @@ class ExposureCanvas extends RPCClient {
    }
 
 
-    _getCursorBox(point) {
-        let pxLL = Object.assign({}, point);
-        let pxUR = Object.assign({}, this.cursor.anchor);
-        let width = pxUR.x - pxLL.x;
-        if (width < 0) {
-            pxLL.x = pxUR.x;
-            pxUR.x = point.x;
-            width = -width;
-        }
-
-        let height = pxUR.y - pxLL.y;
-        if (height < 0) {
-            pxLL.y = pxUR.y;
-            pxUR.y = point.y;
-            height = -height;
-        }
-
-        return { pxLL, pxUR, width, height }
-    }
 
     // Draws the location cursor at the current location. If the cursor
     // is already displayed, it is moved to the new location.
-    drawCursor(cursorOn) {
+    drawCursor(cursorOn, csrColor='white') {
 
+        const ctx = this.getContext()
+
+        // Compute 1/2 cursor size for later use...
+        const ch = Math.trunc(CURSOR_SIZE / 2);
 
         if (cursorOn) {
-            if (this.cursorDrawInProgress) {
-                // Ignore multiple draw attempts...
-                console.log('Ignoring re-entrant cursor draw')
-                return;
-            }
-    
-            if (this.cursor.savePoint) {
-                // There is an active cursor box drawn...
-                if (this.cursor.savePoint.x === this.cursor.location.x &&
-                    this.cursor.savePoint.y === this.cursor.location.y) {
-                    // Cursor is already on, and nothing has changed, so do
-                    // nothing...
-                    return;
-                }
+            this.drawCursor(false);
+            let canvasCoord = this.cursor.location;
+            let color = csrColor;
 
-                // Restore the old image...
-                this.drawCursor(false);
-            }
+            // Save the area we are about to draw on
+            // by drawing its contents on to the "saveImage"
+            this.saveImage.width = CURSOR_SIZE;
+            const saveCtx = this.saveImage.getContext('2d')
+            saveCtx.imageSmoothingEnabled = false;        
+            let saveCoord = canvasCoord;
+            saveCtx.drawImage(this.canvas, saveCoord.x - ch, saveCoord.y - ch, CURSOR_SIZE, CURSOR_SIZE, 0, 0, CURSOR_SIZE, CURSOR_SIZE);
 
-            this.cursorDrawInProgress = true;
-            // Calculate where to draw the "cursor box"
-            let csrBox = this._getCursorBox(this.cursor.location);
-
-            // Invert the area that is the cursor box...
-            let ctx = this.getContext()
             ctx.save();
-            ctx.globalCompositeOperation='difference';
-            ctx.fillStyle='white';
-            ctx.fillRect(csrBox.pxLL.x, csrBox.pxLL.y, csrBox.width, csrBox.height);
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+                        
+            ctx.fillRect(canvasCoord.x - ch,  canvasCoord.y-1, CURSOR_SIZE, 3);
+            ctx.fillRect(canvasCoord.x-1,  canvasCoord.y-ch , 3, CURSOR_SIZE);
+          
             ctx.restore();        
-
-            // Save this info so we can restore the cursor...
-            this.cursor.savePoint = Object.assign({}, this.cursor.location);
-            this.cursor.saveBox = csrBox;
-            this.cursorDrawInProgress = false;
+            this.cursor.point = Object.assign({}, canvasCoord);
         }
         else {
-            if (this.cursor.savePoint) {
-                // Restore the original image by inverting
-                // again
-                this.cursorDrawInProgress = true;
-                let csrBox = this.cursor.saveBox;
-                let ctx = this.getContext()
-                ctx.save();
-                ctx.globalCompositeOperation='difference';
-                ctx.fillStyle='white';
-                ctx.fillRect(csrBox.pxLL.x, csrBox.pxLL.y, csrBox.width, csrBox.height);
-                ctx.restore();        
-                this.cursor.savePoint = null;
-                this.cursorDrawInProgress = false;
+            if (this.cursor.point) {
+                let restoreCoord = this.cursor.point;
+                ctx.clearRect(restoreCoord.x - ch, restoreCoord.y - ch, CURSOR_SIZE, CURSOR_SIZE);
+                ctx.drawImage(this.saveImage, restoreCoord.x - ch, restoreCoord.y - ch, CURSOR_SIZE, CURSOR_SIZE);
+                this.cursor.point = null;
             }
         }
     }
 
 
 
-    activateCursor(cursorOn = true, anchorPoint = { x: 0, y: 0 }) {
-        this.cursor.anchor = anchorPoint;
+    activateCursor(cursorOn = true, cursorColor = 'white') {
+        this.cursor.color = cursorColor;
         this.cursor.active = cursorOn;
         if (cursorOn) {
-            if (!this.navCheckInterval) {
-                this.navCheckInterval = setInterval(() => { this.onNavigateCheck(); }, 500);
+            if (!this.navCheckTimeout) {
+                this.navCheckTimeout = setTimeout(() => { this.onNavigateCheck(); }, CURSOR_NAV_INTERVAL);
             }
             this.drawCursor(true)
         }
         else {
-            if (this.navCheckInterval) {
-                clearInterval(this.navCheckInterval);
-                delete this.navCheckInterval;
+            if (this.navCheckTimeout) {
+                clearTimeout(this.navCheckTimeout);
+                delete this.navCheckTimeout;
                 this.drawCursor(false);
             }
         }
@@ -433,12 +402,8 @@ class ExposureCanvas extends RPCClient {
 
             let multiplier;
             switch (speed) {
-                case 4:
-                    multiplier = 4;
-                    break;
-    
                 case 3:
-                    multiplier = 2;
+                    multiplier = 5;
                     break;
     
                 case 2:
@@ -446,7 +411,7 @@ class ExposureCanvas extends RPCClient {
                     break;
     
                 case 1:
-                    multiplier = 0.5;
+                    multiplier = 0.25;
                     break;
         
                 default:
@@ -501,7 +466,6 @@ class ExposureCanvas extends RPCClient {
     }
 
 
-
     onJoystick(stick) {
         this.joystick = stick;
     }
@@ -517,43 +481,14 @@ class ExposureCanvas extends RPCClient {
         if (deflection < 0.05) {
             return 0;
         }
-        else if (deflection > 0.95) {
-            return 4;
-        }
-        else if (deflection > 0.65) {
+        else if (deflection > 0.97) {
             return 3;
         }
-        else if (deflection > 0.35) {
+        else if (deflection > 0.92) {
             return 2;
         }
         else {
             return 1;
-        }
-    }
-
-    //
-    // Returns the number of miliseconds that needs
-    // to pass before the cursor is moved again.
-    // Slower speeds require more precision 
-    // in navigation when using the joystick.
-    //
-    _getNavigationInterval(speed) {
-        const Config = window.appConfig;
-
-        switch (speed) {
-            case 0:
-               return 9999999;
-
-            case 4:
-                return 1;
-
-            case 1:
-                return 750;
-
-            case 2:
-            case 3:
-               return 500;
-
         }
     }
 
@@ -574,12 +509,9 @@ class ExposureCanvas extends RPCClient {
             }
 
             let speed = this._deflectionToSpeed(deflection);
-            let minInterval = this._getNavigationInterval(speed);
-            let interval = Date.now() - this.throttleJoystick;
-            if (interval > minInterval) {
-                this.moveCursor(dir, speed);
-                this.throttleJoystick = Date.now();
-            }
+            this.moveCursor(dir, speed);
+
+            this.navCheckTimeout = setTimeout(() => { this.onNavigateCheck(); }, CURSOR_NAV_INTERVAL);
         }
     }
 
