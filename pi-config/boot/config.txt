@@ -89,4 +89,5 @@ hdmi_drive=2
 
 [all]
 ## Default GPIO settings for Qwicktrace Pro LED and CNC laser pointer pins
-gpio=6,13,26=op,dl
+gpio=6,26=op,dl
+gpio=13=op,dh
