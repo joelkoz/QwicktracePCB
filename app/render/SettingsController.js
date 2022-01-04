@@ -804,6 +804,10 @@ class SettingsController extends RPCClient {
                                      let canvasHeight = window.maskWidth;                                    
                                      let area = thiz.config.mask.area;
                                      thiz.resetMaskCorners();
+                                     // Since the "cursor box" is an inverted
+                                     // rectangle, make the canvas "white", so
+                                     // the inverted box is mostly black...
+                                     uiExpose.exposureCanvas.reset('white');
                                      try {
                                         await thiz.getMaskCorner('pxLL', 'lower left', 'pxUR');
                                         area.pxUL.x = area.pxLL.x;
@@ -1324,7 +1328,7 @@ class SettingsController extends RPCClient {
         let pxCoords = area[propertyName];
         let anchorPoint = area[anchorPropertyName]
         this.setWizardInstructions(`Use joystick to move cursor to the ${cornerName} corner. Press OK when done.`)
-        pxCoords = await uiExpose.exposureCanvas.getPixelLocation(pxCoords);
+        pxCoords = await uiExpose.exposureCanvas.getPixelLocation(pxCoords, anchorPoint);
         if (!this.settingsWizardCanceled) {
             area[propertyName] = pxCoords;
         }

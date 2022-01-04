@@ -67,22 +67,6 @@ class ExposeController extends RPCClient {
                   }
                },
 
-
-               { id: "placeStock",
-                  subtitle: "Place stock on table",
-                  instructions: "Place the stock face down in the same corner as the traces. Press Next to continue",
-                  buttonDefs: [
-                     { label: "Next", next: true },
-                     { label: "Cancel", fnAction: () => { thiz.cancelExposure() } }                      
-                  ],
-                  onActivate: async (wizStep) => {
-                     await thiz.rpCall('uv.safelight', true);
-                  },
-                  onDeactivate: async (wizStep) => {
-                     await thiz.rpCall('uv.safelight', false);
-                  }
-               },
-
                { id: "findCorner",
                   subtitle: "Locate Board Corner",
                   instructions: "Position the cursor at the corner of the board closest to center or screen and press ok",
@@ -91,23 +75,28 @@ class ExposeController extends RPCClient {
                      { label: "Cancel", fnAction: () => { thiz.cancelExposure() } }                      
                   ],
                   onActivate: async (wizStep) => {
+                     await thiz.rpCall('uv.safelight', true);
                      let startX, startY;
+                     let mmOther = {};
+                     let maskArea = Config.mask.area;
                      if (profile.state.side === 'bottom') {
                          // Looking for LL corner...
-                         startX = 0;
-                         startY = 0;
+                         mmOther = this.exposureCanvas.toPCB({ x: maskArea.pxUR.x, y: maskArea.pxUR.y });
+                         startX = mmOther.x - profile.stock.width;
+                         startY = mmOther.y - profile.stock.height;
                      }
                      else {
-                        // Looking for upper right corner...
-                        startX = 0;
-                        startY = profile.stock.height;
+                        // Looking for UL corner...
+                        mmOther = this.exposureCanvas.toPCB({ x: maskArea.pxLR.x, y: maskArea.pxLR.y });
+                        startX = mmOther.x - profile.stock.width;
+                        startY = mmOther.y + profile.stock.height;
                      }
 
-                     let corner = { x: startX, y: startY }
-                     corner = await this.exposureCanvas.getPcbLocation(corner);
+                     let mmCorner = { x: startX, y: startY }
+                     mmCorner = await this.exposureCanvas.getPcbLocation(mmCorner, mmOther);
                      if (!this.exposureCanceled) {
-                        let dx = corner.x - startX;
-                        let dy = corner.y - startY;
+                        let dx = mmCorner.x - startX;
+                        let dy = mmCorner.y - startY;
                         let profile = this.activeProfile;
                         profile.stock.actual = { width: profile.stock.width - dx, height: profile.stock.height - dy }
                         console.log('Stock actual', profile.stock.actual);
@@ -116,6 +105,9 @@ class ExposeController extends RPCClient {
                      else {
                         console.log('get corner was canceled');
                      }
+                   },
+                   onDeactivate: async (wizStep) => {
+                     await thiz.rpCall('uv.safelight', false);
                    }
                },
 

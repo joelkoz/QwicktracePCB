@@ -82,18 +82,22 @@ class ExposureCanvas extends RPCClient {
     }
 
 
-    async getPcbLocation(mmStart = { x: 0, y: 0}, cursorColor = 'white') {
+    async getPcbLocation(mmStart = { x: 0, y: 0}, cursorData = { x: 0, y: 0 }) {
         let pxStart = this.toCanvas(mmStart);
-        let pxLocation = await this.getPixelLocation(pxStart, cursorColor)
+        if (typeof cursorData != 'string') {
+            // Convert from mm to pixels...
+            cursorData = this.toCanvas(cursorData);
+        }
+        let pxLocation = await this.getPixelLocation(pxStart, cursorData)
         let pcbCoord = this.toPCB(pxLocation);
         return pcbCoord;
     }
 
 
-    async getPixelLocation(pxStart = { x: 0, y: 0}, cursorColor = 'white') {
+    async getPixelLocation(pxStart = { x: 0, y: 0}, cursorData = { x: 0, y: 0 }) {
         await this.rpCall('uv.safelight', true);
         this.cursor.location = pxStart
-        this.activateCursor(true, cursorColor);
+        this.activateCursor(true, cursorData);
         await untilTrue(500, () => { return (this.cursor.active === false )}, () => { return false; });
         this.activateCursor(false);
         await this.rpCall('uv.safelight', false);
@@ -201,7 +205,8 @@ class ExposureCanvas extends RPCClient {
       canvas.width = canvas.width;
 
       const ctx = this.getContext();
-      ctx.clearRect(0, 0, canvas.pxMaskWidth, canvas.pxMaskHeight);
+      ctx.fillStyle = this.canvasBgColor;
+      ctx.fillRect(0, 0, canvas.pxMaskWidth, canvas.pxMaskHeight);
 
       if (this.pcbInfo.img == null) {
          return;
@@ -225,9 +230,10 @@ class ExposureCanvas extends RPCClient {
         this.pcbInfo = { url: null };
 
         // Reset the canvas...
-        this.canvas.style.backgroundColor = canvasBgColor;
+        this.canvasBgColor = canvasBgColor;
         const ctx = this.getContext();
-        ctx.clearRect(0, 0, this.pxMaskWidth, this.pxMaskHeight);
+        ctx.fillStyle = this.canvasBgColor;
+        ctx.fillRect(0, 0, this.pxMaskWidth, this.pxMaskHeight);
    }
 
    
@@ -324,10 +330,89 @@ class ExposureCanvas extends RPCClient {
    }
 
 
+   _getCursorBox(point) {
+        let pxLL = Object.assign({}, point);
+        let pxUR = Object.assign({}, this.cursor.anchorPoint);
+        let width = pxUR.x - pxLL.x;
+        if (width < 0) {
+            pxLL.x = pxUR.x;
+            pxUR.x = point.x;
+            width = -width;
+        }
+
+        let height = pxUR.y - pxLL.y;
+        if (height < 0) {
+            pxLL.y = pxUR.y;
+            pxUR.y = point.y;
+            height = -height;
+        }
+
+        return { pxLL, pxUR, width, height }
+   }
 
     // Draws the location cursor at the current location. If the cursor
     // is already displayed, it is moved to the new location.
-    drawCursor(cursorOn, csrColor='white') {
+   _drawBoxCursor(cursorOn) {
+
+        if (cursorOn) {
+            if (this.cursorDrawInProgress) {
+                // Ignore multiple draw attempts...
+                console.log('Ignoring re-entrant cursor draw')
+                return;
+            }
+
+            if (this.cursor.savePoint) {
+                // There is an active cursor box drawn...
+                if (this.cursor.savePoint.x === this.cursor.location.x &&
+                    this.cursor.savePoint.y === this.cursor.location.y) {
+                    // Cursor is already on, and nothing has changed, so do
+                    // nothing...
+                    return;
+                }
+
+                // Restore the old image...
+                this.drawCursor(false);
+            }
+
+            this.cursorDrawInProgress = true;
+            // Calculate where to draw the "cursor box"
+            let csrBox = this._getCursorBox(this.cursor.location);
+
+            // Invert the area that is the cursor box...
+            let ctx = this.getContext()
+            ctx.save();
+            ctx.globalCompositeOperation='difference';
+            ctx.fillStyle='white';
+            ctx.fillRect(csrBox.pxLL.x, csrBox.pxLL.y, csrBox.width, csrBox.height);
+            ctx.restore();        
+
+            // Save this info so we can restore the cursor...
+            this.cursor.savePoint = Object.assign({}, this.cursor.location);
+            this.cursor.saveBox = csrBox;
+            this.cursorDrawInProgress = false;
+        }
+        else {
+            if (this.cursor.savePoint) {
+                // Restore the original image by inverting
+                // again
+                this.cursorDrawInProgress = true;
+                let csrBox = this.cursor.saveBox;
+                let ctx = this.getContext()
+                ctx.save();
+                ctx.globalCompositeOperation='difference';
+                ctx.fillStyle='white';
+                ctx.fillRect(csrBox.pxLL.x, csrBox.pxLL.y, csrBox.width, csrBox.height);
+                ctx.restore();        
+                this.cursor.savePoint = null;
+                this.cursorDrawInProgress = false;
+            }
+        }
+    }
+
+
+    // Draws the location cursor at the current location. If the cursor
+    // is already displayed, it is moved to the new location.
+    _drawCrossCursor(cursorOn) {
 
         const ctx = this.getContext()
 
@@ -335,9 +420,9 @@ class ExposureCanvas extends RPCClient {
         const ch = Math.trunc(CURSOR_SIZE / 2);
 
         if (cursorOn) {
-            this.drawCursor(false);
+            this.drawCrossCursor(false);
             let canvasCoord = this.cursor.location;
-            let color = csrColor;
+            let color = this.cursor.color;
 
             // Save the area we are about to draw on
             // by drawing its contents on to the "saveImage"
@@ -368,9 +453,24 @@ class ExposureCanvas extends RPCClient {
     }
 
 
+    drawCursor(cursorOn) {
+        if (this.cursor.anchorPoint) {
+            this._drawBoxCursor(cursorOn);
+        }
+        else {
+            this._drawCrossCursor(cursorOn);
+        }
+    }
 
-    activateCursor(cursorOn = true, cursorColor = 'white') {
-        this.cursor.color = cursorColor;
+    activateCursor(cursorOn = true, cursorData = { x: 0, y: 0 }) {
+        if (typeof cursorData === 'string') {
+           this.cursor.color = cursorData;
+           this.cursor.anchorPoint = null;
+        }
+        else {
+            this.cursor.color = null;
+            this.cursor.anchorPoint = cursorData;
+        }
         this.cursor.active = cursorOn;
         if (cursorOn) {
             if (!this.navCheckTimeout) {
