@@ -417,7 +417,7 @@ class ProjectLoader  extends MainSubProcess {
                 return `${projectId}.DRL`
             }
             else if (gerberType.type === 'outline') {
-                return `${projectId}.GKO`
+                return `${projectId}.GML`
             }
         }
         return null;
@@ -446,6 +446,10 @@ class ProjectLoader  extends MainSubProcess {
 
             zipEntries.forEach(function (zipEntry) {
                 let gerberType = gerberInfo[zipEntry.name];
+                // Try to recognize ".oln" files as "outline"
+                if (zipEntry.name.toLowerCase().indexOf('.oln') > 0) {
+                    gerberType.type = 'outline';
+                }
                 let targetName = ProjectLoader._getFileName(projectId, gerberType);
                 if (targetName) {
                     let targetPath = path.join(projectDir, '/', targetName);

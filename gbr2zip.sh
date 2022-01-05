@@ -25,7 +25,7 @@ cpw "-F_Mask" "gts"
 cpw "-B_Mask" "gbs"
 cpw "-F_SilkS" "gto"
 cpw "-B_SilkS" "gbo"
-cpw "-Edge_Cuts" "oln"
+cpw "-Edge_Cuts" "gml"
 
 # Copy the drill file
 cp -v "$workdir.drl" "$workdir"

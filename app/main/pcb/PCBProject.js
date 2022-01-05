@@ -302,6 +302,9 @@ class PCBProject {
             else if (gType.type === 'drill') {
                 this.drillFile = baseName;
             }
+            else if (gType.type === 'outline') {
+                fileFunc = 'Profile'
+            }
             else {
                 console.log(`File ${gerberFileName} is an unhandled type (gtype is ${gType.type})`);
             }
