@@ -157,7 +157,7 @@ class PCBProject {
     /**
      * Returns an object that represents this project for the user interface.
      */
-    getUiObj() {
+     getUiObj() {
         let sides = [];
         this.gbrjob.FilesAttributes.forEach(attr => {
             if (attr.FileFunction.indexOf('Copper') >= 0) {
@@ -171,11 +171,20 @@ class PCBProject {
             }
         });
 
+        let master = this.boundingBoxes.master.bb;
+        let masterWidth = master.max.x - master.min.x;
+        let masterHeight = master.max.y - master.min.y;
+        let rotateNeeded = (masterHeight > masterWidth);
         return {
             projectId: this.projectId,
             sides,
             hasDrill: (this.drillFile ? true : false),
-            size: this.size
+            size: this.size,
+            sizes: {
+                copper: this.boundingBoxes.copper.both.bb,
+                master
+            },
+            rotateNeeded
         };
     }
 

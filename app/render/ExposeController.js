@@ -75,6 +75,7 @@ class ExposeController extends RPCClient {
                      { label: "Cancel", fnAction: () => { thiz.cancelExposure() } }                      
                   ],
                   onActivate: async (wizStep) => {
+                     window.setWizardInstructions(`Place ${profile.state.side} side face down then position the cursor at the corner of the board closest to center or screen and press ok`)
                      await thiz.rpCall('uv.safelight', true);
                      let startX, startY;
                      let mmOther = {};
@@ -121,6 +122,7 @@ class ExposeController extends RPCClient {
                   ],
                   onActivate: async (wizStep) => {
                      // Prepare for final exposure using "real" trace mask...
+                     window.setWizardSubtitle(`Expose board ${profile.state.side}`)
                      $('#wizardPage .btnStartExposure').css("display", "none");
                      profile.mask = this.finalMaskProfile;
                      await thiz.prepareExposure();
@@ -137,7 +139,37 @@ class ExposeController extends RPCClient {
                   onActivate: (wizStep) => {
                      setTimeout(() => { ui.showPage('exposurePage', false)}, 25);
                   }
-               }
+               },
+
+               { id: "finishExpose",
+                  subtitle: "Exposure Complete",
+                  instructions: "Do you want to drill PCB holes now?",
+                  buttonDefs: [
+                     { label: "Yes", fnAction: () => { thiz.finishExposeWizard(true) } },
+                     { label: "No", fnAction: () => { thiz.finishExposeWizard(false) } }
+                  ],
+                  onActivate: (wizStep) => {
+                     let thisProfile = thiz.activeProfile;
+                     let lastProfile = window.uiController.lastProfile;
+                     if (  thisProfile.state.project.sides.length > 1 && 
+                           thisProfile.material.sides > 1 &&
+                          (lastProfile?.state?.projectId != thisProfile?.state?.projectId ||
+                           lastProfile?.state?.side === thisProfile?.state?.side)
+                        ) {
+                        window.setWizardInstructions('Do you want to expose the other side of board?')
+                        thiz.exposeOtherSide = true;
+                        thiz.drillOtherSide = false;
+                     }
+                     else if (window.Config.app.hasCNC && thisProfile.state.project.hasDrill) {
+                        window.setWizardInstructions('Do you want to drill PCB holes now?')
+                        thiz.exposeOtherSide = false;
+                        thiz.drillOtherSide = true;
+                     }
+                     else {
+                        setTimeout(() => { thiz.finishExposeWizard(false) }, 25);
+                     }
+                  }
+               }               
          ]
       }
       
@@ -160,9 +192,9 @@ class ExposeController extends RPCClient {
 
 
    async startExposure() {
+     $('#exposurePage .page-header .header-area').text(`Exposing ${this.activeProfile.state.side}`);
      let ui = window.uiController;
-     let exposure = this.activeProfile.exposure;
-     await this.rpCall('uv.expose', exposure);
+     await this.rpCall('uv.expose', this.activeProfile);
    }
 
 
@@ -177,13 +209,45 @@ class ExposeController extends RPCClient {
 
 
    finishExposure() {
-      window.uiController.finishWizard();
+      window.uiController.wizardNext();
    }
 
-   peek() {
-     this.rpCall('uv.peek');
-   }   
-     
+
+   finishExposeWizard(continueProcessing) {
+      window.uiController.finishProcess();
+
+      if (continueProcessing) {
+          let profile = window.uiController.currentProfile;
+
+          if (this.exposeOtherSide) {
+            // Expose the "flip" side of this board next
+            profile.state.action = 'expose';
+            profile.state.side = (profile.state.side === 'top' ? 'bottom' : 'top');
+            profile.state.alignStock = false;
+            profile.state.stockIsBlank = false;
+            profile.state.stockReuse = true;
+            window.uiController.state = profile.state;
+          }
+          else {
+            // Drill the current side of this board
+            profile.state.action = 'drill';
+            profile.state.alignStock = true;
+            profile.state.stockReuse = false;
+            profile.state.stockIsBlank = false;
+            window.uiController.state = profile.state;
+          }
+          window.uiController.initProcessing();
+      }
+      else {
+          window.uiController.finishWizard();
+      }
+  }
+
+  peek() {
+    this.rpCall('uv.peek');
+  }   
+
+  
 }
 
 export { ExposeController }

@@ -423,6 +423,12 @@ class UIController extends RPCClient {
     
     select(listId, value, nextPageId) {
         this.state[listId] = value;
+
+        // Include the project data in the project state.
+        if (listId === 'projectId') {
+            this.state.project = this.projectList[value];
+        }
+
         if (nextPageId) {
             if (typeof nextPageId === 'string') {
                this.showPage(nextPageId);
@@ -440,6 +446,7 @@ class UIController extends RPCClient {
 
     setState(propertyName, value, nextPageId, pushOld) {
         this.state[propertyName] = value;
+
         if (nextPageId) {
             this.showPage(nextPageId, pushOld);
         }
@@ -619,17 +626,19 @@ class UIController extends RPCClient {
         let state = Object.assign({}, this.state);
         let defaults = this.profileList.default;
 
-        let stock, material, mask;
+        let stock, material, mask, exposure;
         if (state.stockReuse) {
             stock = this.lastProfile.stock;
             material = this.lastProfile.material;
             mask = this.lastProfile.mask;
+            exposure = this.lastProfile.exposure;
         }
         else if (state.stockId) {
             // Use user selected stock in the processing profile
             stock = this.profileList[state.stockId].stock; 
             material = this.profileList[stock.materialId].material;
-            mask = this.profileList[stock.materialId].mask
+            mask = this.profileList[stock.materialId].mask;
+            exposure = this.profileList[stock.materialId].exposure
             if (!stock.width) {
                 // A custom stock setting was used...
                 stock = Object.assign({}, stock);
@@ -650,6 +659,10 @@ class UIController extends RPCClient {
         if (mask) {
             profile = Object.assign(profile, { mask });
         }
+        if (exposure) {
+            profile = Object.assign(profile, { exposure });
+        }
+
 
         // Normalize so the width of the stock is always the long side...
         let longSide = Math.max(profile.stock.width, profile.stock.height);

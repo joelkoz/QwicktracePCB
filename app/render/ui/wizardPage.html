@@ -82,10 +82,17 @@
             }
         }
 
+        function setWizardTitle(text) {
+            setWizardText('#wizardPage .title-area', text)
+        }
+
         function setWizardStatusText(text) {
             setWizardText('#wizardPage .status-area', text)
         }
 
+        function setWizardSubtitle(text) {
+            setWizardText('#wizardPage .subtitle-area', text)
+        }
 
         function setWizardInstructions(text) {
             setWizardText('#wizardPage .instructions-area', text)
@@ -99,8 +106,8 @@
                 buttonDefs =  [ ];                
             }
 
-            setWizardText('#wizardPage .title-area', wizardStep.title)
-            setWizardText('#wizardPage .subtitle-area', wizardStep.subtitle)
+            setWizardTitle(wizardStep.title)
+            setWizardSubtitle(wizardStep.subtitle)
             setWizardInstructions(wizardStep.instructions)
             setWizardStatusText('');
             

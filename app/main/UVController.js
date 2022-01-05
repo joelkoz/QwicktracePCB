@@ -33,8 +33,8 @@ class UVController  extends MainSubProcess {
 
         // Define the RPC API that this object serves...
         this.rpcAPI( {
-            async expose(exposure) {
-                thiz.expose(exposure);
+            async expose(profile) {
+                thiz.expose(profile);
             },
 
             async peek() {
@@ -53,8 +53,11 @@ class UVController  extends MainSubProcess {
     }
 
 
-    expose(exposure) {
+    expose(profile) {
         if (this.uv) {
+            console.log(`Starting PCB exposure of ${profile.state.projectId}\n`, JSON.stringify(profile,null,2))
+
+            let exposure = profile.exposure;
             this.cancel();
 
             this.exposure = Object.assign({}, exposure);
