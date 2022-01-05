@@ -1,0 +1,102 @@
+ {
+  "material": {
+    "name": "2 sides photo positive",
+    "actions": [
+      "expose",
+      "drill"
+    ],
+    "sides": 2,
+    "thickness": 1.5
+  },
+  "exposure": {
+    "time": 4,
+    "power": 0.8
+  },
+  "mill": {
+    "marginLeft": 5,
+    "marginTop": 5
+  },
+  "drill": {
+    "marginLeft": 3,
+    "marginTop": 3
+  },
+  "stock": {
+    "width": 76,
+    "height": 50,
+    "materialId": "ppos2",
+    "actual": {
+      "width": 76.02266669893407,
+      "height": 49.99050000949819
+    }
+  },
+  "state": {
+    "projectId": "TestPCB",
+    "project": {
+      "projectId": "TestPCB",
+      "sides": [
+        "top",
+        "bottom"
+      ],
+      "hasDrill": true,
+      "size": {
+        "x": 50,
+        "y": 70
+      },
+      "sizes": {
+        "copper": {
+          "min": {
+            "x": 21.3,
+            "y": 21.1
+          },
+          "max": {
+            "x": 36.2,
+            "y": 48.900000000000006
+          }
+        },
+        "master": {
+          "min": {
+            "x": 0,
+            "y": 0
+          },
+          "max": {
+            "x": 50,
+            "y": 70
+          }
+        }
+      },
+      "rotateNeeded": true,
+      "name": "TestPCB",
+      "value": "TestPCB"
+    },
+    "action": "expose",
+    "side": "bottom",
+    "stockIsBlank": true,
+    "alignStock": false,
+    "stockId": "stock-ppos2-50x76",
+    "originalSize": {
+      "x": 50,
+      "y": 70
+    },
+    "rotateBoard": true,
+    "size": {
+      "x": 70,
+      "y": 50
+    },
+    "mirror": true,
+    "positionBoard": 0
+  },
+  "mask": {
+    "traceColor": "black",
+    "bgColor": "white"
+  },
+  "baseFiles": {
+    "gbr": "./temp/bottom.gbr",
+    "drl": "./temp/bottom.drl"
+  },
+  "workFiles": {
+    "gbr": "./temp/bottom.gbr",
+    "drl": "./temp/bottom.drl"
+  },
+  "traceColor": "black"
+}
+
