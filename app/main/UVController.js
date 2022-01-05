@@ -55,7 +55,7 @@ class UVController  extends MainSubProcess {
 
     expose(profile) {
         if (this.uv) {
-            console.log(`Starting PCB exposure of ${profile.state.projectId}`, profile)
+            console.log(`Starting PCB exposure of ${profile.state.projectId}\n`, JSON.stringify(profile,null,2))
 
             let exposure = profile.exposure;
             this.cancel();
