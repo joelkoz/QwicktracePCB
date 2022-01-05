@@ -9,6 +9,11 @@
     "mask": {
         "traceColor": "black",
         "bgColor": "white"
-    }
+    },
+
+    "exposure": {
+        "time": 4,
+        "power": 0.8
+    }   
 
 }
