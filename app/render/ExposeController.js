@@ -161,8 +161,7 @@ class ExposeController extends RPCClient {
 
    async startExposure() {
      let ui = window.uiController;
-     let exposure = this.activeProfile.exposure;
-     await this.rpCall('uv.expose', exposure);
+     await this.rpCall('uv.expose', this.activeProfile);
    }
 
 
