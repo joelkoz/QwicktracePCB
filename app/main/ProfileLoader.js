@@ -36,7 +36,7 @@ class ProfileLoader extends MainSubProcess {
                             MainMQ.emit('render.ui.profileUpdate', profile);
                           }
                           catch (err) {
-                            console.log(`Error loading profile ${fileName}`);
+                            console.log(`Error loading profile ${file}`);
                             console.error(err);
                           }                          
                      });
