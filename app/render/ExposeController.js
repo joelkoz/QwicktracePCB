@@ -2,6 +2,7 @@
 "use strict"
 import { ExposureCanvas } from './ExposureCanvas.js';
 import { RPCClient } from './RPCClient.js'
+import { RenderMQ } from './RenderMQ.js'
 
 /*
 Visible area of LCD screen: (26, 43) to (1411, 2530)
@@ -25,6 +26,8 @@ window.innerHeight: 2560
 // const ppinHeight = 109;
 
 
+const CORNER_NAV_EVENT = 'render.expose.cornerNav'
+
 class ExposeController extends RPCClient {
 
    constructor() {
@@ -35,6 +38,12 @@ class ExposeController extends RPCClient {
         window.uiDispatch.expose = (profile) => {
            this.startExposeWizard(profile);
         }
+
+        RenderMQ.on(CORNER_NAV_EVENT, (data) => {
+           if (data.dir != 'Ok') {
+              this.exposureCanvas.moveCursor(data.dir, data.speed);
+           }
+        })        
    }
 
 
@@ -72,6 +81,7 @@ class ExposeController extends RPCClient {
                   instructions: "Position the cursor at the corner of the board closest to center or screen and press ok",
                   buttonDefs: [
                      { label: "Ok", fnAction: () => { thiz.exposureCanvas.activateCursor(false) } },
+                     { label: "Keypad", fnAction: () => { thiz.useKeypadForCornerCursor(); } },                     
                      { label: "Cancel", fnAction: () => { thiz.cancelExposure() } }                      
                   ],
                   onActivate: async (wizStep) => {
@@ -175,6 +185,22 @@ class ExposeController extends RPCClient {
       
       window.uiController.startWizard(wizard);
 
+   }
+
+
+   async useKeypadForCornerCursor() {
+      if (!this.keypadInUse) {
+
+          this.keypadInUse = true;
+
+          const label = 'Locate corner'
+          await window.uiController.directionInput(label, CORNER_NAV_EVENT);
+
+          // Turn the cursor off, ending the input for the corner
+          uiExpose.exposureCanvas.activateCursor(false);
+
+          this.keypadInUse = false;
+      }
    }
 
 
