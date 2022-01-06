@@ -254,7 +254,7 @@ class ExposureCanvas extends RPCClient {
       pcb.pxBoardHeight = stock.height * Config.mask.ppmmHeight;
       pcb.pxBoardOrigin = {
           x: Config.mask.area.pxUR.x - pcb.pxBoardWidth,
-          y: 0
+          y: Config.mask.area.pxLR.y
       };
       if (pcb.profile.state.side === 'bottom') {
           // Bottom side traces are rendered offset from the top/Y margin
@@ -314,6 +314,21 @@ class ExposureCanvas extends RPCClient {
             pcb.pxCopperOrigin = {
                 x: pcb.pxBoardOrigin.x + pcb.pxMarginX,
                 y: pcb.pxBoardOrigin.y + pcb.pxMarginY
+            }
+
+            let profile = pcb.profile;
+            let state = profile.state;
+            if (state.side === 'bottom' && 
+                (!state.hasOwnProperty('boardPosition') || state.boardPosition <= 1)) {
+                // An adjustment needs to be made to the copper origin Y position to
+                // account for differences in the stock height and the original board height
+                // as boardPositions zero and one are aligned with the board bottom, but
+                // a mirrored board is mirrored based on the original board height, not
+                // the stock height.
+                let originalBoardHeight = state.size.y;
+                let dy = stock.height - originalBoardHeight;
+                let pxDy = dy * Config.mask.ppmmHeight;
+                pcb.pxCopperOrigin.y += pxDy;
             }
 
          }
