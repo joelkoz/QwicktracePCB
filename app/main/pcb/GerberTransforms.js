@@ -112,7 +112,7 @@ class GerberTransforms {
         let copperSize = copper.size();
 
         let oldMarginTop = this.bb.master.max.y - this.bb.copper.max.y;
-        const FIXED_MARGIN = 1;
+        const mmFIXED_MARGIN = 2;
 
         // console.log('Calculating positioning transform for stock: ', stock)
         // console.log('master bb: ', this.bb.master);
@@ -155,8 +155,8 @@ class GerberTransforms {
 
             case BOARD_POSITIONS.ROTATE_UR: {
 
-                let dx = stockWidth - copperSize.y + oldMarginTop - FIXED_MARGIN;
-                let dy = stockHeight - copperSize.x - FIXED_MARGIN*2;
+                let dx = stockWidth - copperSize.y + oldMarginTop - mmFIXED_MARGIN;
+                let dy = stockHeight - copperSize.x - mmFIXED_MARGIN*2;
 
                 let newTransform = compose(
                     translate(-oldMarginY, -oldMarginX),
@@ -172,7 +172,7 @@ class GerberTransforms {
 
             case BOARD_POSITIONS.ROTATE_CENTER_RIGHT: {
 
-                let dx = stockWidth - copperSize.y + oldMarginTop - FIXED_MARGIN;
+                let dx = stockWidth - copperSize.y + oldMarginTop - mmFIXED_MARGIN;
                 let dy = (stockHeight - copperSize.x) / 2;
 
                 let newTransform = compose(
