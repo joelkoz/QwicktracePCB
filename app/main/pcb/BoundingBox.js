@@ -1,4 +1,3 @@
-const { TouchBarOtherItemsProxy } = require("electron");
 
 class BoundingBox {
 
