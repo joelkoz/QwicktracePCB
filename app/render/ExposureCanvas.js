@@ -316,21 +316,6 @@ class ExposureCanvas extends RPCClient {
                 y: pcb.pxBoardOrigin.y + pcb.pxMarginY
             }
 
-            let profile = pcb.profile;
-            let state = profile.state;
-            if (state.side === 'bottom' && 
-                (!state.hasOwnProperty('boardPosition') || state.boardPosition <= 1)) {
-                // An adjustment needs to be made to the copper origin Y position to
-                // account for differences in the stock height and the original board height
-                // as boardPositions zero and one are aligned with the board bottom, but
-                // a mirrored board is mirrored based on the original board height, not
-                // the stock height.
-                let originalBoardHeight = state.size.y;
-                let dy = stock.height - originalBoardHeight;
-                let pxDy = dy * Config.mask.ppmmHeight;
-                pcb.pxCopperOrigin.y += pxDy;
-            }
-
          }
    
          thiz.paint();

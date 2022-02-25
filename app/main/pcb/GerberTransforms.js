@@ -41,13 +41,12 @@ class GerberTransforms {
     }
 
 
-    async mirror(mirrorX = false, mirrorY = true) {
+    async mirror(stock, mirrorX = false, mirrorY = true) {
 
         this.invertArc = (mirrorX && !mirrorY) || (mirrorY && !mirrorX)
-        let size = await this.getSize();    
         let newTransform = compose(
             scale(mirrorY ? -1 : 1, mirrorX ? -1 : 1),
-            translate(mirrorY ? -size.x : 0, mirrorX ? -size.y : 0)
+            translate(mirrorY ? -stock.width : 0, mirrorX ? -stock.height : 0)
          );
 
          this.addTransform(newTransform);

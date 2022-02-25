@@ -198,8 +198,16 @@ class ProjectLoader  extends MainSubProcess {
 
             if (mirror) {
                 // Mirror the files
+                let stock;
+                if (profile.stock.actual) {
+                    stock = profile.stock.actual;
+                }
+                else {
+                    stock = profile.stock;
+                }
+
                 let gTrans = new GerberTransforms(project);
-                await gTrans.mirror(true, false);
+                await gTrans.mirror(stock, true, false);
 
                 if (gbrSource) {
                    let gbrMirror = workDir + 'mirror-'+ path.posix.basename(gbrSource);
