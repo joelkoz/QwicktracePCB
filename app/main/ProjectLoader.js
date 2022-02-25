@@ -92,8 +92,7 @@ class ProjectLoader  extends MainSubProcess {
     /**
      * Initializes the project work directory by creating transformed files ready
      * for use by the system. Two files are created: side.gbr and side.drl. If
-     * the side is bottom, it is mirrored if milling or drilling. If the side it top, it
-     * is mirrored if exposing.
+     * the side is bottom, it is mirrored.
      * @param {object} profile 
      */
     static async prepareForWork(profile) {
@@ -117,7 +116,7 @@ class ProjectLoader  extends MainSubProcess {
             
             // Place a copy of gbr and drill files in the work directory.
             let side = state.side;
-            let mirror = (state.action != 'expose' && side === 'bottom') || (state.action === 'expose' && side === 'top');
+            let mirror = (side === 'bottom');
             _currentProfile.state.mirror = mirror;
 
             let gbrSource, drlSource;
