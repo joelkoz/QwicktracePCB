@@ -98,8 +98,7 @@ class GerberTransforms {
 
 
     /**
-     * Positions the copper traces on the specified stock. Note that this
-     * will fail if rotate90() has been called following 
+     * Positions the copper traces on the specified stock. 
      */
     async positionCopper(boardPosition, stock) {
 
@@ -111,7 +110,6 @@ class GerberTransforms {
         let oldMarginY = copper.min.y
         let copperSize = copper.size();
 
-        let oldMarginTop = this.bb.master.max.y - this.bb.copper.max.y;
         const mmFIXED_MARGIN = 2;
 
         // console.log('Calculating positioning transform for stock: ', stock)
@@ -155,7 +153,7 @@ class GerberTransforms {
 
             case BOARD_POSITIONS.ROTATE_UR: {
 
-                let dx = stockWidth - copperSize.y + oldMarginTop - mmFIXED_MARGIN;
+                let dx = stockWidth - copperSize.y - mmFIXED_MARGIN;
                 let dy = stockHeight - copperSize.x - mmFIXED_MARGIN*2;
 
                 let newTransform = compose(
@@ -172,7 +170,7 @@ class GerberTransforms {
 
             case BOARD_POSITIONS.ROTATE_CENTER_RIGHT: {
 
-                let dx = stockWidth - copperSize.y + oldMarginTop - mmFIXED_MARGIN;
+                let dx = stockWidth - copperSize.y - mmFIXED_MARGIN;
                 let dy = (stockHeight - copperSize.x) / 2;
 
                 let newTransform = compose(
