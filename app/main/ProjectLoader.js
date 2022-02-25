@@ -105,10 +105,6 @@ class ProjectLoader  extends MainSubProcess {
         try {
             let originalSize = await project.getSize();
 
-            // Make sure board is wider than it is taller...
-            let rotateBoard = (originalSize.y > originalSize.x);
-            const clockwise = true;
-
             if (_currentProfile?.state?.projectId != projectId) {
                 // Start work on a new project...
                 console.log('Emptying work dir for new project id ', projectId);
@@ -117,67 +113,55 @@ class ProjectLoader  extends MainSubProcess {
 
             _currentProfile = profile;
             _currentProfile.state.originalSize = originalSize;
-            _currentProfile.state.rotateBoard = rotateBoard;
-            if (rotateBoard) {
-                _currentProfile.state.size = { "x": originalSize.y, "y": originalSize.x };
-            }
-            else {
-                _currentProfile.state.size = { "x": originalSize.x, "y": originalSize.y };
-            }
+            _currentProfile.state.size = { "x": originalSize.x, "y": originalSize.y };
             
             // Place a copy of gbr and drill files in the work directory.
             let side = state.side;
             let mirror = (state.action != 'expose' && side === 'bottom') || (state.action === 'expose' && side === 'top');
             _currentProfile.state.mirror = mirror;
-            let gbrTarget = workDir + side + ".gbr";
 
-            // Create the transformations necessary to position the board
-            // for fabrication. Note that the order of these transformations
-            // are important, so don't change them. 
-            let gTrans = new GerberTransforms(project);
-            if (rotateBoard) {
-                await gTrans.rotate90();
-                if (mirror) {
-                   await gTrans.mirror(false, true);
-                }
+            let gbrSource, drlSource;
+
+            // Start with the original files...
+            let sideFile = project.getSideFile(side);
+            if (sideFile) {
+                 gbrSource = project.dirName + "/" + sideFile;
             }
             else {
-                if (mirror) {
-                   await gTrans.mirror(true, false);
-                }
+                gbrSource = undefined;
             }
 
-            if (!fse.existsSync(gbrTarget)) {
-               let fileName = project.getSideFile(side);
-               if (fileName) {
-                    let gbrSource = project.dirName + "/" + fileName;
-                    console.log('Prepare for work creating base file ', gbrTarget)
-                    await gTrans.transformGbr(gbrSource, gbrTarget);
-               }
-               else {
-                   gbrTarget = undefined;
-               }
+            if (project.drillFile) {
+                drlSource = project.dirName + "/" + project.drillFile;
+            }
+            else {
+                drlSource = undefined;
             }
 
 
-            let drlTarget = workDir + side + ".drl";
-            if (!fse.existsSync(drlTarget)) {
-               if (project.drillFile) {
-                    let drlSource = project.dirName + "/" + project.drillFile;
-                    console.log('Prepare for work creating base file ', drlTarget)
-                    await gTrans.transformDrl(drlSource, drlTarget);
-               }
-               else {
-                   drlTarget = undefined;
-               }
+            // Copy those to the work directory...
+            if (gbrSource) {
+              let gbrTarget = workDir + side + ".gbr";
+              if (!fse.existsSync(gbrTarget)) {
+                  await fse.copy(gbrSource, gbrTarget);
+              }
+              gbrSource = gbrTarget;
             }
 
-            _currentProfile.baseFiles = { gbr: gbrTarget, drl: drlTarget }
+            if (drlSource) {
+               let drlTarget = workDir + side + ".drl";
+               if (!fse.existsSync(drlTarget)) {
+                 await fse.copy(drlSource, drlTarget);
+               }
+               drlSource = drlTarget;
+            }
+
+            _currentProfile.baseFiles = { gbr: gbrSource, drl: drlSource }
 
             if (state.positionBoard) {
                 // Create intermediate gbr and drl files with board positioned at user selected
                 // spot...
-                let gTrans2 = new GerberTransforms(project);
+                let gTrans = new GerberTransforms(project);
                 let stock;
                 let suffix;
                 if (profile.stock.actual) {
@@ -191,33 +175,53 @@ class ProjectLoader  extends MainSubProcess {
                 let gbrPositioned = workDir + side + `-pos${state.positionBoard}-${suffix}.gbr`;
                 let drlPositioned = workDir + side + `-pos${state.positionBoard}-${suffix}.drl`;
 
-                await gTrans2.positionCopper(state.positionBoard, stock);
+                await gTrans.positionCopper(state.positionBoard, stock);
 
-                if (!fse.existsSync(gbrPositioned)) {
-                    if (gbrTarget) {
-                         console.log('Prepare for work creating work file ', gbrPositioned)
-                         await gTrans2.transformGbr(gbrTarget, gbrPositioned);
-                     }
-                 }
+                if (gbrSource) {
+                    if (!fse.existsSync(gbrPositioned)) {
+                        console.log('Prepare for work creating positioned file ', gbrPositioned)
+                        await gTrans.transformGbr(gbrSource, gbrPositioned);
+                    }
+                    gbrSource = gbrPositioned;
+                }
 
-                 if (!fse.existsSync(drlPositioned)) {
-                    if (drlTarget) {
-                         console.log('Prepare for work creating work file ', drlPositioned)
-                         await gTrans2.transformDrl(drlTarget, drlPositioned);
+
+                if (drlSource) {
+                    if (!fse.existsSync(drlPositioned)) {
+                        console.log('Prepare for work creating positioned file ', drlPositioned)
+                        await gTrans.transformDrl(drlSource, drlPositioned);
                     }
-                    else {
-                        drlPositioned = undefined;
+                    drlSource = drlPositioned;
+                }
+            }
+
+
+            if (mirror) {
+                // Mirror the files
+                let gTrans = new GerberTransforms(project);
+                await gTrans.mirror(true, false);
+
+                if (gbrSource) {
+                   let gbrMirror = workDir + 'mirror-'+ path.posix.basename(gbrSource);
+                   if (!fse.existsSync(gbrMirror)) {
+                      console.log('Prepare for work creating mirrored file ', gbrMirror);
+                      await gTrans.transformGbr(gbrSource, gbrMirror);
+                   }
+                   gbrSource = gbrMirror;
+                }
+
+                if (drlSource) {
+                    let drlMirror = workDir + 'mirror-'+ path.posix.basename(drlSource);
+                    if (!fse.existsSync(drlMirror)) {
+                       console.log('Prepare for work creating mirrored file ', drlMirror);
+                       await gTrans.transformDrl(drlSource, drlMirror);
                     }
+                    drlSource = drlMirror;
                  }
-                 
-                 _currentProfile.workFiles = { gbr: gbrPositioned, drl: drlPositioned }
-     
-            }
-            else {
-                console.log('PrepareForWork using base files for work files (no position specified)')
-                _currentProfile.workFiles = { gbr: gbrTarget, drl: drlTarget }
-            }
-            
+             }
+
+            _currentProfile.workFiles = { gbr: gbrSource, drl: drlSource }
+
             console.log('Prepare for work - base files: ', _currentProfile.baseFiles)
             console.log('Prepare for work -  work files: ', _currentProfile.workFiles)
 
