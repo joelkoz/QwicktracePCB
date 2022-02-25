@@ -254,7 +254,7 @@ class ExposureCanvas extends RPCClient {
       pcb.pxBoardHeight = stock.height * Config.mask.ppmmHeight;
       pcb.pxBoardOrigin = {
           x: Config.mask.area.pxUR.x - pcb.pxBoardWidth,
-          y: 0
+          y: Config.mask.area.pxLR.y
       };
       if (pcb.profile.state.side === 'bottom') {
           // Bottom side traces are rendered offset from the top/Y margin

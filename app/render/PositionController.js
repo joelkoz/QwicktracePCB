@@ -15,6 +15,9 @@ const BOARD_POSITIONS = {
     ROTATE_CENTER_ALL: 5
 }
 
+const mmAUTO_MARGIN = 2;
+const mmNEEDED_MARGIN = mmAUTO_MARGIN * 2;
+
 class PositionController extends RPCClient {
 
     constructor(config) {
@@ -170,13 +173,13 @@ class PositionController extends RPCClient {
         switch (pos) {
             case BOARD_POSITIONS.CENTER_ALL:
             case BOARD_POSITIONS.ROTATE_CENTER_ALL:
-                return maxMarginWidth >= 3 || maxMarginHeight >= 3;
+                return maxMarginWidth >= mmNEEDED_MARGIN || maxMarginHeight >= mmNEEDED_MARGIN;
 
             case BOARD_POSITIONS.CENTER_BOTTOM:
-                return maxMarginWidth >= 3;
+                return maxMarginWidth >= mmNEEDED_MARGIN;
 
             case BOARD_POSITIONS.ROTATE_CENTER_RIGHT:
-                return maxMarginHeight >= 3;
+                return maxMarginHeight >= mmNEEDED_MARGIN;
 
             case BOARD_POSITIONS.ROTATE_UR:
                 return canRotate;

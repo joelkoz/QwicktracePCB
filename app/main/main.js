@@ -10,6 +10,7 @@ const CNCController = require('./CNCController.js');
 const Config = require('./Config.js');
 const MainMQ = require('./MainMQ.js');
 const ConfigServer = require('./ConfigServer.js');
+const LogServer = require('./LogServer.js');
 const JoystickController = require('./JoystickController.js');
 const WebServer = require('./web/WebServer.js');
 

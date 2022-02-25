@@ -4,6 +4,7 @@ const path = require('path');
 const whatsThatGerber = require('whats-that-gerber')
 const gerbValid = require('whats-that-gerber').validate;
 const GerberData = require('./GerberData.js');
+const GerberTransforms = require('./GerberTransforms.js');
 
 class PCBProject {
 
@@ -224,12 +225,52 @@ class PCBProject {
     async saveCache(projectFileName) {
         console.log('Saving project cache file', projectFileName);
         await this.getSize();
-        let projectData = { gbrjob: this.gbrjob };
         await this.getGerberData();
+
+        if (this.size.y > this.size.x) {
+            console.log("Project taller than wider - rotations needed...");
+            await this._rotateProjectFiles();
+        }
+
+        let projectData = { gbrjob: this.gbrjob };
         projectData.boundingBoxes = this._gerberData.boundingBoxes;
         projectData.drillFile = this.drillFile;
         let jStr = JSON.stringify(projectData, null, 2);
         await fs.writeFile(projectFileName, jStr, 'utf8');
+    }
+
+
+    async _rotateProjectFiles() {
+        let gData = await this.getGerberData();
+
+        // Rotates all of the files in the project 90 degrees...
+        let gTrans = new GerberTransforms(this);
+        gTrans.rotate90();
+        let files = this.fileList;
+        for (const fileName of files) {
+            let gbrTarget = this.dirName + "/" + fileName;
+            let tempFile = this.dirName + "/" + "__toRotate.gbr";
+            await fs.move(gbrTarget, tempFile, { overwrite: true });
+            console.log(`Rotating ${gbrTarget} 90 degrees...`);
+            if (gbrTarget.endsWith('DRL')) {
+                await gTrans.transformDrl(tempFile, gbrTarget);
+            }
+            else {
+               await gTrans.transformGbr(tempFile, gbrTarget);
+            }
+            await fs.remove(tempFile);
+        };
+
+        // Finally, swap all of the bounding boxes...
+        gData.boundingBoxes.master.rotate();
+        gData.boundingBoxes.drill.rotate();
+        gData.boundingBoxes.corners.rotate();
+        gData.boundingBoxes.copper.top.rotate();
+        gData.boundingBoxes.copper.bottom.rotate();
+        gData.boundingBoxes.copper.both.rotate();
+
+        let oldSize = this.gbrjob.GeneralSpecs.Size;
+        this.gbrjob.GeneralSpecs.Size = { X: oldSize.Y, Y: oldSize.X };
     }
 
 

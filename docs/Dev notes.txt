@@ -1,0 +1,15 @@
+RaspPi splash screen is here
+/usr/share/plymouth/themes/pix/splash.png
+
+Thus, plymouth is already installed.
+
+Ideas:
+Use input pin to specify if probe arm is connected or not.  Use status report from grbl to see if 
+clip is connected or not.  Thus:
+1. Ground clip screw
+2. Connect pin from pi to arm strip and read to see if arm is in place
+
+
+Remove M3 from pcb2gcode output, and use our own ramp up code to turn on spindle.
+
+Add a red "emergency stop" button to bit holder and connect it to Grbl alarm pin

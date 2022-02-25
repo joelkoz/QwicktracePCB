@@ -77,8 +77,8 @@ class ExposeController extends RPCClient {
                },
 
                { id: "findCorner",
-                  subtitle: "Locate Board Corner",
-                  instructions: "Position the cursor at the corner of the board closest to center or screen and press ok",
+                  subtitle: "Position board",
+                  instructions: "See code below",
                   buttonDefs: [
                      { label: "Ok", fnAction: () => { thiz.exposureCanvas.activateCursor(false) } },
                      { label: "Keypad", fnAction: () => { thiz.useKeypadForCornerCursor(); } },                     
@@ -90,17 +90,24 @@ class ExposeController extends RPCClient {
                      let startX, startY;
                      let mmOther = {};
                      let maskArea = Config.mask.area;
+                     let stock;
+                     if (profile.stock.actual) {
+                        stock = profile.stock.actual;
+                     }
+                     else {
+                        stock = profile.stock;
+                     }
                      if (profile.state.side === 'bottom') {
                          // Looking for LL corner...
                          mmOther = this.exposureCanvas.toPCB({ x: maskArea.pxUR.x, y: maskArea.pxUR.y });
-                         startX = mmOther.x - profile.stock.width;
-                         startY = mmOther.y - profile.stock.height;
+                         startX = mmOther.x - stock.width;
+                         startY = mmOther.y - stock.height;
                      }
                      else {
                         // Looking for UL corner...
                         mmOther = this.exposureCanvas.toPCB({ x: maskArea.pxLR.x, y: maskArea.pxLR.y });
-                        startX = mmOther.x - profile.stock.width;
-                        startY = mmOther.y + profile.stock.height;
+                        startX = mmOther.x - stock.width;
+                        startY = mmOther.y + stock.height;
                      }
 
                      let mmCorner = { x: startX, y: startY }
