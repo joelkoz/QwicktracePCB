@@ -3,7 +3,7 @@ class BoundingBox {
 
     constructor(otherBB) {
         if (otherBB) {
-           this.bb = { min: { x: otherBB.min.x, y: otherBB.min.y }, max: { x: otherBB.max.x, y: otherBB.max.y }}
+           this.bb = { min: { x: otherBB.bb.min.x, y: otherBB.bb.min.y }, max: { x: otherBB.bb.max.x, y: otherBB.bb.max.y }}
         }
         else {
            this.bb = { min: { x: 99999, y: 999999}, max: { x:-999999, y:-999999 }}
@@ -38,6 +38,20 @@ class BoundingBox {
     set max(newMax) {
         this.bb.max = newMax;
     }
+    
+    /**
+     * swaps the x and y values of the min and max members.
+     */
+    rotate() {
+       let other = this.bb.min.y;
+       this.bb.min.y = this.bb.min.x;
+       this.bb.min.x = other;
+
+       other = this.bb.max.y;
+       this.bb.max.y = this.bb.max.x;
+       this.bb.max.x = other;
+    }
+
     
     checkCoord(coord) {
         let x = coord.x;
