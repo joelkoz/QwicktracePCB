@@ -28,6 +28,8 @@ let _filesToProject = {};
 // the most recent project prepared by prepareForWork().
 let _currentProfile = {};
 
+const RAMP_MOTOR_ON = 'M3 S2000\nG04 P2.00000\nM3 S4000\nG04 P1.00000\nM3 S6000\nG04 P1.00000\nM3 S8500G04 P1.00000';
+
 class ProjectLoader  extends MainSubProcess {
 
     constructor(win) {
@@ -298,7 +300,6 @@ class ProjectLoader  extends MainSubProcess {
 
     }
  
-
     static async getWorkAsGcode(profile) {
 
         let gbrFinal = await ProjectLoader.getFinalGerber(profile);
@@ -320,8 +321,10 @@ class ProjectLoader  extends MainSubProcess {
         // Strip out tool change commands, as we have already taken care of that stuff...
         if (state.action === 'mill') {
             let ndxRemoveStart = contents.indexOf('( Feedrate. )');
-            let ndxRemoveEnd = contents.indexOf('M3');
+            let ndxRemoveEnd = contents.indexOf('M3')+2;
             contents = contents.substring(0, ndxRemoveStart+14) + 
+                       '\n\n' +
+                       RAMP_MOTOR_ON +
                        '\n\n' +
                        contents.substring(ndxRemoveEnd)
 
