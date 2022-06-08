@@ -87,41 +87,6 @@ class MillController extends AlignmentController {
                 },
         
 
-                { id: "posZProbe",
-                  subtitle: "ZPad Probe",
-                  instructions: "Use joystick to position spindle approx 2 to 3 mm over Zpad",
-                  buttonDefs: [
-                     { label: "Continue", next: true },
-                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
-                  ],
-                    onActivate: async (wizStep) => {
-                      if (profile.state.stockIsBlank) {
-                        // Skip zpad probing and go straight to copper board...
-                        ui.gotoWizardPage('posProbeArmPCB')
-                      }
-                      else {
-                         await thiz.rpCall('cnc.zPadPosition');
-                         await thiz.rpCall('cnc.jogMode', true)
-                      }
-                    },
-                    onDeactivate: (wizStep) => {
-                      thiz.rpCall('cnc.jogMode', false)
-                    }                  
-                },                
-        
-                { id: "zProbePad",
-                  subtitle: "ZPad Probe",
-                  instructions: "Searching for pad surface. Standby...",
-                  buttonDefs: [
-                    { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
-                  ],
-                  onActivate: async (wizStep) => {
-                    await thiz.rpCall('cnc.zProbePad', false);
-                    ui.wizardNext();
-                  }
-                },
-
-
                 { id: "posProbeArmPCB",
                   subtitle: "Move Probe Arm to PCB",
                   instructions: "Position the zprobe arm on the copper board.",

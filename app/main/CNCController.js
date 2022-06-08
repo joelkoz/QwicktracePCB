@@ -841,7 +841,6 @@ class CNCController  extends MainSubProcess {
 
         let zheight = Config.cnc.zheight;
 
-        // Move to 2 mm above the PCB surface...
         let zpadZ = zheight.zpad.lastZ;
         let estZ = zpadZ + zheight.zpad.pcbOffset + 2
 
