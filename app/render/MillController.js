@@ -1,7 +1,7 @@
 "use strict"
 import { AlignmentController } from './AlignmentController.js';
 import { RenderMQ } from './RenderMQ.js'
-
+const { setIntervalAsync, clearIntervalAsync } = require('set-interval-async/fixed')
 
 class MillController extends AlignmentController {
 
@@ -65,9 +65,10 @@ class MillController extends AlignmentController {
                      { label: "Continue", next: true, btnClass: 'zProbeContinue' },
                      { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
-                  onActivate: (wizStep) => {
-                    function updateBtnContinue() {
-                        if (window.cncZProbe) {
+                  onActivate: async (wizStep) => {
+                    async function updateBtnContinue() {
+                        let rpt = await thiz.rpCall('cnc.getPinReport');
+                        if (rpt.probe) {
                            // We can not continue if ZProbe is currently "pressed"
                            $('#wizardPage .zProbeContinue').css("display", "none");
                         }
@@ -76,49 +77,15 @@ class MillController extends AlignmentController {
                             $('#wizardPage .zProbeContinue').css("display", "block");
                         }
                     }
-                    wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                    updateBtnContinue();
+                    await updateBtnContinue();
+                    wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
+                    
                   },
                   onDeactivate: (wizStep) => {
-                    clearInterval(wizStep.timerId);
+                    clearIntervalAsync(wizStep.timerId);
                   }
                 },
         
-
-                { id: "posZProbe",
-                  subtitle: "ZPad Probe",
-                  instructions: "Use joystick to position spindle approx 2 to 3 mm over Zpad",
-                  buttonDefs: [
-                     { label: "Continue", next: true },
-                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
-                  ],
-                    onActivate: async (wizStep) => {
-                      if (profile.state.stockIsBlank) {
-                        // Skip zpad probing and go straight to copper board...
-                        ui.gotoWizardPage('posProbeArmPCB')
-                      }
-                      else {
-                         await thiz.rpCall('cnc.zPadPosition');
-                         await thiz.rpCall('cnc.jogMode', true)
-                      }
-                    },
-                    onDeactivate: (wizStep) => {
-                      thiz.rpCall('cnc.jogMode', false)
-                    }                  
-                },                
-        
-                { id: "zProbePad",
-                  subtitle: "ZPad Probe",
-                  instructions: "Searching for pad surface. Standby...",
-                  buttonDefs: [
-                    { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
-                  ],
-                  onActivate: async (wizStep) => {
-                    await thiz.rpCall('cnc.zProbePad', false);
-                    ui.wizardNext();
-                  }
-                },
-
 
                 { id: "posProbeArmPCB",
                   subtitle: "Move Probe Arm to PCB",
@@ -212,10 +179,10 @@ class MillController extends AlignmentController {
                     { label: "Start mill", next: true, btnClass: 'removeProbeContinue' },
                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
-                  onActivate: (wizStep) => {
-
-                    function updateBtnContinue() {
-                      if (window.cncZProbe) {
+                  onActivate: async (wizStep) => {
+                    async function updateBtnContinue() {
+                        let rpt = await thiz.rpCall('cnc.getPinReport');
+                        if (rpt.probe) {
                           // We can not continue if ZProbe is currently "pressed"
                           $('#wizardPage .removeProbeContinue').show();
                        }
@@ -225,8 +192,9 @@ class MillController extends AlignmentController {
                        }
                     }
 
-                    wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                    updateBtnContinue();
+                    await updateBtnContinue();
+                    wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
+
                   },
                   onDeactivate: (wizStep) => {
                     clearInterval(wizStep.timerId);

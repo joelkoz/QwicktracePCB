@@ -841,13 +841,6 @@ class CNCController  extends MainSubProcess {
 
         let zheight = Config.cnc.zheight;
 
-        // Move to 2 mm above the PCB surface...
-        let zpadZ = zheight.zpad.lastZ;
-        let estZ = zpadZ + zheight.zpad.pcbOffset + 2
-
-        await this.cnc.untilGoto({z: estZ}, wcsMACHINE_WORK);
-
-
         // Now start another Z probe...
         await this.cnc.feedGCode(['(Start pcb probe)', 'G91']);            
         this.cnc.sendGCode('G38.2 Z-10 F20');
@@ -873,8 +866,6 @@ class CNCController  extends MainSubProcess {
             // Retract 4mm
             await this.cnc.feedGCode(['G91', 'G0 Z4', 'G90'])
 
-            let probedOffset = zpadZ - probeVal.z;
-            zheight.zpad.pcbProbeOffset = probedOffset;
             zheight.pcb = { lastZ: probeVal.z }
             Config.save();
             
