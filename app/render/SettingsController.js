@@ -2,6 +2,7 @@
 const { untilDelay } = require('promise-utils');
 import { RPCClient } from './RPCClient.js'
 import { RenderMQ } from './RenderMQ.js'
+const { setIntervalAsync, clearIntervalAsync } = require('set-interval-async/fixed')
 
 const wcsMACHINE_WORK = 0;
 const wcsPCB_WORK = 1;
@@ -221,9 +222,10 @@ class SettingsController extends RPCClient {
                               { label: "Continue", next: true, btnClass: 'zProbeContinue' },
                               { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                             ],
-                            onActivate: (wizStep) => {
-                            function updateBtnContinue() {
-                                if (window.cncZProbe) {
+                            onActivate: async (wizStep) => {
+                            async function updateBtnContinue() {
+                                let rpt = await thiz.rpCall('cnc.getPinReport');
+                                if (rpt.probe) {
                                     // We can not continue if ZProbe is currently "pressed"
                                     $('#wizardPage .zProbeContinue').css("display", "none");
                                 }
@@ -232,11 +234,11 @@ class SettingsController extends RPCClient {
                                     $('#wizardPage .zProbeContinue').css("display", "block");
                                 }
                             }
-                            wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                            updateBtnContinue();
+                            await updateBtnContinue();
+                            wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
                             },
                             onDeactivate: (wizStep) => {
-                                clearInterval(wizStep.timerId);
+                                clearIntervalAsync(wizStep.timerId);
                             }
                         },
       
@@ -281,24 +283,24 @@ class SettingsController extends RPCClient {
                             { label: "Done", next: true, btnClass: 'removeProbeContinue' },
                             { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                         ],
-                        onActivate: (wizStep) => {
+                        onActivate: async (wizStep) => {
         
-                            function updateBtnContinue() {
-                            if (window.cncZProbe) {
-                                // We can not continue if ZProbe is currently "pressed"
-                                $('#wizardPage .removeProbeContinue').show();
+                            async function updateBtnContinue() {
+                                let rpt = await thiz.rpCall('cnc.getPinReport');
+                                if (rpt.probe) {
+                                    // We can not continue if ZProbe is currently "pressed"
+                                    $('#wizardPage .removeProbeContinue').show();
+                                }
+                                else {
+                                    // Enable continue button
+                                    $('#wizardPage .removeProbeContinue').hide();
+                                }
                             }
-                            else {
-                                // Enable continue button
-                                $('#wizardPage .removeProbeContinue').hide();
-                            }
-                            }
-        
-                            wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                            updateBtnContinue();
+                            await updateBtnContinue();
+                            wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
                         },
                         onDeactivate: (wizStep) => {
-                            clearInterval(wizStep.timerId);
+                            clearIntervalAsync(wizStep.timerId);
                         }
         
                         }
@@ -321,9 +323,10 @@ class SettingsController extends RPCClient {
                               { label: "Continue", next: true, btnClass: 'zProbeContinue' },
                               { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                             ],
-                            onActivate: (wizStep) => {
-                            function updateBtnContinue() {
-                                if (window.cncZProbe) {
+                            onActivate: async (wizStep) => {
+                            async function updateBtnContinue() {
+                                let rpt = await thiz.rpCall('cnc.getPinReport');
+                                if (rpt.probe) {
                                     // We can not continue if ZProbe is currently "pressed"
                                     $('#wizardPage .zProbeContinue').css("display", "none");
                                 }
@@ -332,11 +335,11 @@ class SettingsController extends RPCClient {
                                     $('#wizardPage .zProbeContinue').css("display", "block");
                                 }
                             }
-                            wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                            updateBtnContinue();
+                            await updateBtnContinue();
+                            wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
                             },
                             onDeactivate: (wizStep) => {
-                                clearInterval(wizStep.timerId);
+                                clearIntervalAsync(wizStep.timerId);
                             }
                         },
       
@@ -379,10 +382,11 @@ class SettingsController extends RPCClient {
                             { label: "Done", next: true, btnClass: 'removeProbeContinue' },
                             { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                         ],
-                        onActivate: (wizStep) => {
+                        onActivate: async (wizStep) => {
         
-                            function updateBtnContinue() {
-                            if (window.cncZProbe) {
+                            async function updateBtnContinue() {
+                            let rpt = await thiz.rpCall('cnc.getPinReport');
+                            if (rpt.probe) {
                                 // We can not continue if ZProbe is currently "pressed"
                                 $('#wizardPage .removeProbeContinue').show();
                             }
@@ -391,12 +395,11 @@ class SettingsController extends RPCClient {
                                 $('#wizardPage .removeProbeContinue').hide();
                             }
                             }
-        
-                            wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                            updateBtnContinue();
+                            await updateBtnContinue();
+                            wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
                         },
                         onDeactivate: (wizStep) => {
-                            clearInterval(wizStep.timerId);
+                            clearIntervalAsync(wizStep.timerId);
                         }
         
                         }
@@ -418,9 +421,10 @@ class SettingsController extends RPCClient {
                             { label: "Continue", next: true, btnClass: 'zProbeContinue' },
                             { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                             ],
-                            onActivate: (wizStep) => {
-                                function updateBtnContinue() {
-                                    if (window.cncZProbe) {
+                            onActivate: async (wizStep) => {
+                                async function updateBtnContinue() {
+                                    let rpt = await thiz.rpCall('cnc.getPinReport');
+                                    if (rpt.probe) {
                                         // We can not continue if ZProbe is currently "pressed"
                                         $('#wizardPage .zProbeContinue').css("display", "none");
                                     }
@@ -429,11 +433,11 @@ class SettingsController extends RPCClient {
                                         $('#wizardPage .zProbeContinue').css("display", "block");
                                     }
                                 }
-                                wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                                updateBtnContinue();
+                                await updateBtnContinue();
+                                wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
                             },
                             onDeactivate: (wizStep) => {
-                                clearInterval(wizStep.timerId);
+                                clearIntervalAsync(wizStep.timerId);
                             }
                         },
                 
@@ -574,9 +578,10 @@ class SettingsController extends RPCClient {
                                 { label: "Skip zprobe", fnAction: () => { thiz.gotoWizardPage('readyToCalibrate') } },
                                 { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                             ],
-                            onActivate: (wizStep) => {
-                                function updateBtnContinue() {
-                                    if (window.cncZProbe) {
+                            onActivate: async (wizStep) => {
+                                async function updateBtnContinue() {
+                                    let rpt = await thiz.rpCall('cnc.getPinReport');
+                                    if (rpt.probe) {
                                         // We can not continue if ZProbe is currently "pressed"
                                         thiz.setWizardInstructions(wizStep.instructions)
                                         $('#wizardPage .zProbeContinue').css("display", "none");
@@ -587,11 +592,11 @@ class SettingsController extends RPCClient {
                                         $('#wizardPage .zProbeContinue').css("display", "block");
                                     }
                                 }
-                                wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                                updateBtnContinue();
+                                await updateBtnContinue();
+                                wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
                             },
                             onDeactivate: (wizStep) => {
-                                clearInterval(wizStep.timerId);
+                                clearIntervalAsync(wizStep.timerId);
                             }
                         },
               
@@ -615,10 +620,11 @@ class SettingsController extends RPCClient {
                                 { label: "Start calibration", next: true, btnClass: 'removeProbeContinue' },
                                 { label: "Cancel", fnAction: () => { thiz.cancelWizard() } }                      
                             ],
-                            onActivate: (wizStep) => {
+                            onActivate: async (wizStep) => {
         
-                                function updateBtnContinue() {
-                                    if (window.cncZProbe) {
+                                async function updateBtnContinue() {
+                                    let rpt = await thiz.rpCall('cnc.getPinReport');
+                                    if (rpt.probe) {
                                         // We can only continue if ZProbe is currently "pressed"
                                         thiz.setWizardInstructions('')
                                         $('#wizardPage .removeProbeContinue').show();
@@ -629,12 +635,11 @@ class SettingsController extends RPCClient {
                                         $('#wizardPage .removeProbeContinue').hide();
                                     }
                                 }
-            
-                                wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                                updateBtnContinue();
+                                await updateBtnContinue();
+                                wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
                             },
                             onDeactivate: (wizStep) => {
-                                clearInterval(wizStep.timerId);
+                                clearIntervalAsync(wizStep.timerId);
                             }
         
                         },

@@ -1,7 +1,7 @@
 "use strict"
 import { AlignmentController } from './AlignmentController.js';
 import { RenderMQ } from './RenderMQ.js'
-
+const { setIntervalAsync, clearIntervalAsync } = require('set-interval-async/fixed')
 
 class DrillController extends AlignmentController {
 
@@ -88,8 +88,9 @@ class DrillController extends AlignmentController {
                      { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }
                   ],
                   onActivate: async (wizStep) => {
-                    function updateBtnContinue() {
-                        if (window.cncZProbe) {
+                    async function updateBtnContinue() {
+                      let rpt = await thiz.rpCall('cnc.getPinReport');
+                      if (rpt.probe) {
                            // We can not continue if ZProbe is currently "pressed"
                            $('#wizardPage .zProbeContinue').css("display", "none");
                         }
@@ -99,11 +100,11 @@ class DrillController extends AlignmentController {
                         }
                     }
                     await thiz.rpCall('cnc.goto', window.appConfig.cnc.locations.zpad);
-                    wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                    updateBtnContinue();
+                    await updateBtnContinue();
+                    wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
                   },
                   onDeactivate: (wizStep) => {
-                    clearInterval(wizStep.timerId);
+                    clearIntervalAsync(wizStep.timerId);
                   }
                 },
         
@@ -147,10 +148,11 @@ class DrillController extends AlignmentController {
                     { label: "Start drilling", next: true, btnClass: 'removeProbeContinue' },
                     { label: "Cancel", fnAction: () => { thiz.cancelDrill() } }                      
                   ],
-                  onActivate: (wizStep) => {
+                  onActivate: async (wizStep) => {
 
-                    function updateBtnContinue() {
-                      if (window.cncZProbe) {
+                    async function updateBtnContinue() {
+                      let rpt = await thiz.rpCall('cnc.getPinReport');
+                      if (rpt.probe) {
                           // We can not continue until ZProbe is currently "pressed"
                           $('#wizardPage .removeProbeContinue').show();
                           thiz.setWizardInstructions('Press Continue')
@@ -161,12 +163,12 @@ class DrillController extends AlignmentController {
                           $('#wizardPage .removeProbeContinue').hide();
                        }
                     }
+                    await updateBtnContinue();
+                    wizStep.timerId = setIntervalAsync(updateBtnContinue, 1000);
 
-                    wizStep.timerId = setInterval(updateBtnContinue, 1000);
-                    updateBtnContinue();
                   },
                   onDeactivate: (wizStep) => {
-                    clearInterval(wizStep.timerId);
+                    clearIntervalAsync(wizStep.timerId);
                   }
 
                 },
