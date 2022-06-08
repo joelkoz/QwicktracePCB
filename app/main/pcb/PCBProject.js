@@ -65,7 +65,8 @@ class PCBProject {
         if (!this._gerberData) {
             this._gerberData = new GerberData();
             let projectFiles = this.getProjectFileList();
-            await this._gerberData.loadFilesAsync(projectFiles); 
+            await this._gerberData.loadFilesAsync(projectFiles);
+            this.boundingBoxes = this._gerberData.boundingBoxes;
         }
         return this._gerberData;
     }
@@ -271,6 +272,7 @@ class PCBProject {
 
         let oldSize = this.gbrjob.GeneralSpecs.Size;
         this.gbrjob.GeneralSpecs.Size = { X: oldSize.Y, Y: oldSize.X };
+        this.boundingBoxes = gData.boundingBoxes;
     }
 
 
