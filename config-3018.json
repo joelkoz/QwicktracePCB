@@ -70,7 +70,7 @@
             "startHeight": 2,
             "drillDepth": -1.8,
             "drillDepthX": 0.6,
-            "plungeRate": 45,
+            "plungeRate": 100,
             "msStartupDelay": 2000
         },
         "cut": {
