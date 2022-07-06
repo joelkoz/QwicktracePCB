@@ -154,7 +154,7 @@ class MillController extends AlignmentController {
                   instructions: "Ready to start autolevel",
                   buttonDefs: [
                      { label: "Start", fnAction: () => { ui.wizardNext() } },
-                     { label: "Skip", fnAction: () => { ui.gotoWizardPage('removeProbe') } },                  
+                     { label: "Skip", fnAction: () => { ui.setState('skipAutolevel', true); ui.gotoWizardPage('removeProbe') } },                  
                      { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ]
                 },
@@ -166,6 +166,7 @@ class MillController extends AlignmentController {
                     { label: "Cancel", fnAction: () => { thiz.cancelMill() } }                      
                   ],
                   onActivate: async (wizStep) => {
+                      ui.setState('skipAutolevel', false);
                       await thiz.rpCall('cnc.autolevelPCB', profile)
                       ui.wizardNext();
                   }

@@ -989,10 +989,12 @@ class CNCController  extends MainSubProcess {
 
             await untilTrue(1000, () => { return thiz.cnc.getSenderStatus() === CNC.SENDER_LOADED}, fnRejectIfCanceled);
 
-            this.autolevelReapplyInProgress = true;
-            this.cnc.sendGCode('(#autolevel_reapply)');
+            if (profile.state.skipAutolevel) {
+               this.autolevelReapplyInProgress = true;
+               this.cnc.sendGCode('(#autolevel_reapply)');
 
-            await untilEvent(MainMQ.getInstance(), 'cnc-autolevel-apply-complete', 45000)
+               await untilEvent(MainMQ.getInstance(), 'cnc-autolevel-apply-complete', 45000)
+            }
 
             this.cnc.senderStart();
 
