@@ -74,3 +74,9 @@ Electron framework.  This UI is layered on top of a software stack comprised of 
 4. [EventEmitter2](https://github.com/EventEmitter2/EventEmitter2) Advanced event handling for NodeJS
 
 For additional technical information on the Qwicktrace software architecture, see the `docs` directory
+
+---
+### Do you find my work useful?
+
+<a href="https://www.buymeacoffee.com/joelkoz" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+---
