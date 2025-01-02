@@ -69,8 +69,13 @@ class GerberData extends EventEmitter {
         let parser = gerberParser()
 
         parser.on('warning', function(w) {
-          // console.warn('warning at line ' + w.line + ': ' + w.message)
+          console.warn('warning at line ' + w.line + ': ' + w.message);
         })
+
+        parser.on('error', function(w) {
+            console.warn('error at line ' + w.line + ': ' + w.message);
+          })
+  
 
         this.holes = [];
         this.currentTool = null;
@@ -113,6 +118,11 @@ class GerberData extends EventEmitter {
 
                 case "done":
                     thiz.nextFile();
+                    break;
+
+                default:
+                    console.warn('unexpected data type');
+                    console.log(data);
                     break;
 
             }
