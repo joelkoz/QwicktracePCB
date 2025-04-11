@@ -17,6 +17,6 @@ offset=0.5
 # Drilling holes
 zdrill=-2.1
 zchange=1.0
-drill-feed=100
+drill-feed=75
 drill-speed=6000
 onedrill=true
