@@ -497,10 +497,10 @@ class CNC extends EventEmitter {
            let ramp = [];
             if (val > 2000) {
                 ramp.push('M03 S2000')
-                ramp.push('G4 P0.5')
+                ramp.push('G4 P1.0')
                 if (val > 5000) {
                     ramp.push('M03 S5000')
-                    ramp.push('G4 P0.5')
+                    ramp.push('G4 P1.0')
                 }
             }
            ramp.push(`M03 S${val}`)
