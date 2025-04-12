@@ -306,49 +306,72 @@ class GerberTransforms {
 
 
     static async _transformDrl(inputFileName, outputFileName, matrixXY) {
-        
+    
+        // By default, assume explicit coordinates (numbers already include a decimal point)
+        let implicitMode = false;
+        let scaleFactor = 1;  // Default: no scaling
+    
         function parseCoord(line, ndxStart, ndxEnd) {
             if (ndxStart >= 0) {
-                let str = line.substring(ndxStart+1, ndxEnd);
-                let val = parseFloat(str);             
+                let str = line.substring(ndxStart + 1, ndxEnd);
+                let val;
+                // If the coordinate string already includes a decimal point,
+                // or if we are not in implicit mode, parse it directly.
+                if (str.indexOf('.') >= 0 || !implicitMode) {
+                    val = parseFloat(str);
+                } else if (implicitMode) {
+                    // In implicit mode the file omits the decimal point.
+                    // Divide by the scaleFactor determined from the header.
+                    val = parseFloat(str) / scaleFactor;
+                }
                 return val;
             }
-            else {
-                return null;
-            }
+            return null;
         }
-
+    
         function fmtCoord(prefix, val) {
-            if (val != null) {
-                return prefix + val.toFixed(2);
-            }
-            else {
-                return '';
-            }
+            return (val != null) ? (prefix + val.toFixed(2)) : '';
         }
-
+    
         function transformLine(line) {
-            let ndxY = line.indexOf('Y');
-
-            let x = parseCoord(line, 0, ndxY)
-            let y = parseCoord(line, ndxY, line.length)
-            let point = applyToPoint(matrixXY, {x, y});
-
+            const ndxY = line.indexOf('Y');
+            const x = parseCoord(line, 0, ndxY);
+            const y = parseCoord(line, ndxY, line.length);
+            const point = applyToPoint(matrixXY, { x, y });
             return fmtCoord('X', point.x) + fmtCoord('Y', point.y);
         }
-
-
+    
         try {
             const fileStream = fs.createReadStream(inputFileName);
-
             const rl = readline.createInterface({
                 input: fileStream,
                 crlfDelay: Infinity
             });
-
-            let out = fs.createWriteStream(outputFileName);
-
+            const out = fs.createWriteStream(outputFileName);
+    
             for await (const line of rl) {
+                // Process header lines (i.e. lines starting with METRIC)
+                // Some DRL files include a suppression indicator (TZ or LZ) plus a numeric format string,
+                // while others simply include "METRIC" or "METRIC,000.000".
+                if (line.startsWith('METRIC')) {
+                    // Split the header on commas
+                    const tokens = line.split(',').map(t => t.trim());
+                    // Reset default assumptions if a header is seen
+                    implicitMode = false;
+                    scaleFactor = 1;
+                    tokens.forEach(token => {
+                        if (token === 'TZ' || token === 'LZ') {
+                            implicitMode = true;
+                        } else if (/^\d+\.\d+$/.test(token)) {
+                            // If a numeric format token is present, extract the number of decimals.
+                            // For example, "000.000" implies 3 decimal places.
+                            const decimals = token.split('.')[1].length;
+                            scaleFactor = Math.pow(10, decimals);
+                            // If no explicit suppression token was provided, we assume explicit decimals.
+                            // (Most explicit DRL files already include decimals in the coordinate values.)
+                        }
+                    });
+                }
                 
                 let outLine = line;
                 if (line.startsWith('X')) {
@@ -357,14 +380,12 @@ class GerberTransforms {
                 out.write(outLine, 'utf8');
                 out.write('\n');
             }
-
             out.end();
         }
         catch (err) {
-            console.log('Error during _transformDrl: ', err)
+            console.error('Error during _transformDrl: ', err);
         }
     }
-
 }
 
 module.exports = GerberTransforms;
