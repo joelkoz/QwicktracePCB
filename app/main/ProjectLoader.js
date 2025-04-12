@@ -466,7 +466,11 @@ class ProjectLoader  extends MainSubProcess {
                 if (targetName) {
                     let targetPath = path.join(projectDir, '/', targetName);
                     console.log('Saving zipped file', zipEntry.entryName, 'as', targetPath);
-                    fse.writeFileSync(targetPath, zipEntry.getData().toString('utf8'), 'utf8');
+                    // Always add an extra EOL to the file because some of the gerber parsers
+                    // choke when Fusion/Eagle fails to terminate the last line with a newline.
+                    let fileData = zipEntry.getData().toString('utf8');
+                    fileData += '\n';
+                    fse.writeFileSync(targetPath, fileData, 'utf8');
                     pcbProject.fromGerber(targetPath, gerberType);
                 }
                 else {
